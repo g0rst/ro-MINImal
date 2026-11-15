@@ -7,7 +7,9 @@ Groove-Generator. Dazu Tempo-Delay, Reverb und Kick-Ducking.
 ![Display](docs/screen.png)
 
 **Im Browser testen:** `docs/index.html` öffnen. Die Seite enthält denselben C-Kern wie die Firmware
-(als WebAssembly) und bildet Display, Encoder, Tasten und die 27 Keys des FM-1 nach.
+(als WebAssembly) und bildet Display, Regler, Tasten und die 27 Keys des FM-1 in der Anordnung des Geräts nach.
+
+K1 bis K4 heißen am Gerät KNOB1 bis KNOB4, ALGO und PRESET heißen ALGORITHM und PRESETS.
 
 ## Stand
 
@@ -35,7 +37,8 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Die Kick ist das Raster.** Vier auf dem Boden, nichts sonst ist sicher.
 - **Jede Spur hat ihre eigene Looplänge** (1 bis 16 Steps). Percussion und Clicks laufen auf 7, 9, 11 oder 13
   Steps gegen die 16 der Kick. Der Takt wiederholt sich dadurch erst nach vielen Takten.
-- **Jeder Step hat eine Chance** (100, 75, 50, 25 %), einen Akzent und eine Note.
+- **Jeder Step hat eine Chance** (100, 75, 50, 25 %), einen Akzent, eine Note und einen Ratchet (bis zu vier
+  Schläge im Step).
 - **Swing** verschiebt jede zweite Sechzehntel (50 bis 75 %).
 - **Drift** bewegt Klangfarbe, Ausklang, Lautstärke und Mikrotiming langsam und zufällig. Die Kick bleibt
   davon im Timing unberührt.
@@ -64,7 +67,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | --- | --- |
 | PLAY | Start und Stopp |
 | 16 weiße Tasten | die Steps der gewählten Spur; tippen schaltet um |
-| weiße Taste halten + K1 / K2 / K3 | Note, Chance, Akzent dieses Steps |
+| weiße Taste halten + K1 / K2 / K3 / K4 | Note, Chance, Akzent, Ratchet (1 bis 4 Schläge) dieses Steps |
 | schwarze Tasten 1 bis 6 | Spur wählen: KICK, SUB, HAT, PERC, STAB, CLICK |
 | schwarze Tasten 7 bis 11 | Spur leeren, nach links, nach rechts, ganzer Groove neu, Undo |
 | SELECT, OCT−, OCT+ | Spur wählen |
@@ -74,8 +77,9 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
-| GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock |
-| SEL / ARP / LFO | Spur neu erzeugen / leicht verändern / stumm |
+| GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, Chain (Patterns A bis D nacheinander, je vier Takte) |
+| SEL / ARP | Spur neu erzeugen / leicht verändern |
+| LFO | kurz: Spur stumm; halten: Solo |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
 | SEQ | zurück zu den Steps |
 | SAVE | Projekt (Einstellungen und vier Patterns) im Flash sichern |

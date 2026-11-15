@@ -7,8 +7,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap">
 <style>
 /* One visual world: the instrument's own panel. A cool concrete-grey enclosure, charcoal controls, the dark
-   screen, and the screen's orange as the only accent (LEDs, playhead). Layout: one column at phone width,
-   screen and controls side by side from 760px. */
+   screen, and the screen's orange as the only accent (LEDs, playhead). Layout: the FM-1's own arrangement
+   from 760px (knob cluster and OCT left, screen in the middle, KNOB1-4 over two rows of six buttons right, keys
+   below); at phone width the same groups stacked, the screen first. */
 :root {
   color-scheme: light;
   --panel: #cdd1d2;
@@ -41,13 +42,15 @@ header p { margin: 0; color: var(--ink-soft); max-width: 58ch; }
   box-shadow: 0 1px 0 #fff inset, 0 10px 24px -14px rgba(0, 0, 0, .45);
   user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
-.left, .right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.left, .mid, .right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.mid { order: -1; }
 .bezel { background: #111; border-radius: 8px; padding: 8px; }
 canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; background: var(--screen); border-radius: 2px; }
 
 .row { display: grid; gap: 8px; }
 .row.k { grid-template-columns: repeat(4, 1fr); }
-.row.e { grid-template-columns: repeat(3, 1fr); }
+.row.e { grid-template-columns: repeat(4, 1fr); }
+.oct { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-width: 220px; }
 .enc { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .enc .name { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--ink-soft); }
 .dial {
@@ -64,7 +67,7 @@ canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelate
 }
 .pm button:active { background: #fff; transform: translateY(1px); }
 
-.btns { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.btns { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
 .btn {
   border: 0; border-radius: 6px; background: var(--cap); color: var(--cap-text); padding: 7px 2px 6px;
   font: 600 13px/1.1 var(--font); letter-spacing: .03em; touch-action: none; cursor: pointer;
@@ -107,7 +110,6 @@ canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelate
 }
 .sound.live { background: var(--led); color: #1d1206; }
 label { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; color: var(--ink-soft); }
-input[type=range] { width: 130px; accent-color: var(--ink); }
 input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--ink); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outline-offset: 2px; }
 
@@ -120,7 +122,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
 #err { display: none; background: #fff; border-left: 4px solid var(--led); padding: 10px 12px; margin: 0; }
 
 @media (min-width: 760px) {
-  .unit { grid-template-columns: minmax(280px, 380px) 1fr; padding: 18px; gap: 16px 18px; }
+  .unit { grid-template-columns: 170px minmax(240px, 300px) 1fr; padding: 18px; gap: 16px 18px; align-items: start; }
+  .mid { order: 0; }
+  .row.e { grid-template-columns: 1fr 1fr; gap: 14px 8px; }
+  .right { gap: 18px; }
   .help { grid-template-columns: 1fr 1fr; }
   .btn { padding: 10px 2px 8px; font-size: 14px; }
   .block { height: 150px; }
@@ -138,39 +143,41 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     </div>
     <div class="bar">
       <button class="sound" id="sound" type="button">Ton einschalten</button>
-      <label for="vol">MASTER <input id="vol" type="range" min="0" max="100" value="75"></label>
     </div>
   </header>
   <p id="err"></p>
 
   <div class="unit" id="unit">
     <div class="left">
+      <div class="row e" id="rowe"></div>
+      <div class="oct" id="oct"></div>
+    </div>
+    <div class="mid">
       <div class="bezel"><canvas id="lcd" width="240" height="240" aria-label="Display des FM-1, 240 mal 240 Pixel"></canvas></div>
-      <div class="row k" id="rowk"></div>
     </div>
     <div class="right">
-      <div class="row e" id="rowe"></div>
+      <div class="row k" id="rowk"></div>
       <div class="btns" id="btns"></div>
-      <div class="bar">
-        <label for="hold"><input id="hold" type="checkbox"> Weiße Tasten einrasten (für die Maus: Step halten und K1 bis K3 drehen)</label>
-      </div>
     </div>
     <div class="keys" id="keys"></div>
+  </div>
+  <div class="bar">
+    <label for="hold"><input id="hold" type="checkbox"> Weiße Tasten einrasten (für die Maus: Step halten und KNOB1 bis KNOB4 drehen)</label>
   </div>
 
   <section class="help">
     <h2>Kurzanleitung</h2>
     <ul>
-      <li><b>PLAY</b> startet den Groove. Die 16 weißen Tasten sind die Steps der gewählten Spur: tippen schaltet einen Step.</li>
+      <li>Die Bedienelemente sitzen wie am Gerät. <b>PLAY STOP</b> startet den Groove. Die 16 weißen Tasten sind die Steps der gewählten Spur: tippen schaltet einen Step.</li>
       <li>Schwarze Tasten links wählen die Spur: KICK, SUB, HAT, PERC, STAB, CLICK. Rechts: CLR leert die Spur, ◀ ▶ verschieben sie, NEW würfelt den ganzen Groove neu, UNDO nimmt das zurück.</li>
-      <li>Weiße Taste halten und drehen: <b>K1</b> Note, <b>K2</b> Chance (100, 75, 50, 25 %), <b>K3</b> Akzent.</li>
-      <li><b>ALGO</b> setzt die Looplänge der Spur (1 bis 16). Ungleiche Längen ergeben Polymeter. <b>PRESET</b> wechselt Pattern A bis D zum nächsten Takt.</li>
+      <li>Weiße Taste halten und drehen: <b>KNOB1</b> Note, <b>KNOB2</b> Chance (100, 75, 50, 25 %), <b>KNOB3</b> Akzent, <b>KNOB4</b> Ratchet (1 bis 4 Schläge im Step).</li>
+      <li><b>ALGORITHM</b> setzt die Looplänge der Spur (1 bis 16). Ungleiche Längen ergeben Polymeter. <b>PRESETS</b> wechselt Pattern A bis D zum nächsten Takt. <b>SELECT</b>, OCT− und OCT+ wählen die Spur.</li>
     </ul>
     <ul>
-      <li>Seiten für K1 bis K4: <b>HOME</b> Tempo, Swing, Drift, Duck. <b>EDIT</b> Klang der Spur. <b>ENV</b> Pegel, Pan, Delay, Reverb. <b>FX</b> Delay und Reverb. <b>GLO</b> Grundton, Skala, MIDI-Clock.</li>
-      <li><b>SEL</b> erzeugt die Spur neu, <b>ARP</b> verändert sie leicht, <b>LFO</b> schaltet sie stumm.</li>
+      <li>Seiten für KNOB1 bis KNOB4: <b>HOME</b> Tempo, Swing, Drift, Duck. <b>EDIT</b> Klang der Spur. <b>ENV</b> Pegel, Pan, Delay, Reverb. <b>FX</b> Delay und Reverb. <b>GLO</b> Grundton, Skala, MIDI-Clock, Chain (Patterns A bis D nacheinander, je vier Takte).</li>
+      <li><b>SEL</b> erzeugt die Spur neu, <b>ARP</b> verändert sie leicht. <b>LFO</b> kurz: Spur stumm. LFO halten: Solo.</li>
       <li><b>REC</b>: die Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten in die Steps geschrieben. <b>SEQ</b> führt zurück.</li>
-      <li><b>SAVE</b> speichert das Projekt, hier im Browser, im Gerät im Flash. Leertaste: PLAY.</li>
+      <li><b>SAVE</b> speichert das Projekt, hier im Browser, im Gerät im Flash. <b>MASTER</b> ist die Lautstärke. Leertaste: PLAY.</li>
     </ul>
   </section>
   <p class="note">Stand: Kern und FM-1-Anbindung laufen in den Host-Tests und im Simulator von fm1-base. Auf einem echten FM-1 wurde die Firmware noch nicht gebaut oder geflasht. Klang und Timing der Hardware können abweichen.</p>
@@ -180,10 +187,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
 (function () {
   "use strict";
   var WASM = "@@WASM@@";
-  var BTN = ["FX", "SEL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE", "ARP", "SEQ", "PLAY", "REC", "OCT−", "OCT+"];
-  var BTN_SUB = ["FX", "Neu", "Mix", "Mute", "Sound", "Global", "Groove", "Sichern", "Mutate", "Steps", "Start", "Keys", "Spur −", "Spur +"];
-  var BTN_ORDER = [6, 4, 2, 0, 5, 9, 7, 10, 11, 1, 8, 3, 12, 13];
-  var ENC = ["SELECT", "ALGO", "PRESET", "K1", "K2", "K3", "K4"];
+  var BTN = ["FX", "SEL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE", "ARP", "SEQ", "PLAY STOP", "REC", "OCT−", "OCT+"];
+  var BTN_SUB = ["Effekte", "Neu", "Mix", "Mute", "Sound", "Global", "Groove", "Sichern", "Mutate", "Steps", "Start", "Keys", "Spur −", "Spur +"];
+  /* as on the FM-1: FX SEL ENV LFO EDIT GLO over HOME SAVE ARP SEQ PLAY REC; OCT- OCT+ under the left knobs */
+  var BTN_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+  var ENC = ["SELECT", "ALGORITHM", "PRESETS", "KNOB1", "KNOB2", "KNOB3", "KNOB4"];
+  var ENC_ORDER = [-1, 0, 2, 1, 3, 4, 5, 6];   /* MASTER SELECT over PRESETS ALGORITHM; then KNOB1..4 */
+  var vol = 75;
   var WK = [0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26];
   var BK = [1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25];
   var BK_NAME = ["KICK", "SUB", "HAT", "PERC", "STAB", "CLICK", "CLR", "◀", "▶", "NEW", "UNDO"];
@@ -192,7 +202,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
 
   var $ = function (id) { return document.getElementById(id); };
   var held = { b: 0, k: 0 }, latch = { b: 0, k: 0 }, sticky = 0, enc = [0, 0, 0, 0, 0, 0, 0];
-  var btnEl = [], keyEl = [], dialEl = [], dialTurn = [0, 0, 0, 0, 0, 0, 0];
+  var btnEl = [], keyEl = [], dialEl = [], masterEl = null, dialTurn = [0, 0, 0, 0, 0, 0, 0];
   var w = null, mem = null, ctx = null;
 
   function fail(msg) { var e = $("err"); e.textContent = msg; e.style.display = "block"; }
@@ -229,12 +239,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     b.type = "button"; b.className = "btn"; b.id = "btn" + i;
     b.innerHTML = BTN[i] + "<small>" + BTN_SUB[i] + "</small>";
     wire(b, "b", 1 << i);
-    $("btns").appendChild(b); btnEl[i] = b;
+    $(i >= 12 ? "oct" : "btns").appendChild(b); btnEl[i] = b;
   });
 
-  ENC.forEach(function (name, i) {
+  ENC_ORDER.forEach(function (i) {
+    var name = i < 0 ? "MASTER" : ENC[i];
     var box = document.createElement("div"); box.className = "enc";
-    var dial = document.createElement("button"); dial.type = "button"; dial.className = "dial"; dial.id = "enc" + i;
+    var dial = document.createElement("button"); dial.type = "button"; dial.className = "dial"; dial.id = i < 0 ? "master" : "enc" + i;
     dial.setAttribute("aria-label", name + " drehen: ziehen, oder Minus und Plus");
     dial.innerHTML = "<i></i>";
     var y0 = null, acc = 0;
@@ -253,19 +264,26 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     var pm = document.createElement("div"); pm.className = "pm";
     [-1, 1].forEach(function (d) {
       var b = document.createElement("button"); b.type = "button"; b.textContent = d < 0 ? "−" : "+";
-      b.id = "enc" + i + (d < 0 ? "m" : "p");
+      b.id = (i < 0 ? "master" : "enc" + i) + (d < 0 ? "m" : "p");
       b.setAttribute("aria-label", name + (d < 0 ? " zurück" : " vor"));
       b.addEventListener("click", function () { turn(i, d); audioKick(); });
       pm.appendChild(b);
     });
     var nm = document.createElement("div"); nm.className = "name"; nm.textContent = name;
     box.appendChild(nm); box.appendChild(dial); box.appendChild(pm);
-    $(i < 3 ? "rowe" : "rowk").appendChild(box); dialEl[i] = dial;
+    $(i < 3 ? "rowe" : "rowk").appendChild(box);
+    if (i < 0) masterEl = dial; else dialEl[i] = dial;
   });
   function turn(i, d) {
+    if (i < 0) {                        /* MASTER is a pot with end stops, not an encoder */
+      vol = Math.max(0, Math.min(100, vol + d * 4));
+      masterEl.style.transform = "rotate(" + (vol * 2.7 - 135) + "deg)";
+      return;
+    }
     enc[i] += d; dialTurn[i] += d;
     dialEl[i].style.transform = "rotate(" + dialTurn[i] * 18 + "deg)";
   }
+  turn(-1, 0);
 
   [0, 1].forEach(function (blk) {
     var box = document.createElement("div"); box.className = "block";
@@ -293,7 +311,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
   });
 
   /* ---- sound: the core's 128-frame blocks, resampled if the browser will not run at 44.1 kHz ---- */
-  function gain() { var v = $("vol").value / 100; return Math.round(v * v * 4096); }
+  function gain() { var v = vol / 100; return Math.round(v * v * 4096); }
   function audioKick() { if (ctx && ctx.state !== "running") ctx.resume(); }
   function audioStart() {
     if (!w) return;

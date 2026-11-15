@@ -197,6 +197,32 @@ int main(int argc, char **argv)
         CHECK(peak > 0.2 && peak <= 1.0 && rms > 0.02, "seed %d: peak %f rms %f", i, peak, rms);
     }
 
+    /* K4 on a held step: the ratchet; LFO held: solo; CHAIN walks the patterns every four bars */
+    romi_init(11);
+    held_k = 1u << 0; frame(0);
+    turn(ROMI_E_K4, 2);
+    held_k = 0; frame(0); frame(0);
+    CHECK(ROMI_ST_RATCH(romi_project()->pat[0].tr[0].step[0].flags) == 3, "ratchet %u",
+          ROMI_ST_RATCH(romi_project()->pat[0].tr[0].step[0].flags));
+    held_b = 1u << ROMI_B_LFO;
+    for (i = 0; i < 40; i++) frame(0);
+    held_b = 0; frame(0);
+    CHECK(romi_state(ROMI_Q_SOLO) == 0 && romi_state(ROMI_Q_MUTE) == 0, "solo %d mute %d", romi_state(ROMI_Q_SOLO), romi_state(ROMI_Q_MUTE));
+    tap_button(ROMI_B_PLAY);
+    run(4.0, 0, &peak, &rms);
+    CHECK(peak > 0.2, "the solo kick is silent: %f", peak);
+    held_b = 1u << ROMI_B_LFO;
+    for (i = 0; i < 40; i++) frame(0);
+    held_b = 0; frame(0);
+    CHECK(romi_state(ROMI_Q_SOLO) == -1, "solo off: %d", romi_state(ROMI_Q_SOLO));
+    tap_button(ROMI_B_PLAY);
+    romi_project()->chain = 2;
+    tap_button(ROMI_B_PLAY);
+    run(64 * 15.0 / 126 + 0.3, 0, 0, 0);
+    CHECK(romi_state(ROMI_Q_PATTERN) == 1, "chain after 4 bars: pattern %d", romi_state(ROMI_Q_PATTERN));
+    run(2 * 64 * 15.0 / 126, 0, 0, 0);
+    CHECK(romi_state(ROMI_Q_PATTERN) == 0, "chain after 12 bars: pattern %d", romi_state(ROMI_Q_PATTERN));
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

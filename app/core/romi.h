@@ -33,6 +33,7 @@ enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROM
 #define ROMI_ST_ON 0x80u
 #define ROMI_ST_ACC 0x40u
 #define ROMI_ST_PROB(f) (((f) >> 4) & 3u)   /* 0: 100 %, 1: 75 %, 2: 50 %, 3: 25 % */
+#define ROMI_ST_RATCH(f) (((f) & 3u) + 1u)  /* 1..4 hits within the step */
 
 typedef struct {
     uint8_t flags;
@@ -64,12 +65,14 @@ typedef struct {
     uint8_t dly_fb, rev_size, rev_damp; /* 0..127 */
     uint8_t clock_out;                  /* MIDI clock and start / stop out */
     uint8_t cur_pat;
+    uint8_t chain;                      /* 0: off; 1..3: patterns A-B, A-C, A-D in turn, four bars each */
+    uint8_t rsv[3];
     romi_pattern_t pat[ROMI_PATTERNS];
     uint32_t sum;                       /* over everything before it */
 } romi_project_t;
 
 #define ROMI_MAGIC 0x314D4F52u          /* "ROM1" */
-#define ROMI_VERSION 1u
+#define ROMI_VERSION 2u
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */
@@ -99,7 +102,7 @@ int romi_save_wanted(void);             /* 1 once after SAVE: the platform write
 /* ---- for tests and the simulator ---- */
 int romi_state(int what);
 enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI_Q_PATTERN, ROMI_Q_KEYS_MODE,
-       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS };
+       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO };
 romi_project_t *romi_project(void);
 
 #endif
