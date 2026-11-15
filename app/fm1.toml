@@ -1,0 +1,20 @@
+# ro:MINImal's build settings (base/tools/build.py)
+name = "ROMINIMAL"             # names the build's files: app/build/rominimal.fwsc
+title = "ro:MINImal"
+id_prefix = "FM-1_47"          # package identity: dev FM-1_4700, releases FM-1_47XXYYZZ
+usb_manufacturer = "g0rst"
+usb_product = "ro:MINImal FM-1"
+o2 = ["core/romi.c"]           # the instrument: its own unit at -O2
+o2_cflags = ["-DROMI_FM1_POOL"]   # its delay and reverb lines in the .pool RAM region
+words = "words.tsv"
+ble = false                    # no radio: nothing of JieLi's is linked
+tagline = "rominimal + microhouse groove synth"
+repo = "https://github.com/g0rst/ro-MINImal"
+licence = "MIT"
+credits = "Built on fm1-base and felucca-bsp (MPL-2.0)."
+author = "g0rst"
+description = "A six-voice groove synthesizer for rominimal and microhouse: FM kick, rolling sub, hats, percussion, chord stab and clicks on a polymetric step sequencer with per-step chance, swing, drift and a groove generator; tempo delay, reverb and kick ducking."
+tags = ["groovebox", "synth", "sequencer"]
+install = "https://github.com/g0rst/ro-MINImal"
+site = "https://github.com/g0rst/ro-MINImal"
+screenshot = "docs/screen.png"

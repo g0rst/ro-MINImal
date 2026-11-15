@@ -1,0 +1,116 @@
+# ro:MINImal
+
+Firmware für den **M-VAVE FM-1**: ein Groove-Synthesizer für Rominimal und Microhouse.
+Sechs feste Stimmen, ein polymetrischer Step-Sequencer mit Chance pro Step, Swing, Drift und ein
+Groove-Generator. Dazu Tempo-Delay, Reverb und Kick-Ducking.
+
+![Display](docs/screen.png)
+
+**Im Browser testen:** `docs/index.html` öffnen. Die Seite enthält denselben C-Kern wie die Firmware
+(als WebAssembly) und bildet Display, Encoder, Tasten und die 27 Keys des FM-1 nach.
+
+## Stand
+
+| Teil | Zustand |
+| --- | --- |
+| Kern (`app/core/romi.c`): Klang, Sequencer, Generator, Display | läuft, Host-Tests grün (`tests/run_tests.sh`) |
+| Browser-Testseite (`docs/index.html`) | läuft (WebAssembly aus demselben Kern) |
+| FM-1-Anbindung (`app/app.c`) im Host-Simulator von fm1-base | läuft, Testskript `app/tests/basic.txt` grün (inkl. Speichern und Neustart) |
+| Firmware-Paket `.fwsc` für das Gerät | **noch nicht gebaut** (braucht JieLis Toolchain und das AC79-SDK) |
+| Lauf auf einem echten FM-1 | **noch nicht getestet** |
+
+Offen bis zum ersten Lauf auf der Hardware: CPU-Last des Renderers, ob der Audio-Pfad aus dem RAM laufen
+muss (`PLAT_RAM_CODE` in fm1-base), die Geschwindigkeit des Display-Neuzeichnens pro Step und der Klang über
+Lautsprecher und Kopfhörer des Geräts.
+
+**Vor dem Flashen lesen:** Custom-Firmware kann einen FM-1 unbrauchbar machen. Der Chip hat nur eine
+Firmware-Bank und keinen Recovery-Taster; neuere Hardware-Revisionen (M-VAVE-Logo unter dem Display) vertragen
+manche Custom-Firmwares nicht. Vorher auf die offizielle V15 gehen, Daten sichern und wissen, wie man
+zurückkommt (Installer von fm1-base, `base/README.md`).
+
+## Konzept
+
+Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bewegen. Daraus folgt der Aufbau:
+
+- **Die Kick ist das Raster.** Vier auf dem Boden, nichts sonst ist sicher.
+- **Jede Spur hat ihre eigene Looplänge** (1 bis 16 Steps). Percussion und Clicks laufen auf 7, 9, 11 oder 13
+  Steps gegen die 16 der Kick. Der Takt wiederholt sich dadurch erst nach vielen Takten.
+- **Jeder Step hat eine Chance** (100, 75, 50, 25 %), einen Akzent und eine Note.
+- **Swing** verschiebt jede zweite Sechzehntel (50 bis 75 %).
+- **Drift** bewegt Klangfarbe, Ausklang, Lautstärke und Mikrotiming langsam und zufällig. Die Kick bleibt
+  davon im Timing unberührt.
+- **Der Generator** kennt die Rollen: Hats auf dem Offbeat, ein rollender Sub zwischen den Kicks, euklidische
+  Percussion, seltene Akkord-Stabs, Clicks mit niedriger Chance. `SEL` würfelt eine Spur neu, `ARP` verändert
+  sie um einen Schritt.
+- **Die Kick duckt alles andere**, auch Delay und Reverb.
+
+### Stimmen
+
+| Spur | Synthese | K1 bis K4 auf der Seite EDIT |
+| --- | --- | --- |
+| KICK | Sinus mit Pitch-Hüllkurve, Click, Soft-Clipper | TUNE, DECAY, PUNCH, DRIVE |
+| SUB | Sinus mit kurzem FM-Anschlag, Legato-Glide | DECAY, FM, RATIO, GLIDE |
+| HAT | zwei unharmonische FM-Paare gegen Rauschen, Hochpass; Akzent öffnet | DECAY, TONE, METAL, OPEN |
+| PERC | ein FM-Paar mit Pitch-Bend: Rim, Holz, Tom, Blip | DECAY, FM, RATIO, BEND |
+| STAB | Dreiklang aus FM-Paaren, Tiefpass folgt der Hüllkurve | DECAY, BRIGHT, CHORD, DETUNE |
+| CLICK | Rauschkorn durch resonanten Bandpass, zufällig im Stereofeld | DECAY, FREQ, RESO, SCATTER |
+
+Effekte: Delay (1/16, 1/8, 3/16; links volle Zeit, rechts zwei Drittel), Reverb (vier Kämme, Allpässe),
+Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
+
+## Bedienung
+
+| Bedienelement | Funktion |
+| --- | --- |
+| PLAY | Start und Stopp |
+| 16 weiße Tasten | die Steps der gewählten Spur; tippen schaltet um |
+| weiße Taste halten + K1 / K2 / K3 | Note, Chance, Akzent dieses Steps |
+| schwarze Tasten 1 bis 6 | Spur wählen: KICK, SUB, HAT, PERC, STAB, CLICK |
+| schwarze Tasten 7 bis 11 | Spur leeren, nach links, nach rechts, ganzer Groove neu, Undo |
+| SELECT, OCT−, OCT+ | Spur wählen |
+| ALGO | Looplänge der Spur |
+| PRESET | Pattern A bis D (wechselt zum nächsten Takt) |
+| HOME | Seite GROOVE: Tempo (90 bis 150), Swing, Drift, Duck |
+| EDIT | Seite SOUND: die vier Klangparameter der Spur |
+| ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
+| FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
+| GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock |
+| SEL / ARP / LFO | Spur neu erzeugen / leicht verändern / stumm |
+| REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
+| SEQ | zurück zu den Steps |
+| SAVE | Projekt (Einstellungen und vier Patterns) im Flash sichern |
+| MASTER | Lautstärke |
+
+LEDs: gesetzte Steps leuchten, die Looplänge glimmt, der Playhead invertiert seinen Step.
+MIDI: Kanäle 1 bis 6 spielen die Spuren (Note 60 ist der Grundton), Kanal 10 eine Drum-Map.
+Start und Stopp werden empfangen; Clock, Start und Stopp werden über USB gesendet.
+
+## Aufbau
+
+    app/core/romi.h, romi.c   der ganze Synthesizer: portables C99 ohne libc und ohne Plattform-Aufrufe
+    app/app.c, app.h          Anbindung an fm1-base (Audio, MIDI, Panel, Display, Speicher)
+    app/fm1.toml              Build-Einstellungen für fm1-base
+    app/tests/basic.txt       Testskript für den Host-Simulator von fm1-base
+    base/                     fm1-base als Submodul (darin felucca-bsp): Plattform, Build, Installer
+    sim/                      Browser-Testseite: wasm.c, page.html, build.sh  ->  docs/index.html
+    tests/                    Host-Tests des Kerns
+
+Der Kern zeichnet das Display selbst in Streifen von 240 x 48 Pixeln (eigene 5x7-Schrift). Deshalb zeigen
+Gerät, Simulator und Browser dasselbe Bild.
+
+## Bauen und testen
+
+    git clone --recursive https://github.com/g0rst/ro-MINImal
+    tests/run_tests.sh        # Kern-Tests (cc); schreibt build/tests/groove.wav und Bildschirmfotos
+    sim/build.sh              # Browser-Testseite (clang mit wasm32-Target, wasm-ld, python3)
+    ./build.sh --host         # Host-Simulator von fm1-base (python3, Pillow, cc)
+    ./build.sh                # Firmware-Paket app/build/rominimal.fwsc (JieLi-Toolchain, AC79-SDK)
+
+Toolchain und SDK für das Firmware-Paket beschreibt `base/README.md` (`base/tools/get_toolchain.sh`,
+`base/bsp/tools/get_sdk.sh`). Installiert wird mit `base/tools/fm1_install.py`.
+
+## Lizenz
+
+MIT für die Dateien dieses Repositorys (`LICENSE`). `base/` (fm1-base, felucca-bsp) steht unter MPL-2.0;
+ein Firmware-Paket enthält außerdem drei Dateien aus JieLis AC79-SDK (Apache-2.0).
+Nicht mit M-VAVE oder JieLi verbunden.
