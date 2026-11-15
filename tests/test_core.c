@@ -336,6 +336,35 @@ int main(int argc, char **argv)
         CHECK(a != b, "a lock changed nothing");
     }
 
+    /* LINK: a track's steps gated by another track's hits: with them, in their gaps, a step after them */
+    for (v = 0; v < 3; v++) {
+        int kick, hat, steps;
+        romi_init(27);
+        romi_project()->drift = 0;
+        for (i = 0; i < ROMI_STEPS; i++) {
+            romi_project()->pat[0].tr[ROMI_KICK].step[i].flags = (uint8_t)(i % 4 == 0 ? 0x80 : 0);
+            romi_project()->pat[0].tr[ROMI_HAT].step[i].flags = 0x80;
+        }
+        romi_project()->pat[0].tr[ROMI_KICK].len = romi_project()->pat[0].tr[ROMI_HAT].len = 16;
+        romi_project()->pat[0].tr[ROMI_KICK].mute = (uint8_t)(v == 1);   /* a muted source gates all the same */
+        tap_key(5);                                 /* HAT */
+        tap_button(ROMI_B_SEQ);
+        tap_button(ROMI_B_SEQ);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_LINK, "SEQ twice: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_K1, 1);
+        if (v) turn(ROMI_E_K2, v);
+        CHECK(romi_project()->pat[0].tr[ROMI_HAT].dep_src == 1 && romi_project()->pat[0].tr[ROMI_HAT].dep_mode == v,
+              "link %d mode %d", romi_project()->pat[0].tr[ROMI_HAT].dep_src, romi_project()->pat[0].tr[ROMI_HAT].dep_mode);
+        tap_button(ROMI_B_PLAY);
+        run(64 * 15.0 / 126 + 0.05, 0, 0, 0);       /* four bars and a little: step 65 has begun */
+        steps = romi_state(ROMI_Q_GSTEP);
+        kick = romi_state(ROMI_Q_HITS + ROMI_KICK);
+        hat = romi_state(ROMI_Q_HITS + ROMI_HAT);
+        if (v == 0) CHECK(kick == 17 && hat == kick, "WITH: kick %d hat %d of %d steps", kick, hat, steps);
+        if (v == 1) CHECK(kick == 0 && hat == steps - 17, "GAPS: kick %d hat %d of %d steps", kick, hat, steps);
+        if (v == 2) CHECK(kick == 17 && hat == 16, "AFTER: kick %d hat %d of %d steps", kick, hat, steps);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

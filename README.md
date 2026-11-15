@@ -47,6 +47,9 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
   sie um einen Schritt.
 - **Sidechain pro Spur.** Eine Quelle (ab Werk die Kick) duckt jede Spur um deren eigenen Anteil, dazu Delay
   und Reverb. Ist die Quelle stumm, duckt sie weiter (Ghost-Kick).
+- **Verknüpfte Spuren (LINK).** Die Steps einer Spur können davon abhängen, ob eine andere Spur an dieser
+  Stelle tatsächlich geschlagen hat, mit ihrer Chance und ihrer eigenen Looplänge. Eine stumme Quelle wirkt
+  weiter: ein unhörbares Euklid-Muster als Tor für andere Spuren.
 - **Parameter-Locks und Mikrotiming.** Jeder Step kann eigene Klangwerte haben und früher oder später kommen.
 
 ### Stimmen
@@ -88,6 +91,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | LFO | kurz: Spur stumm; halten: Solo |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
 | SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |
+| SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach) |
 | SAVE | kurz: Projekt (Einstellungen und vier Patterns) im Flash sichern |
 | SAVE halten + PRESETS | ganzes Pattern in ein anderes kopieren (A bis D); Loslassen kopiert |
 | SAVE halten + SELECT | nur die gewählte Spur in ein anderes Pattern kopieren |

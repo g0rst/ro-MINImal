@@ -27,7 +27,7 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
        ROMI_B_ARP, ROMI_B_SEQ, ROMI_B_PLAY, ROMI_B_REC, ROMI_B_OCTDN, ROMI_B_OCTUP, ROMI_NB };
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
-enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_NPAGES };
+enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -53,7 +53,8 @@ typedef struct {
     uint8_t eu_prob;                    /* 0..3: 25, 50, 75, 100 % for all of them */
     uint8_t eu_acc;                     /* 0: none; n: every n-th hit accented */
     uint8_t sc;                         /* 0..127: how much the sidechain ducks this track */
-    uint8_t rsv;
+    uint8_t dep_src;                    /* the LINK page: 0 none, else track + 1 whose hits gate this track's steps */
+    uint8_t dep_mode;                   /* 0 WITH: only on its hits; 1 GAPS: only where it is silent; 2 AFTER: a step later */
 } romi_track_t;
 
 typedef struct {
@@ -82,7 +83,7 @@ typedef struct {
 } romi_project_t;
 
 #define ROMI_MAGIC 0x314D4F52u          /* "ROM1" */
-#define ROMI_VERSION 4u
+#define ROMI_VERSION 5u
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */
@@ -112,7 +113,8 @@ int romi_save_wanted(void);             /* 1 once after SAVE: the platform write
 /* ---- for tests and the simulator ---- */
 int romi_state(int what);
 enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI_Q_PATTERN, ROMI_Q_KEYS_MODE,
-       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO };
+       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO,
+       ROMI_Q_HITS = 100 };            /* + track: hits sounded since PLAY */
 romi_project_t *romi_project(void);
 
 #endif
