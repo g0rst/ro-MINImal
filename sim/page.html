@@ -162,7 +162,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     <div class="keys" id="keys"></div>
   </div>
   <div class="bar">
-    <label for="hold"><input id="hold" type="checkbox"> Weiße Tasten einrasten (für die Maus: Step halten und KNOB1 bis KNOB4 drehen)</label>
+    <label for="hold"><input id="hold" type="checkbox"> Weiße Tasten und SAVE einrasten (für die Maus: halten und dabei drehen)</label>
   </div>
 
   <section class="help">
@@ -170,14 +170,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     <ul>
       <li>Die Bedienelemente sitzen wie am Gerät. <b>PLAY STOP</b> startet den Groove. Die 16 weißen Tasten sind die Steps der gewählten Spur: tippen schaltet einen Step.</li>
       <li>Schwarze Tasten links wählen die Spur: KICK, SUB, HAT, PERC, STAB, CLICK. Rechts: CLR leert die Spur, ◀ ▶ verschieben sie, NEW würfelt den ganzen Groove neu, UNDO nimmt das zurück.</li>
-      <li>Weiße Taste halten und drehen: <b>KNOB1</b> Note, <b>KNOB2</b> Chance (100, 75, 50, 25 %), <b>KNOB3</b> Akzent, <b>KNOB4</b> Ratchet (1 bis 4 Schläge im Step).</li>
-      <li><b>ALGORITHM</b> setzt die Looplänge der Spur (1 bis 16). Ungleiche Längen ergeben Polymeter. <b>PRESETS</b> wechselt Pattern A bis D zum nächsten Takt. <b>SELECT</b>, OCT− und OCT+ wählen die Spur.</li>
+      <li>Weiße Taste halten und drehen: <b>KNOB1</b> Note, <b>KNOB2</b> Chance, <b>KNOB3</b> Akzent, <b>KNOB4</b> Ratchet. <b>SELECT</b> schiebt den Step früher oder später (Mikrotiming).</li>
+      <li>Auf der Seite <b>EDIT</b> eine weiße Taste halten und drehen: Der Klangwert gilt nur für diesen Step (Lock, orange markiert). Step halten und <b>SEL</b>: Locks und Verschiebung des Steps löschen.</li>
+      <li><b>SEQ</b> öffnet die Euklid-Seite der Spur: KNOB1 Schläge, KNOB2 Rotation, KNOB3 Chance, KNOB4 Akzent auf jedem n-ten Schlag. <b>ALGORITHM</b> setzt die Looplänge (1 bis 16).</li>
     </ul>
     <ul>
-      <li>Seiten für KNOB1 bis KNOB4: <b>HOME</b> Tempo, Swing, Drift, Duck. <b>EDIT</b> Klang der Spur. <b>ENV</b> Pegel, Pan, Delay, Reverb. <b>FX</b> Delay und Reverb. <b>GLO</b> Grundton, Skala, MIDI-Clock, Chain (Patterns A bis D nacheinander, je vier Takte).</li>
-      <li><b>SEL</b> erzeugt die Spur neu, <b>ARP</b> verändert sie leicht. <b>LFO</b> kurz: Spur stumm. LFO halten: Solo.</li>
-      <li><b>REC</b>: die Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten in die Steps geschrieben. <b>SEQ</b> führt zurück.</li>
-      <li><b>SAVE</b> speichert das Projekt, hier im Browser, im Gerät im Flash. <b>MASTER</b> ist die Lautstärke. Leertaste: PLAY.</li>
+      <li>Seiten für KNOB1 bis KNOB4: <b>HOME</b> Tempo, Swing, Drift, Duck. <b>EDIT</b> Klang der Spur. <b>ENV</b> Pegel, Pan, Delay, Reverb. <b>GLO</b> Grundton, Skala, MIDI-Clock, Chain.</li>
+      <li><b>FX</b> einmal: Delay und Reverb. FX zweimal: Sidechain mit Quelle, Tiefe, Release und dem Anteil der gewählten Spur. Die Quelle duckt auch, wenn sie stumm ist.</li>
+      <li><b>SAVE</b> kurz: speichern. SAVE halten und <b>PRESETS</b> drehen: ganzes Pattern nach A bis D kopieren. SAVE halten und <b>SELECT</b> drehen: nur die gewählte Spur kopieren. Loslassen kopiert.</li>
+      <li><b>PRESETS</b> wechselt Pattern A bis D zum nächsten Takt. <b>SEL</b> erzeugt die Spur neu, <b>ARP</b> verändert sie leicht. <b>LFO</b> kurz: stumm, halten: Solo.</li>
+      <li><b>REC</b>: die Tasten spielen die Spur chromatisch und nehmen bei laufendem Groove auf. <b>MASTER</b> ist die Lautstärke. Leertaste: PLAY.</li>
     </ul>
   </section>
   <p class="note">Stand: Kern und FM-1-Anbindung laufen in den Host-Tests und im Simulator von fm1-base. Auf einem echten FM-1 wurde die Firmware noch nicht gebaut oder geflasht. Klang und Timing der Hardware können abweichen.</p>
@@ -188,7 +190,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
   "use strict";
   var WASM = "@@WASM@@";
   var BTN = ["FX", "SEL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE", "ARP", "SEQ", "PLAY STOP", "REC", "OCT−", "OCT+"];
-  var BTN_SUB = ["Effekte", "Neu", "Mix", "Mute", "Sound", "Global", "Groove", "Sichern", "Mutate", "Steps", "Start", "Keys", "Spur −", "Spur +"];
+  var BTN_SUB = ["Effekte", "Neu", "Mix", "Mute", "Sound", "Global", "Groove", "Sichern", "Mutate", "Euklid", "Start", "Keys", "Spur −", "Spur +"];
   /* as on the FM-1: FX SEL ENV LFO EDIT GLO over HOME SAVE ARP SEQ PLAY REC; OCT- OCT+ under the left knobs */
   var BTN_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   var ENC = ["SELECT", "ALGORITHM", "PRESETS", "KNOB1", "KNOB2", "KNOB3", "KNOB4"];
@@ -201,7 +203,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
   var BK_AT = [[0, 0], [0, 1], [0, 2], [0, 4], [0, 5], [0, 7], [1, 0], [1, 1], [1, 3], [1, 4], [1, 6]];
 
   var $ = function (id) { return document.getElementById(id); };
-  var held = { b: 0, k: 0 }, latch = { b: 0, k: 0 }, sticky = 0, enc = [0, 0, 0, 0, 0, 0, 0];
+  var held = { b: 0, k: 0 }, latch = { b: 0, k: 0 }, sticky = 0, stickyB = 0, enc = [0, 0, 0, 0, 0, 0, 0];
   var btnEl = [], keyEl = [], dialEl = [], masterEl = null, dialTurn = [0, 0, 0, 0, 0, 0, 0];
   var w = null, mem = null, ctx = null;
 
@@ -217,6 +219,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
         if (sticky & bit) latch.k |= bit;
         return;
       }
+      if (kind === "b" && bit === 1 << 7 && $("hold").checked) {               /* and a latching SAVE, to copy */
+        stickyB ^= bit;
+        el.classList.toggle("down", stickyB !== 0);
+        return;
+      }
       held[kind] |= bit; latch[kind] |= bit; el.classList.add("down");
       try { el.setPointerCapture(ev.pointerId); } catch (e) {}
       audioKick();
@@ -225,6 +232,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
   function release(kind, bit, el) {
     return function () {
       if (kind === "k" && (sticky & bit)) return;
+      if (kind === "b" && (stickyB & bit)) return;
       held[kind] &= ~bit; el.classList.remove("down");
     };
   }
@@ -304,7 +312,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     $("keys").appendChild(box);
   });
   $("hold").addEventListener("change", function () {
-    if (!this.checked) { sticky = 0; WK.forEach(function (k) { keyEl[k].classList.remove("down"); }); }
+    if (!this.checked) { sticky = stickyB = 0; WK.forEach(function (k) { keyEl[k].classList.remove("down"); }); btnEl[7].classList.remove("down"); }
   });
   document.addEventListener("keydown", function (e) {
     if (e.code === "Space" && !e.repeat && e.target.tagName !== "INPUT") { latch.b |= 1 << 10; audioKick(); e.preventDefault(); }
@@ -347,7 +355,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
   /* ---- the screen and the lights, once a frame ---- */
   var lcd = $("lcd").getContext("2d"), img = lcd.createImageData(240, 240), seenB = -1, seenK = -1, seenDB = -1, seenDK = -1;
   function frame(t) {
-    var dirty = w.sim_frame((held.b | latch.b) >>> 0, (held.k | latch.k | sticky) >>> 0,
+    var dirty = w.sim_frame((held.b | latch.b | stickyB) >>> 0, (held.k | latch.k | sticky) >>> 0,
                             enc[0], enc[1], enc[2], enc[3], enc[4], enc[5], enc[6], (t >>> 0));
     latch.b = latch.k = 0; enc = [0, 0, 0, 0, 0, 0, 0];
     if (dirty) {

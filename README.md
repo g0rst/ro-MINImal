@@ -45,7 +45,9 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Der Generator** kennt die Rollen: Hats auf dem Offbeat, ein rollender Sub zwischen den Kicks, euklidische
   Percussion, seltene Akkord-Stabs, Clicks mit niedriger Chance. `SEL` würfelt eine Spur neu, `ARP` verändert
   sie um einen Schritt.
-- **Die Kick duckt alles andere**, auch Delay und Reverb.
+- **Sidechain pro Spur.** Eine Quelle (ab Werk die Kick) duckt jede Spur um deren eigenen Anteil, dazu Delay
+  und Reverb. Ist die Quelle stumm, duckt sie weiter (Ghost-Kick).
+- **Parameter-Locks und Mikrotiming.** Jeder Step kann eigene Klangwerte haben und früher oder später kommen.
 
 ### Stimmen
 
@@ -68,6 +70,9 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | PLAY | Start und Stopp |
 | 16 weiße Tasten | die Steps der gewählten Spur; tippen schaltet um |
 | weiße Taste halten + K1 / K2 / K3 / K4 | Note, Chance, Akzent, Ratchet (1 bis 4 Schläge) dieses Steps |
+| weiße Taste halten + SELECT | Mikrotiming: Step bis zu eine halbe Sechzehntel früher oder später |
+| auf Seite EDIT: weiße Taste halten + K1 bis K4 | Parameter-Lock: der Klangwert gilt nur für diesen Step |
+| weiße Taste halten + SEL | Locks und Verschiebung dieses Steps löschen |
 | schwarze Tasten 1 bis 6 | Spur wählen: KICK, SUB, HAT, PERC, STAB, CLICK |
 | schwarze Tasten 7 bis 11 | Spur leeren, nach links, nach rechts, ganzer Groove neu, Undo |
 | SELECT, OCT−, OCT+ | Spur wählen |
@@ -77,12 +82,15 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
+| FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, Chain (Patterns A bis D nacheinander, je vier Takte) |
 | SEL / ARP | Spur neu erzeugen / leicht verändern |
 | LFO | kurz: Spur stumm; halten: Solo |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
-| SEQ | zurück zu den Steps |
-| SAVE | Projekt (Einstellungen und vier Patterns) im Flash sichern |
+| SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |
+| SAVE | kurz: Projekt (Einstellungen und vier Patterns) im Flash sichern |
+| SAVE halten + PRESETS | ganzes Pattern in ein anderes kopieren (A bis D); Loslassen kopiert |
+| SAVE halten + SELECT | nur die gewählte Spur in ein anderes Pattern kopieren |
 | MASTER | Lautstärke |
 
 LEDs: gesetzte Steps leuchten, die Looplänge glimmt, der Playhead invertiert seinen Step.

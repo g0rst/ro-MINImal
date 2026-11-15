@@ -27,7 +27,7 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
        ROMI_B_ARP, ROMI_B_SEQ, ROMI_B_PLAY, ROMI_B_REC, ROMI_B_OCTDN, ROMI_B_OCTUP, ROMI_NB };
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
-enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_NPAGES };
+enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -38,6 +38,9 @@ enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROM
 typedef struct {
     uint8_t flags;
     int8_t note;                        /* semitones from the track's base note */
+    int8_t shift;                       /* microtiming, -8..8: sixteenths of a step early or late */
+    uint8_t lock[4];                    /* a sound parameter for this step alone: 0 none, else value + 1 */
+    uint8_t rsv;
 } romi_step_t;
 
 typedef struct {
@@ -46,6 +49,11 @@ typedef struct {
     uint8_t mute;
     uint8_t p[4];                       /* the sound's four parameters, 0..127 */
     uint8_t level, pan, dly, rev;       /* 0..127 */
+    uint8_t eu_hits, eu_rot;            /* the EUCLID page: hits spread over the loop, rotated */
+    uint8_t eu_prob;                    /* 0..3: 25, 50, 75, 100 % for all of them */
+    uint8_t eu_acc;                     /* 0: none; n: every n-th hit accented */
+    uint8_t sc;                         /* 0..127: how much the sidechain ducks this track */
+    uint8_t rsv;
 } romi_track_t;
 
 typedef struct {
@@ -58,7 +66,7 @@ typedef struct {
     uint8_t bpm;                        /* 90..150 */
     uint8_t swing;                      /* 50..75 % */
     uint8_t drift;                      /* 0..127: slow random movement of timbre, level and timing */
-    uint8_t duck;                       /* 0..127: the kick ducks everything else */
+    uint8_t duck;                       /* 0..127: the sidechain's depth */
     uint8_t root;                       /* MIDI note of the sub's root, 24..47 */
     uint8_t scale;                      /* 0..3 */
     uint8_t dly_time;                   /* 0: 1/16, 1: 1/8, 2: 3/16 */
@@ -66,13 +74,15 @@ typedef struct {
     uint8_t clock_out;                  /* MIDI clock and start / stop out */
     uint8_t cur_pat;
     uint8_t chain;                      /* 0: off; 1..3: patterns A-B, A-C, A-D in turn, four bars each */
-    uint8_t rsv[3];
+    uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
+    uint8_t sc_rel;                     /* 0..127: how fast the ducking lets go */
+    uint8_t rsv;
     romi_pattern_t pat[ROMI_PATTERNS];
     uint32_t sum;                       /* over everything before it */
 } romi_project_t;
 
 #define ROMI_MAGIC 0x314D4F52u          /* "ROM1" */
-#define ROMI_VERSION 2u
+#define ROMI_VERSION 4u
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */

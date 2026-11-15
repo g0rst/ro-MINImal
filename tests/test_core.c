@@ -223,6 +223,119 @@ int main(int argc, char **argv)
     run(2 * 64 * 15.0 / 126, 0, 0, 0);
     CHECK(romi_state(ROMI_Q_PATTERN) == 0, "chain after 12 bars: pattern %d", romi_state(ROMI_Q_PATTERN));
 
+    /* SEQ: the EUCLID page spreads hits over the loop; UNDO brings the steps back */
+    romi_init(21);
+    tap_key(8);                                     /* PERC */
+    v = romi_state(ROMI_Q_STEPS_ON);
+    tap_button(ROMI_B_SEQ);
+    CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_EUCLID, "SEQ: page %d", romi_state(ROMI_Q_PAGE));
+    turn(ROMI_E_ALGO, 16);
+    turn(ROMI_E_K1, -16);
+    CHECK(romi_state(ROMI_Q_STEPS_ON) == 0, "0 hits: %d steps", romi_state(ROMI_Q_STEPS_ON));
+    turn(ROMI_E_K1, 5);
+    CHECK(romi_state(ROMI_Q_STEPS_ON) == 5, "5 hits: %d steps", romi_state(ROMI_Q_STEPS_ON));
+    {
+        const romi_track_t *tr = &romi_project()->pat[0].tr[ROMI_PERC];
+        int gaps = 0, last = -1, lo = 99, hi = 0;
+        for (i = 0; i < 32; i++)
+            if (tr->step[i % 16].flags & ROMI_ST_ON) {
+                if (last >= 0) { int g = i - last; if (g < lo) lo = g; if (g > hi) hi = g; gaps++; }
+                last = i;
+            }
+        CHECK(gaps && hi - lo <= 1 && (tr->step[0].flags & ROMI_ST_ON), "5 in 16 uneven: gaps %d..%d", lo, hi);
+        turn(ROMI_E_K2, 2);
+        CHECK(!(tr->step[0].flags & ROMI_ST_ON) && (tr->step[2].flags & ROMI_ST_ON), "rotate by 2");
+        turn(ROMI_E_K3, -2);
+        turn(ROMI_E_K4, 2);
+        CHECK(ROMI_ST_PROB(tr->step[2].flags) == 2 && (tr->step[2].flags & ROMI_ST_ACC), "chance and accent: %02x", tr->step[2].flags);
+    }
+    tap_key(25);                                    /* UNDO */
+    CHECK(romi_state(ROMI_Q_STEPS_ON) == v, "undo after euclid: %d, was %d", romi_state(ROMI_Q_STEPS_ON), v);
+
+    /* SAVE held: PRESETS copies the pattern, SELECT the track; a tap still saves */
+    romi_init(22);
+    romi_save_wanted();
+    held_b = 1u << ROMI_B_SAVE; frame(0);
+    turn(ROMI_E_PRESET, 2);
+    held_b = 0; frame(0);
+    CHECK(!memcmp(&romi_project()->pat[0], &romi_project()->pat[2], sizeof(romi_pattern_t)), "pattern A not copied to C");
+    CHECK(romi_state(ROMI_Q_PATTERN) == 0 && romi_save_wanted() == 0, "a copy changed the pattern or saved");
+    CHECK(memcmp(&romi_project()->pat[0].tr[1], &romi_project()->pat[3].tr[1], sizeof(romi_track_t)), "D is A already");
+    tap_key(3);                                     /* SUB */
+    held_b = 1u << ROMI_B_SAVE; frame(0);
+    turn(ROMI_E_SELECT, 3);
+    held_b = 0; frame(0);
+    CHECK(romi_state(ROMI_Q_TRACK) == ROMI_SUB, "SELECT under SAVE moved the track");
+    CHECK(!memcmp(&romi_project()->pat[0].tr[1], &romi_project()->pat[3].tr[1], sizeof(romi_track_t)), "track not copied to D");
+    CHECK(memcmp(&romi_project()->pat[0].tr[2], &romi_project()->pat[3].tr[2], sizeof(romi_track_t)), "more than the track was copied");
+    tap_button(ROMI_B_SAVE);
+    CHECK(romi_save_wanted() == 1, "a tap on SAVE did not save");
+
+    /* the sidechain: the muted kick still ducks the rest; a track with AMOUNT 0 is left alone */
+    {
+        double loud, ducked;
+        for (v = 0; v < 2; v++) {
+            romi_init(23);
+            romi_project()->pat[0].tr[ROMI_KICK].mute = 1;
+            romi_project()->drift = 0;
+            romi_project()->duck = v ? 127 : 0;
+            tap_button(ROMI_B_PLAY);
+            run(8.0, 0, 0, v ? &ducked : &loud);
+        }
+        CHECK(ducked < loud * 0.96, "ghost sidechain: rms %f against %f", ducked, loud);
+        tap_button(ROMI_B_FX);
+        tap_button(ROMI_B_FX);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SC, "FX twice: page %d", romi_state(ROMI_Q_PAGE));
+    }
+
+    /* microtiming: a step held, SELECT nudges it; it sounds that much early or late */
+    for (v = -8; v <= 8; v += 8) {
+        static const int32_t none[ROMI_NE];
+        int t, first = -1;
+        romi_init(24);
+        for (t = 0; t < ROMI_TRACKS; t++)
+            for (i = 0; i < ROMI_STEPS; i++)
+                romi_project()->pat[0].tr[t].step[i].flags = 0;
+        tap_key(7);                                 /* step 5 of the kick, set */
+        if (v) {                                    /* (held without a turn, the release would toggle it) */
+            held_k = 1u << 7; frame(0);
+            turn(ROMI_E_SELECT, v);
+            held_k = 0; frame(0); frame(0);
+        }
+        CHECK(romi_project()->pat[0].tr[0].step[4].shift == v && romi_state(ROMI_Q_STEPS_ON) == 1 &&
+              romi_state(ROMI_Q_TRACK) == 0, "shift %d: %d", v, romi_project()->pat[0].tr[0].step[4].shift);
+        run(1.0, 0, 0, 0);
+        romi_input(1u << ROMI_B_PLAY, 0, none, now_ms);
+        run(1.0, pcm, 0, 0);
+        romi_input(0, 0, none, now_ms);
+        for (i = 0; i < ROMI_SR - 128 && first < 0; i++)
+            if (abs(pcm[2 * i]) > 300) first = i;
+        /* step 5 starts 4 sixteenths in: 21000 samples at 126 BPM; a full shift is half a sixteenth, 2625 */
+        CHECK(abs(first - (21000 + v * 2625 / 8)) < 200, "shift %d: the kick at sample %d", v, first);
+    }
+
+    /* locks: a step held on the sound page gets its own value; the track's stays; SEL makes the step plain */
+    romi_init(25);
+    tap_button(ROMI_B_EDIT);
+    v = romi_project()->pat[0].tr[0].p[0];
+    held_k = 1u << 0; frame(0);
+    turn(ROMI_E_K1, 3);
+    CHECK(romi_project()->pat[0].tr[0].step[0].lock[0] == v + 12 + 1 && romi_project()->pat[0].tr[0].p[0] == v,
+          "lock %d, track %d (was %d)", romi_project()->pat[0].tr[0].step[0].lock[0], romi_project()->pat[0].tr[0].p[0], v);
+    snprintf(path, sizeof path, "%s/screen-lock.ppm", out);
+    write_screen(path);
+    tap_button(ROMI_B_SEL);
+    CHECK(romi_project()->pat[0].tr[0].step[0].lock[0] == 0, "SEL on a held step left its lock");
+    held_k = 0; frame(0); frame(0);
+    CHECK(romi_project()->pat[0].tr[0].step[0].flags & ROMI_ST_ON, "the step went off");
+    {   /* a locked step sounds different from the same step without */
+        uint32_t a, b;
+        romi_init(26); romi_project()->drift = 0; tap_button(ROMI_B_PLAY); a = run(2.0, 0, 0, 0);
+        romi_init(26); romi_project()->drift = 0; romi_project()->pat[0].tr[0].step[0].lock[1] = 128;
+        tap_button(ROMI_B_PLAY); b = run(2.0, 0, 0, 0);
+        CHECK(a != b, "a lock changed nothing");
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);
