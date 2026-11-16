@@ -170,7 +170,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     <ul>
       <li>Die Bedienelemente sitzen wie am Gerät. <b>PLAY STOP</b> startet den Groove. Die 16 weißen Tasten sind die Steps der gewählten Spur: tippen schaltet einen Step.</li>
       <li>Schwarze Tasten links wählen die Spur: KICK, SUB, HAT, PERC, STAB, CLICK. Rechts: CLR leert die Spur, ◀ ▶ verschieben sie, NEW würfelt den ganzen Groove neu, UNDO nimmt das zurück.</li>
-      <li>Weiße Taste halten und drehen: <b>KNOB1</b> Note, <b>KNOB2</b> Chance, <b>KNOB3</b> Akzent, <b>KNOB4</b> Ratchet. <b>SELECT</b> schiebt den Step früher oder später (Mikrotiming).</li>
+      <li>Weiße Taste halten und drehen: <b>KNOB1</b> Note, <b>KNOB2</b> Chance, <b>KNOB3</b> Akzent, <b>KNOB4</b> Ratchet.</li>
+      <li><b>SEQ</b> dreimal: Seite TIMING. <b>SELECT</b> springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). KNOB1 schiebt den gewählten Schlag früher oder später, KNOB2 die ganze Spur.</li>
       <li>Auf der Seite <b>EDIT</b> eine weiße Taste halten und drehen: Der Klangwert gilt nur für diesen Step (Lock, orange markiert). Step halten und <b>SEL</b>: Locks und Verschiebung des Steps löschen.</li>
       <li><b>SEQ</b> öffnet die Euklid-Seite der Spur: KNOB1 Schläge, KNOB2 Rotation, KNOB3 Chance, KNOB4 Akzent auf jedem n-ten Schlag. <b>ALGORITHM</b> setzt die Looplänge (1 bis 16).</li>
       <li><b>SEQ</b> zweimal: Seite LINK. Die Steps der Spur spielen abhängig von einer anderen Spur. KNOB1 Quelle, KNOB2 Modus: WITH nur wenn die Quelle schlägt, GAPS nur in ihren Lücken, AFTER einen Step danach. Das gilt auch, wenn die Quelle stumm ist.</li>
@@ -215,9 +216,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     return function (ev) {
       ev.preventDefault();
       if (kind === "k" && $("hold").checked && el.classList.contains("w")) {   /* latching white keys */
-        sticky ^= bit;
-        el.classList.toggle("down", (sticky & bit) !== 0);
-        if (sticky & bit) latch.k |= bit;
+        var was = sticky & bit;             /* one latched step at a time: another key takes the latch over */
+        WK.forEach(function (k) { keyEl[k].classList.remove("down"); });
+        sticky = was ? 0 : bit;
+        el.classList.toggle("down", sticky !== 0);
+        if (sticky) latch.k |= bit;
         return;
       }
       if (kind === "b" && bit === 1 << 7 && $("hold").checked) {               /* and a latching SAVE, to copy */

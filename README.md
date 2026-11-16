@@ -73,7 +73,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | PLAY | Start und Stopp |
 | 16 weiße Tasten | die Steps der gewählten Spur; tippen schaltet um |
 | weiße Taste halten + K1 / K2 / K3 / K4 | Note, Chance, Akzent, Ratchet (1 bis 4 Schläge) dieses Steps |
-| weiße Taste halten + SELECT | Mikrotiming: Step bis zu eine halbe Sechzehntel früher oder später |
+| weiße Taste halten + SELECT | Mikrotiming dieses Steps (bequemer auf der Seite TIMING) |
 | auf Seite EDIT: weiße Taste halten + K1 bis K4 | Parameter-Lock: der Klangwert gilt nur für diesen Step |
 | weiße Taste halten + SEL | Locks und Verschiebung dieses Steps löschen |
 | schwarze Tasten 1 bis 6 | Spur wählen: KICK, SUB, HAT, PERC, STAB, CLICK |
@@ -88,6 +88,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, Chain (Patterns A bis D nacheinander, je vier Takte) |
 | SEL / ARP | Spur neu erzeugen / leicht verändern |
+| SEQ ein drittes Mal | Seite TIMING: SELECT springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). K1 schiebt den gewählten Schlag, K2 die ganze Spur, zusammen bis zu eine halbe Sechzehntel früher oder später |
 | LFO | kurz: Spur stumm; halten: Solo |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
 | SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |

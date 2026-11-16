@@ -365,6 +365,56 @@ int main(int argc, char **argv)
         if (v == 2) CHECK(kick == 17 && hat == 16, "AFTER: kick %d hat %d of %d steps", kick, hat, steps);
     }
 
+    /* the TIMING page: SELECT walks the hits, a key picks a step without toggling it; the first knob shifts that
+     * step, the second the whole track; the track's choice and its steps stay */
+    romi_init(28);
+    {
+        romi_track_t *tr = &romi_project()->pat[0].tr[ROMI_PERC];
+        int on;
+        for (i = 0; i < ROMI_STEPS; i++)
+            tr->step[i].flags = (uint8_t)(i == 2 || i == 5 || i == 11 ? 0x80 : 0);
+        tr->len = 16;
+        tap_key(8);                                 /* PERC */
+        tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_TIMING, "SEQ three times: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_SELECT, 1);
+        CHECK(romi_state(ROMI_Q_CURSOR) == 2 && romi_state(ROMI_Q_TRACK) == ROMI_PERC, "cursor %d track %d",
+              romi_state(ROMI_Q_CURSOR), romi_state(ROMI_Q_TRACK));
+        turn(ROMI_E_K1, -3);
+        turn(ROMI_E_SELECT, 2);
+        CHECK(romi_state(ROMI_Q_CURSOR) == 11, "cursor %d", romi_state(ROMI_Q_CURSOR));
+        turn(ROMI_E_K1, 5);
+        turn(ROMI_E_SELECT, 1);                     /* round the end, to the first hit */
+        CHECK(romi_state(ROMI_Q_CURSOR) == 2, "cursor wrapped to %d", romi_state(ROMI_Q_CURSOR));
+        turn(ROMI_E_SELECT, -1);
+        CHECK(romi_state(ROMI_Q_CURSOR) == 11, "cursor back to %d", romi_state(ROMI_Q_CURSOR));
+        on = romi_state(ROMI_Q_STEPS_ON);
+        tap_key(9);                                 /* the white key of step 6 */
+        CHECK(romi_state(ROMI_Q_CURSOR) == 5 && romi_state(ROMI_Q_STEPS_ON) == on, "a key on the timing page: cursor %d, %d steps",
+              romi_state(ROMI_Q_CURSOR), romi_state(ROMI_Q_STEPS_ON));
+        turn(ROMI_E_K1, 20);
+        turn(ROMI_E_K2, -2);
+        CHECK(tr->step[2].shift == -3 && tr->step[11].shift == 5 && tr->step[5].shift == 8 && tr->tshift == -2,
+              "shifts %d %d %d track %d", tr->step[2].shift, tr->step[11].shift, tr->step[5].shift, tr->tshift);
+        snprintf(path, sizeof path, "%s/screen-timing.ppm", out);
+        write_screen(path);
+    }
+    for (v = -8; v <= 8; v += 16) {                 /* the whole track early or late: heard */
+        static const int32_t none[ROMI_NE];
+        int t, first = -1;
+        romi_init(29);
+        for (t = 0; t < ROMI_TRACKS; t++)
+            for (i = 0; i < ROMI_STEPS; i++)
+                romi_project()->pat[0].tr[t].step[i].flags = (uint8_t)(t == 0 && i == 4 ? 0x80 : 0);
+        romi_project()->pat[0].tr[0].tshift = (int8_t)v;
+        romi_input(1u << ROMI_B_PLAY, 0, none, now_ms);
+        run(1.0, pcm, 0, 0);
+        romi_input(0, 0, none, now_ms);
+        for (i = 0; i < ROMI_SR - 128 && first < 0; i++)
+            if (abs(pcm[2 * i]) > 300) first = i;
+        CHECK(abs(first - (21000 + v * 2625 / 8)) < 200, "track shift %d: the kick at sample %d", v, first);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);
