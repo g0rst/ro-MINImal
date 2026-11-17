@@ -6,6 +6,8 @@ Groove-Generator. Dazu Tempo-Delay, Reverb und Kick-Ducking.
 
 ![Display](docs/screen.png)
 
+**Handbuch:** `docs/manual.html`, in Englisch, Deutsch und Rumänisch (Quelle: `manual/build.py`).
+
 **Im Browser testen:** `docs/index.html` öffnen. Die Seite enthält denselben C-Kern wie die Firmware
 (als WebAssembly) und bildet Display, Regler, Tasten und die 27 Keys des FM-1 in der Anordnung des Geräts nach.
 
@@ -111,6 +113,7 @@ Start und Stopp werden empfangen; Clock, Start und Stopp werden über USB gesend
     base/                     fm1-base als Submodul (darin felucca-bsp): Plattform, Build, Installer
     sim/                      Browser-Testseite: wasm.c, page.html, build.sh  ->  docs/index.html
     tests/                    Host-Tests des Kerns
+    manual/                   Handbuch in drei Sprachen: build.py  ->  docs/manual.html
 
 Der Kern zeichnet das Display selbst in Streifen von 240 x 48 Pixeln (eigene 5x7-Schrift). Deshalb zeigen
 Gerät, Simulator und Browser dasselbe Bild.
