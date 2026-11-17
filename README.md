@@ -20,10 +20,10 @@ K1 bis K4 heißen am Gerät KNOB1 bis KNOB4, ALGO und PRESET heißen ALGORITHM u
 | Kern (`app/core/romi.c`): Klang, Sequencer, Generator, Display | läuft, Host-Tests grün (`tests/run_tests.sh`) |
 | Browser-Testseite (`docs/index.html`) | läuft (WebAssembly aus demselben Kern) |
 | FM-1-Anbindung (`app/app.c`) im Host-Simulator von fm1-base | läuft, Testskript `app/tests/basic.txt` grün (inkl. Speichern und Neustart) |
-| Firmware-Paket `.fwsc` für das Gerät | **noch nicht gebaut** (braucht JieLis Toolchain und das AC79-SDK) |
+| Firmware-Paket `.fwsc` für das Gerät | wird bei jedem Push von GitHub Actions gebaut (Artefakt `rominimal-firmware-UNTESTED-…` im Lauf „build“); besteht die Prüfungen von fm1-base (Image 107 KB, RAM 42 von 96 KB) |
 | Lauf auf einem echten FM-1 | **noch nicht getestet** |
 
-Offen bis zum ersten Lauf auf der Hardware: CPU-Last des Renderers, ob der Audio-Pfad aus dem RAM laufen
+Das Paket ist gebaut, aber nie auf einem Gerät gestartet. Offen bis zum ersten Lauf auf der Hardware: CPU-Last des Renderers, ob der Audio-Pfad aus dem RAM laufen
 muss (`PLAT_RAM_CODE` in fm1-base), die Geschwindigkeit des Display-Neuzeichnens pro Step und der Klang über
 Lautsprecher und Kopfhörer des Geräts.
 
@@ -125,6 +125,10 @@ Gerät, Simulator und Browser dasselbe Bild.
     sim/build.sh              # Browser-Testseite (clang mit wasm32-Target, wasm-ld, python3)
     ./build.sh --host         # Host-Simulator von fm1-base (python3, Pillow, cc)
     ./build.sh                # Firmware-Paket app/build/rominimal.fwsc (JieLi-Toolchain, AC79-SDK)
+
+Ohne eigene Toolchain: Das Paket liegt als Artefakt an jedem Lauf des Workflows `build` unter Actions
+(`.github/workflows/build.yml`). JieLis SDK kommt dort von Gitee, das GitHub-Repository des SDK gibt es nicht
+mehr (`SDK_URL=https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git` für `get_sdk.sh`).
 
 Toolchain und SDK für das Firmware-Paket beschreibt `base/README.md` (`base/tools/get_toolchain.sh`,
 `base/bsp/tools/get_sdk.sh`). Installiert wird mit `base/tools/fm1_install.py`.
