@@ -76,7 +76,9 @@ jobs:
         if: steps.jieli.outputs.cache-hit != 'true'
         run: |
           sh base/tools/get_toolchain.sh "$HOME/.jieli"
-          sh base/bsp/tools/get_sdk.sh "$HOME/.jieli/ac79-sdk"
+          # JieLi's SDK repository on GitHub is gone; Gitee is where JieLi maintains it (felucca-bsp's newer
+          # get_sdk.sh defaults to it). Same revision, and the script checks the files' hashes.
+          SDK_URL=https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git sh base/bsp/tools/get_sdk.sh "$HOME/.jieli/ac79-sdk"
       - name: Build the firmware package
         run: |
           export JIELI_TOOLCHAIN="$HOME/.jieli/toolchain" AC79_SDK="$HOME/.jieli/ac79-sdk"
