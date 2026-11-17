@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: MIT
+# Builds ro:MINImal on every push: the host tests and the browser test page first, then the firmware package for
+# the FM-1 with JieLi's toolchain and AC79 SDK (fetched by fm1-base's own scripts, at the commit base/ is pinned to).
+# The package is kept as a workflow artifact. Nothing is released: the firmware has not run on an FM-1 yet.
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang lld libfribidi0
+          python3 -m pip install -q Pillow
+      - name: Core tests
+        run: sh tests/run_tests.sh
+      - name: Host simulator (fm1-base) and its test script
+        run: |
+          ./build.sh --host
+          sh tests/run_tests.sh
+      - name: Browser test page and manual
+        run: |
+          sh sim/build.sh
+          python3 manual/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-output
+          path: |
+            build/tests/groove.wav
+            build/tests/*.ppm
+            app/build/host/*.png
+          if-no-files-found: warn
+
+  firmware:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libfribidi0 xz-utils
+          python3 -m pip install -q Pillow
+      - name: JieLi toolchain and AC79 SDK (cached)
+        id: jieli
+        uses: actions/cache@v4
+        with:
+          path: ~/.jieli
+          key: jieli-${{ hashFiles('base/tools/get_toolchain.sh', 'base/bsp/tools/get_sdk.sh') }}
+      - name: Fetch the toolchain and the SDK
+        if: steps.jieli.outputs.cache-hit != 'true'
+        run: |
+          sh base/tools/get_toolchain.sh "$HOME/.jieli"
+          sh base/bsp/tools/get_sdk.sh "$HOME/.jieli/ac79-sdk"
+      - name: Build the firmware package
+        run: |
+          export JIELI_TOOLCHAIN="$HOME/.jieli/toolchain" AC79_SDK="$HOME/.jieli/ac79-sdk"
+          ./build.sh
+          ls -l app/build/
+          sha256sum app/build/rominimal.fwsc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rominimal-firmware-UNTESTED-${{ github.sha }}
+          path: |
+            app/build/rominimal.fwsc
+            app/build/rominimal.bin
+            app/build/firmware.json
+          if-no-files-found: error
