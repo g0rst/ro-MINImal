@@ -27,7 +27,8 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
        ROMI_B_ARP, ROMI_B_SEQ, ROMI_B_PLAY, ROMI_B_REC, ROMI_B_OCTDN, ROMI_B_OCTUP, ROMI_NB };
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
-enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK, ROMI_PG_TIMING, ROMI_NPAGES };
+enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK,
+       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -43,6 +44,15 @@ typedef struct {
     uint8_t rsv;
 } romi_step_t;
 
+/* an LFO: a slow wave in time with the groove, added to one of the track's values */
+typedef struct {
+    uint8_t rate;                       /* 0..8: 1/16, 1/8, 1/4, 1/2, 1, 2, 4, 8, 16 bars a cycle */
+    int8_t depth;                       /* -64..63: how far it moves the value (0..127), either way */
+    uint8_t target;                     /* 0..3 the sound's parameters, 4 level, 5 pan, 6 delay send, 7 reverb send */
+    uint8_t shape;                      /* 0 sine, 1 triangle, 2 saw down, 3 square, 4 random (a new value a cycle) */
+} romi_lfo_t;
+#define ROMI_LFOS 2
+
 typedef struct {
     romi_step_t step[ROMI_STEPS];
     uint8_t len;                        /* 1..16: each track loops on its own length (polymetre) */
@@ -57,6 +67,7 @@ typedef struct {
     int8_t tshift;                      /* microtiming of the whole track, -8..8, added to each step's shift */
     uint8_t dep_mode;                   /* 0 WITH: only on its hits; 1 GAPS: only where it is silent; 2 AFTER: a step later */
     uint8_t follow;                     /* 0 none, else track + 1 whose notes transpose this track's (its harmony) */
+    romi_lfo_t lfo[ROMI_LFOS];
 } romi_track_t;
 
 typedef struct {
@@ -86,9 +97,9 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 8u
+#define ROMI_VERSION 9u
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D */
-#define ROMI_OBJ_MAX 420u               /* the largest packed object, in bytes */
+#define ROMI_OBJ_MAX 464u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */
@@ -121,7 +132,7 @@ void romi_store_saved(int obj);
 /* ---- for tests and the simulator ---- */
 int romi_state(int what);
 enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI_Q_PATTERN, ROMI_Q_KEYS_MODE,
-       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY,
+       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY, ROMI_Q_LFO_PAGE,
        ROMI_Q_HITS = 100,              /* + track: hits sounded since PLAY */
        ROMI_Q_NOTE = 110 };            /* + track: the note of its last hit, as played (semitones from its base) */
 romi_project_t *romi_project(void);

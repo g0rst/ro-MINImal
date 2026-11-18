@@ -159,10 +159,11 @@ int main(int argc, char **argv)
     CHECK(romi_state(ROMI_Q_BPM) == 120, "bpm %d", romi_state(ROMI_Q_BPM));
     tap_button(ROMI_B_FX);
     CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_FX, "page %d", romi_state(ROMI_Q_PAGE));
-    tap_button(ROMI_B_LFO);
-    CHECK(romi_state(ROMI_Q_MUTE) == 1, "mute");
-    tap_button(ROMI_B_LFO);
     tap_button(ROMI_B_SEL);
+    CHECK(romi_state(ROMI_Q_MUTE) == 1, "mute");
+    tap_button(ROMI_B_SEL);
+    CHECK(romi_state(ROMI_Q_MUTE) == 0, "unmute");
+    tap_key(22);                                    /* NEW: the track */
     CHECK(romi_state(ROMI_Q_STEPS_ON) > 0, "generate made nothing");
     snprintf(path, sizeof path, "%s/screen-fx.ppm", out);
     write_screen(path);
@@ -272,14 +273,14 @@ int main(int argc, char **argv)
     held_k = 0; frame(0); frame(0);
     CHECK(ROMI_ST_RATCH(romi_project()->pat[0].tr[0].step[0].flags) == 3, "ratchet %u",
           ROMI_ST_RATCH(romi_project()->pat[0].tr[0].step[0].flags));
-    held_b = 1u << ROMI_B_LFO;
+    held_b = 1u << ROMI_B_SEL;
     for (i = 0; i < 40; i++) frame(0);
     held_b = 0; frame(0);
     CHECK(romi_state(ROMI_Q_SOLO) == 0 && romi_state(ROMI_Q_MUTE) == 0, "solo %d mute %d", romi_state(ROMI_Q_SOLO), romi_state(ROMI_Q_MUTE));
     tap_button(ROMI_B_PLAY);
     run(4.0, 0, &peak, &rms);
     CHECK(peak > 0.2, "the solo kick is silent: %f", peak);
-    held_b = 1u << ROMI_B_LFO;
+    held_b = 1u << ROMI_B_SEL;
     for (i = 0; i < 40; i++) frame(0);
     held_b = 0; frame(0);
     CHECK(romi_state(ROMI_Q_SOLO) == -1, "solo off: %d", romi_state(ROMI_Q_SOLO));
@@ -500,7 +501,7 @@ int main(int argc, char **argv)
                 romi_init(5000u + (uint32_t)seed * 31u);
                 romi_project()->scale = (uint8_t)sc;
                 tap_key(10);                        /* STAB (black key 5) */
-                tap_button(ROMI_B_SEL);             /* new */
+                tap_key(22);                        /* NEW: the track */
                 tr = &romi_project()->pat[0].tr[ROMI_STAB];
                 for (k = 0; k < tr->len; k++) {
                     int nt = tr->step[k].note, m = ((nt % 12) + 12) % 12, j, ok = 0;
@@ -685,6 +686,65 @@ int main(int argc, char **argv)
         CHECK(k >= 5, "NEW held changed only %d tracks", k);
         tap_key(25);
         CHECK(!memcmp(&before, &romi_project()->pat[0], sizeof before), "UNDO after NEW held: not as before");
+    }
+
+    /* LFOs: LFO opens LFO 1, again LFO 2, again LFO 1; the knobs set rate, depth, target, shape; a level LFO
+     * (square, a bar) makes one half of the bar loud and the other quiet; a decay LFO changes the sound; both kept
+     * by the store; off (depth 0) changes nothing */
+    {
+        static uint8_t obj[ROMI_OBJ_MAX];
+        romi_track_t *hat;
+        uint32_t n, h0, h1;
+        double a, b2;
+        int k;
+        romi_init(55);
+        romi_project()->drift = 0;
+        for (k = 0; k < ROMI_TRACKS; k++)
+            if (k != ROMI_HAT) romi_project()->pat[0].tr[k].mute = 1;
+        hat = &romi_project()->pat[0].tr[ROMI_HAT];
+        for (k = 0; k < 16; k++) { hat->step[k].flags = 0xC0; hat->step[k].note = 0; }   /* every step, accented */
+        hat->len = 16; hat->dly = hat->rev = 0;
+        tap_button(ROMI_B_PLAY);
+        h0 = run(4 * 60.0 / 126 * 2, 0, 0, 0);       /* two bars, no LFO */
+        tap_button(ROMI_B_PLAY);
+        tap_key(5);                                 /* HAT */
+        tap_button(ROMI_B_LFO);
+        CHECK(romi_state(ROMI_Q_LFO_PAGE) == 1, "LFO: page %d", romi_state(ROMI_Q_LFO_PAGE));
+        tap_button(ROMI_B_LFO);
+        CHECK(romi_state(ROMI_Q_LFO_PAGE) == 2, "LFO twice: page %d", romi_state(ROMI_Q_LFO_PAGE));
+        tap_button(ROMI_B_LFO);
+        CHECK(romi_state(ROMI_Q_LFO_PAGE) == 1, "LFO three times: page %d", romi_state(ROMI_Q_LFO_PAGE));
+        turn(ROMI_E_K1, 20); turn(ROMI_E_K1, -4);   /* rate: 1 bar */
+        turn(ROMI_E_K2, -40);                       /* depth: -64 */
+        turn(ROMI_E_K3, -10); turn(ROMI_E_K3, 4);   /* target: level */
+        turn(ROMI_E_K4, 3);                         /* shape: square */
+        CHECK(hat->lfo[0].rate == 4 && hat->lfo[0].depth == -64 && hat->lfo[0].target == 4 && hat->lfo[0].shape == 3,
+              "LFO 1: rate %d depth %d target %d shape %d", hat->lfo[0].rate, hat->lfo[0].depth, hat->lfo[0].target,
+              hat->lfo[0].shape);
+        snprintf(path, sizeof path, "%s/screen-lfo.ppm", out);
+        write_screen(path);
+        tap_button(ROMI_B_PLAY);
+        run(4 * 60.0 / 126 / 2, 0, 0, &a);          /* the first half bar: square at +1, depth -64: quiet */
+        run(4 * 60.0 / 126 / 2, 0, 0, &b2);         /* the second: loud */
+        tap_button(ROMI_B_PLAY);
+        printf("lfo: level square, half bars rms %.4f and %.4f\n", a, b2);
+        CHECK(a < b2 * 0.7, "a level LFO did nothing: %.4f %.4f", a, b2);
+        n = romi_store_get(1, obj, sizeof obj);
+        CHECK(n <= ROMI_OBJ_MAX, "pattern object %u bytes", n);
+        romi_init(56);
+        CHECK(romi_store_set(1, obj, n) == 0, "LFOs: did not load");
+        hat = &romi_project()->pat[0].tr[ROMI_HAT];
+        CHECK(hat->lfo[0].rate == 4 && hat->lfo[0].depth == -64 && hat->lfo[0].target == 4 && hat->lfo[0].shape == 3,
+              "LFO after load: %d %d %d %d", hat->lfo[0].rate, hat->lfo[0].depth, hat->lfo[0].target, hat->lfo[0].shape);
+        /* a decay LFO, heard */
+        hat->lfo[0].target = 0; hat->lfo[0].depth = 50; hat->lfo[0].shape = 1;
+        romi_project()->drift = 0;
+        for (k = 0; k < ROMI_TRACKS; k++)
+            romi_project()->pat[0].tr[k].mute = (uint8_t)(k != ROMI_HAT);
+        tap_button(ROMI_B_PLAY);
+        h1 = run(4 * 60.0 / 126 * 2, 0, 0, 0);
+        tap_button(ROMI_B_PLAY);
+        CHECK(h0 != h1, "a decay LFO changed nothing");
     }
 
     /* MIDI: channel 1 plays the kick */

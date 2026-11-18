@@ -84,9 +84,12 @@ ol(T("Press [[PLAY STOP]]. A groove runs. The firmware makes a new one at every 
    T("Tap white keys. The 16 white keys are the 16 steps of that track.",
      "Weiße Tasten tippen. Die 16 weißen Tasten sind die 16 Steps dieser Spur.",
      "Atinge clapele albe. Cele 16 clape albe sunt cei 16 pași ai pistei."),
-   T("Press [[SEL]] for a new pattern on this track. Press [[ARP]] for one small change.",
-     "[[SEL]] drücken für ein neues Pattern auf dieser Spur. [[ARP]] drücken für eine kleine Änderung.",
-     "Apasă [[SEL]] pentru un pattern nou pe această pistă. Apasă [[ARP]] pentru o singură schimbare mică."),
+   T("Press NEW (the fourth black key from the right) for a new pattern on this track. Press [[ARP]] for one small "
+     "change.",
+     "NEW drücken (die vierte schwarze Taste von rechts) für ein neues Pattern auf dieser Spur. [[ARP]] drücken für "
+     "eine kleine Änderung.",
+     "Apasă NEW (a patra clapă neagră de la dreapta) pentru un pattern nou pe această pistă. Apasă [[ARP]] pentru o "
+     "singură schimbare mică."),
    T("Press [[HOME]] and turn [[KNOB1]] for tempo, [[KNOB2]] for swing, [[KNOB3]] for drift.",
      "[[HOME]] drücken und drehen: [[KNOB1]] Tempo, [[KNOB2]] Swing, [[KNOB3]] Drift.",
      "Apasă [[HOME]] și rotește [[KNOB1]] pentru tempo, [[KNOB2]] pentru swing, [[KNOB3]] pentru drift."),
@@ -117,10 +120,11 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[SEQ]]", T("back to the steps; pages EUCLID, LINK, TIMING in turn",
                     "zurück zu den Steps; Seiten EUCLID, LINK, TIMING der Reihe nach",
                     "înapoi la pași; paginile EUCLID, LINK, TIMING pe rând")),
-      ("[[SEL]]", T("a new pattern for the track", "ein neues Pattern für die Spur", "un pattern nou pentru pistă")),
-      ("[[ARP]]", T("mutate: one small change", "Mutate: eine kleine Änderung", "mutate: o schimbare mică")),
-      ("[[LFO]]", T("tap: mute the track. Hold: solo", "kurz: Spur stumm. Halten: Solo",
+      ("[[SEL]]", T("tap: mute the track. Hold: solo", "kurz: Spur stumm. Halten: Solo",
                     "scurt: pista pe mut. Ținut: solo")),
+      ("[[ARP]]", T("mutate: one small change", "Mutate: eine kleine Änderung", "mutate: o schimbare mică")),
+      ("[[LFO]]", T("page LFO 1 of the track; pressed again: LFO 2", "Seite LFO 1 der Spur; nochmal: LFO 2",
+                    "pagina LFO 1 a pistei; apăsat din nou: LFO 2")),
       ("[[REC]]", T("keys mode: the keys play the track", "Tastenmodus: die Tasten spielen die Spur",
                     "modul clape: clapele cântă pista")),
       ("[[SAVE]]", T("tap: save. Hold: copy", "kurz: speichern. Halten: kopieren", "scurt: salvează. Ținut: copiază")),
@@ -191,19 +195,18 @@ p(T("NEW (the fourth black key from the right) renews the selected track, and on
     "make: the kick tuned to the key, the sub between the kicks starting on the root, the hats on the off-beat, the "
     "percussion turned off the kick, the stab a phrase in the scale. Its colour (for hat, percussion, stab and "
     "click) changes too, within ranges that suit it; level, pan and sends stay. Hold NEW for half a second for a "
-    "whole new groove: a new density, then every track in turn. [[SEL]] renews the track too. UNDO takes it back.",
+    "whole new groove: a new density, then every track in turn. UNDO takes it back.",
     "NEW (die vierte schwarze Taste von rechts) erneuert die gewählte Spur, und nur sie, passend zum Groove der "
     "anderen: die Kick auf die Tonart gestimmt, der Sub zwischen den Kicks und auf dem Grundton beginnend, die Hats "
     "auf dem Offbeat, die Percussion von der Kick weggedreht, der Stab als Phrase in der Skala. Auch ihre "
     "Klangfarbe (bei Hat, Percussion, Stab und Click) ändert sich, in passenden Grenzen; Pegel, Pan und Sends "
     "bleiben. NEW eine halbe Sekunde halten: ein ganz neuer Groove, erst eine neue Dichte, dann alle Spuren der "
-    "Reihe nach. [[SEL]] erneuert die Spur ebenfalls. UNDO nimmt es zurück.",
+    "Reihe nach. UNDO nimmt es zurück.",
     "NEW (a patra clapă neagră de la dreapta) reînnoiește pista selectată, și doar pe ea, în groove-ul celorlalte: "
     "kick-ul acordat în tonalitate, sub-ul între kick-uri începând pe fundamentală, hat-urile pe contratimp, "
     "percuția rotită departe de kick, stab-ul o frază în gamă. Se schimbă și culoarea ei (la hat, percuție, stab și "
     "click), în limite potrivite; nivelul, pan-ul și send-urile rămân. Ține NEW o jumătate de secundă pentru un "
-    "groove complet nou: o densitate nouă, apoi toate pistele pe rând. [[SEL]] reînnoiește și el pista. UNDO "
-    "anulează."))
+    "groove complet nou: o densitate nouă, apoi toate pistele pe rând. UNDO anulează."))
 
 h("b", 2, T("steps", "steps", "pași"))
 p(T("Tap a white key: the step turns on or off. Hold a white key and turn: the knobs edit that step alone.",
@@ -237,7 +240,28 @@ p(T("Press [[EDIT]]. Hold a white key and turn a knob. The value now belongs to 
 img("lock", T("Step 1 of the kick with its own TUNE.", "Step 1 der Kick mit eigenem TUNE.",
               "Pasul 1 al kick-ului cu propriul TUNE."))
 
-h("b", 4, T("pages", "seiten", "pagini"))
+h("b", 4, SAME("lfo"))
+p(T("Every track has two LFOs: slow waves in time with the groove. [[LFO]] opens the first, [[LFO]] again the "
+    "second. RATE is one cycle, from a sixteenth to sixteen bars. DEPTH moves the value either way, up to half its "
+    "range; zero is off. TARGET is one of the track's four sound parameters, or LEVEL, PAN, DELAY, REVERB. SHAPE: "
+    "SINE, TRI, SAW, SQR, or RAND (a new value each cycle). Both LFOs may move the same value. The sound parameters "
+    "take the LFO at each hit; level, pan and the sends follow it all the time. The LFOs start with the groove at "
+    "PLAY and are kept with the pattern.",
+    "Jede Spur hat zwei LFOs: langsame Wellen im Takt des Grooves. [[LFO]] öffnet den ersten, nochmal [[LFO]] den "
+    "zweiten. RATE ist ein Durchlauf, von einer Sechzehntel bis sechzehn Takte. DEPTH bewegt den Wert in beide "
+    "Richtungen, bis zur Hälfte seines Bereichs; null ist aus. TARGET ist einer der vier Klangparameter der Spur oder "
+    "LEVEL, PAN, DELAY, REVERB. SHAPE: SINE, TRI, SAW, SQR oder RAND (ein neuer Wert pro Durchlauf). Beide LFOs "
+    "dürfen denselben Wert bewegen. Klangparameter übernehmen den LFO bei jedem Schlag; Pegel, Pan und Sends folgen "
+    "ihm ständig. Die LFOs starten mit dem Groove bei PLAY und werden mit dem Pattern gespeichert.",
+    "Fiecare pistă are două LFO-uri: unde lente în ritmul groove-ului. [[LFO]] îl deschide pe primul, încă o dată "
+    "[[LFO]] pe al doilea. RATE este un ciclu, de la o șaisprezecime la șaisprezece măsuri. DEPTH mută valoarea în "
+    "ambele direcții, până la jumătate din domeniu; zero înseamnă oprit. TARGET este unul dintre cei patru parametri "
+    "de sunet ai pistei sau LEVEL, PAN, DELAY, REVERB. SHAPE: SINE, TRI, SAW, SQR sau RAND (o valoare nouă la fiecare "
+    "ciclu). Ambele LFO-uri pot mișca aceeași valoare. Parametrii de sunet preiau LFO-ul la fiecare lovitură; "
+    "nivelul, pan-ul și send-urile îl urmează tot timpul. LFO-urile pornesc cu groove-ul la PLAY și se salvează cu "
+    "pattern-ul."))
+
+h("b", 5, T("pages", "seiten", "pagini"))
 table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite", "KNOB1", "KNOB2", "KNOB3", "KNOB4"],
         ["buton", "pagină", "KNOB1", "KNOB2", "KNOB3", "KNOB4"]),
       ("[[HOME]]", "GROOVE", "TEMPO<br>90 – 150", "SWING<br>50 – 75 %", "DRIFT", "DUCK"),
@@ -248,7 +272,9 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN", "CLOCK", "CHAIN"),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
       ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", ""),
-      ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", "", ""))
+      ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", "", ""),
+      ("[[LFO]]", "LFO 1", "RATE", "DEPTH", "TARGET", "SHAPE"),
+      ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"))
 p(T("DRIFT moves timbre, decay, level and timing slowly and at random. At zero the machine is exact. "
     "The kick's timing never drifts.",
     "DRIFT bewegt Klangfarbe, Ausklang, Lautstärke und Timing langsam und zufällig. Bei null ist die Maschine exakt. "
@@ -402,9 +428,13 @@ table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
          "SUB: [[SEQ]], HITS auf 11. [[SEQ]] nochmal, SOURCE KICK, MODE GAPS. [[EDIT]], GLIDE hoch.",
          "SUB: [[SEQ]], HITS la 11. [[SEQ]] din nou, SOURCE KICK, MODE GAPS. [[EDIT]], GLIDE mai sus.")),
       (T("pumping without a kick", "Pumpen ohne Kick", "pompare fără kick"),
-       T("KICK: [[LFO]]. The kick is silent and still ducks the rest. [[FX]] twice, DEPTH to taste.",
-         "KICK: [[LFO]]. Die Kick schweigt und duckt weiter den Rest. [[FX]] zweimal, DEPTH nach Geschmack.",
-         "KICK: [[LFO]]. Kick-ul tace și tot apasă restul. [[FX]] de două ori, DEPTH după gust.")),
+       T("KICK: [[SEL]]. The kick is silent and still ducks the rest. [[FX]] twice, DEPTH to taste.",
+         "KICK: [[SEL]]. Die Kick schweigt und duckt weiter den Rest. [[FX]] zweimal, DEPTH nach Geschmack.",
+         "KICK: [[SEL]]. Kick-ul tace și tot apasă restul. [[FX]] de două ori, DEPTH după gust.")),
+      (T("a stab that breathes", "ein Stab, der atmet", "un stab care respiră"),
+       T("STAB: [[LFO]], TARGET DECAY, RATE 4 BAR, DEPTH +30. [[LFO]] again: TARGET PAN, RATE 1 BAR, SHAPE RAND.",
+         "STAB: [[LFO]], TARGET DECAY, RATE 4 BAR, DEPTH +30. Nochmal [[LFO]]: TARGET PAN, RATE 1 BAR, SHAPE RAND.",
+         "STAB: [[LFO]], TARGET DECAY, RATE 4 BAR, DEPTH +30. Din nou [[LFO]]: TARGET PAN, RATE 1 BAR, SHAPE RAND.")),
       (T("seven against sixteen", "sieben gegen sechzehn", "șapte contra șaisprezece"),
        T("PERC: [[ALGORITHM]] to 7, [[SEQ]], HITS 3. CLICK: [[ALGORITHM]] to 11, CHANCE 50 %.",
          "PERC: [[ALGORITHM]] auf 7, [[SEQ]], HITS 3. CLICK: [[ALGORITHM]] auf 11, CHANCE 50 %.",
@@ -429,9 +459,12 @@ ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A ste
    T("[[SAVE]] writes only what changed: the settings and each pattern are kept apart. USB carries MIDI only.",
      "[[SAVE]] schreibt nur, was sich geändert hat: Einstellungen und jedes Pattern liegen getrennt. Über USB läuft nur MIDI.",
      "[[SAVE]] scrie doar ce s-a schimbat: setările și fiecare pattern sunt păstrate separat. Prin USB trece doar MIDI."),
-   T("One level of undo per change. A hold on [[LFO]] of about half a second is a solo.",
-     "Eine Undo-Stufe pro Änderung. [[LFO]] etwa eine halbe Sekunde halten ist Solo.",
-     "Un singur nivel de undo pe schimbare. [[LFO]] ținut cam o jumătate de secundă înseamnă solo."),
+   T("One level of undo per change. A hold on [[SEL]] or NEW of about half a second is the second job: solo, the "
+     "whole groove.",
+     "Eine Undo-Stufe pro Änderung. [[SEL]] oder NEW etwa eine halbe Sekunde halten löst die zweite Aufgabe aus: "
+     "Solo, ganzer Groove.",
+     "Un singur nivel de undo pe schimbare. [[SEL]] sau NEW ținut cam o jumătate de secundă face a doua treabă: "
+     "solo, tot groove-ul."),
    T("At slow tempos a long delay time does not fit; the delay then takes the next shorter value.",
      "Bei langsamen Tempi passt eine lange Delay-Zeit nicht; das Delay nimmt dann den nächstkürzeren Wert.",
      "La tempo lent, un timp lung de delay nu încape; delay-ul ia atunci valoarea mai scurtă următoare."),

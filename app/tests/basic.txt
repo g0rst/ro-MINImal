@@ -41,7 +41,7 @@ tap FX
 wait 30
 expect page 3
 shot fx.png
-tap LFO
+tap SEL
 wait 30
 expect mute 1
 expect unsaved 1

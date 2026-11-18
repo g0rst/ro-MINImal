@@ -50,7 +50,7 @@ storage:
                             # firmware without samples; ro:MINImal does not need it and leaves the presets alone.
   objects:                  # each a pair of 4 KiB sectors; the same addresses on the FM-1 (fm1-base's data area)
     settings: 0xB1000       # 24 bytes
-    pattern_a: 0xB3000      # 316 bytes, 412 with 32 locks
+    pattern_a: 0xB3000      # 364 bytes, 460 with 32 locks
     pattern_b: 0xB5000
     pattern_c: 0xB7000
     pattern_d: 0xB9000      # ends at 0xBAFFF: the playbook's window for a firmware's extra objects is full

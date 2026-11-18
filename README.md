@@ -48,7 +48,7 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Swing** verschiebt jede zweite Sechzehntel (50 bis 75 %).
 - **Drift** bewegt Klangfarbe, Ausklang, Lautstärke und Mikrotiming langsam und zufällig. Die Kick bleibt
   davon im Timing unberührt.
-- **Der Generator macht einen Groove, nicht sechs Würfel.** NEW (oder `SEL`) erneuert nur die gewählte Spur,
+- **Der Generator macht einen Groove, nicht sechs Würfel.** NEW erneuert nur die gewählte Spur,
   passend zu den anderen. NEW gehalten macht einen ganz neuen Groove: zuerst eine Dichte (sparsam, mittel, dicht;
   schnelle Tempi eher sparsam), dann die Spuren in einer Reihenfolge, in der jede sich auf die vorigen stützt: Die Kick ist das Raster und wird auf den Grundton gestimmt, der Stab bildet die Harmonie, der Sub rollt
   zwischen den Kicks und beginnt auf dem Grundton, die Hats sitzen auf dem Offbeat, die Percussion läuft in eigener
@@ -60,6 +60,8 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Verknüpfte Spuren (LINK).** Die Steps einer Spur können davon abhängen, ob eine andere Spur an dieser
   Stelle tatsächlich geschlagen hat, mit ihrer Chance und ihrer eigenen Looplänge. Eine stumme Quelle wirkt
   weiter: ein unhörbares Euklid-Muster als Tor für andere Spuren.
+- **Zwei LFOs pro Spur**, im Takt des Grooves, auf Klangparameter, Pegel, Pan oder Sends. Ohne Filter, deshalb
+  kaum Rechenzeit: Klangparameter werden pro Schlag moduliert, Pegel, Pan und Sends einmal pro Audioblock.
 - **Parameter-Locks und Mikrotiming.** Jeder Step kann eigene Klangwerte haben (bis zu 32 Locks pro Pattern) und
   bis zu 7/16 Step früher oder später kommen; die ganze Spur dazu noch einmal bis zu 8/16.
 
@@ -98,9 +100,10 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, Chain (Patterns A bis D nacheinander, je vier Takte) |
-| SEL / ARP | Spur neu erzeugen / leicht verändern |
+| SEL | kurz: Spur stumm; halten: Solo |
+| ARP | Spur leicht verändern |
 | SEQ ein drittes Mal | Seite TIMING: SELECT springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). K1 schiebt den gewählten Schlag, K2 die ganze Spur, zusammen bis zu eine halbe Sechzehntel früher oder später |
-| LFO | kurz: Spur stumm; halten: Solo |
+| LFO | Seite LFO 1 der Spur; nochmal: LFO 2. Je RATE (1/16 bis 16 Takte), DEPTH (±), TARGET (vier Klangparameter, Pegel, Pan, Delay, Reverb), SHAPE (Sinus, Dreieck, Säge, Rechteck, Zufall) |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
 | SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |
 | SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach). K3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk: SUB folgt STAB; OFF schaltet es ab) |
@@ -116,8 +119,8 @@ meldet sich nicht als Audio-Interface.
 
 ### Speicher
 
-Gespeichert wird in fünf Objekten: Einstellungen (24 Bytes) und jedes Pattern für sich (316 Bytes, mit 32 Locks
-412 Bytes). Ein Step belegt dabei 2 Bytes, Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
+Gespeichert wird in fünf Objekten: Einstellungen (24 Bytes) und jedes Pattern für sich (364 Bytes, mit 32 Locks
+460 Bytes). Ein Step belegt dabei 2 Bytes, Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
 32 Locks pro Pattern (sonst „LOCKS FULL“), Verschiebung eines Steps ±7/16, Noten −32 bis +31 Halbtöne um den Grundton.
 Ein beschädigtes Pattern lässt die anderen unberührt.
 
