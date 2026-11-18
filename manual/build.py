@@ -416,20 +416,20 @@ p(T("Pattern A is the groove. B, C and D are never other songs: they are ways of
     "their loops, a sub hit moved, the same chords in another order, a ghost kick that comes or goes. C plays A "
     "with drum rolls into the next bar: rolling hats, percussion and clicks, a kick and a sub pickup. D plays A in "
     "a related key: the subdominant, the dominant, the seventh or the third; the stab, the percussion and the sub "
-    "move with it and the kick is tuned to the new root. The screen's bottom line says which one plays.",
+    "move with it; the kick stays A's. The screen's bottom line says which one plays.",
     "Pattern A ist der Groove. B, C und D sind nie andere Songs: Sie sind Spielarten von A, aus A gemacht und neu "
     "gemacht, sobald A sich ändert. B spielt A variiert: ein paar Hats gedreht, Percussion und Clicks auf ihren "
     "Loops verschoben, ein Sub-Schlag versetzt, dieselben Akkorde in anderer Reihenfolge, eine Ghost-Kick, die kommt "
     "oder geht. C spielt A mit Drum-Rolls in den nächsten Takt: rollende Hats, Percussion und Clicks, ein Auftakt "
     "von Kick und Sub. D spielt A in einer verwandten Tonart: Subdominante, Dominante, Septime oder Terz; Stab, "
-    "Percussion und Sub wandern mit, die Kick wird auf den neuen Grundton gestimmt. Die unterste Zeile im Display "
+    "Percussion und Sub wandern mit, die Kick bleibt die von A. Die unterste Zeile im Display "
     "sagt, welche gerade läuft.",
     "Pattern-ul A este groove-ul. B, C și D nu sunt niciodată alte piese: sunt moduri de a cânta A, făcute din el "
     "și refăcute în clipa în care A se schimbă. B cântă A variat: câteva hat-uri întoarse, percuția și click-urile "
     "rotite pe buclele lor, o lovitură de sub mutată, aceleași acorduri în altă ordine, un ghost kick care apare "
     "sau dispare. C cântă A cu drum roll-uri spre măsura următoare: hat-uri, percuție și click-uri care se "
     "rostogolesc, un preambul de kick și sub. D cântă A într-o tonalitate înrudită: subdominanta, dominanta, "
-    "septima sau terța; stab-ul, percuția și sub-ul se mută cu ea, iar kick-ul se acordează pe noua fundamentală. "
+    "septima sau terța; stab-ul, percuția și sub-ul se mută cu ea, iar kick-ul rămâne cel din A. "
     "Ultimul rând al ecranului spune care cântă."))
 ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever you change, you change in A, even "
      "while B, C or D plays; they follow at once.",
@@ -452,6 +452,17 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "A und D behalten sie auf jeder Viertel.",
      "Kick-ul se poate odihni: B lasă din când în când o lovitură afară, C face des pauză în ultimii patru pași "
      "dinaintea măsurii. A și D îl țin pe fiecare pătrime."),
+   T("When C's kick pauses on 13 to 16, the dice decide, one time in three: the kick becomes another (the root or "
+     "its fifth, decay, sweep, click and drive moved a little), from D on and in every pattern alike, A too. It "
+     "stays so until you change it by hand or C's pause throws again. Once per visit of C; in LAZY and HARD.",
+     "Wenn in C die Kick auf 13 bis 16 aussetzt, entscheidet der Würfel, eins zu drei: Die Kick wird eine andere "
+     "(Grundton oder Quinte, Ausklang, Sweep, Click und Drive leicht verschoben), ab D und in allen Patterns gleich, "
+     "auch in A. So bleibt sie, bis du sie von Hand änderst oder Cs Pause wieder würfelt. Einmal pro Durchgang von "
+     "C; in LAZY und HARD.",
+     "Când kick-ul din C face pauză pe 13–16, zarul hotărăște, o dată din trei: kick-ul devine altul (fundamentala "
+     "sau cvinta, decay, sweep, click și drive mutate puțin), de la D încolo și la fel în toate pattern-urile, și "
+     "în A. Rămâne așa până îl schimbi de mână sau până ce pauza din C aruncă iar zarul. O dată pe trecere prin C; "
+     "în LAZY și HARD."),
    T("Two modes, on GLOBAL 2 ([[GLO]] twice), MODE. LAZY is all of the above: the set grows by itself. HARD: "
      "B, C and D start as copies of A and then are yours; you edit the pattern that plays, NEW renews its track "
      "(hold: the whole pattern), all four are saved, EVOLVE stays still. Back in LAZY the HARD patterns wait aside "

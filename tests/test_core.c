@@ -865,6 +865,7 @@ int main(int argc, char **argv)
                     if (!on && t2 < 3 && k >= 8) { drops[t2]++; continue; }
                     CHECK(on, "groove %d: pattern %c without the kick on %d", g, 'A' + t2, k);
                 }
+            CHECK(!memcmp(&pd->tr[ROMI_KICK], &pa->tr[ROMI_KICK], sizeof pa->tr[0]), "groove %d: D's kick not A's", g);
             if (!(pc2->tr[ROMI_KICK].step[12].flags & ROMI_ST_ON))   /* C's pause: the whole last four steps */
                 for (k = 13; k < 16; k++)
                     CHECK(!(pc2->tr[ROMI_KICK].step[k].flags & ROMI_ST_ON), "groove %d: C's kick pause on %d", g, k);
@@ -1022,6 +1023,46 @@ int main(int argc, char **argv)
         CHECK(seen[0][0] && !seen[0][1] && !seen[0][2] && !seen[0][3], "PLAY LOOP left A");
         CHECK(seen[2][0] && seen[2][1] && seen[2][2] && seen[2][3] && !same, "PLAY RANDOM: %d %d %d %d, %d repeats",
               seen[2][0], seen[2][1], seen[2][2], seen[2][3], same);
+    }
+
+    /* a new kick after C's pause on 13..16, one time in three, the same in every pattern; in LAZY and HARD */
+    {
+        int mode, k, seed, changes;
+        for (mode = 0; mode < 2; mode++) {
+            uint8_t last[5] = {0};
+            for (seed = 40; ; seed++) {         /* LAZY: a groove whose C pauses */
+                romi_init((uint32_t)seed);
+                if (mode || !(romi_project()->pat[2].tr[ROMI_KICK].step[12].flags & ROMI_ST_ON)) break;
+            }
+            tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+            turn(ROMI_E_K2, 1);                 /* PLAY A-D */
+            if (mode) {
+                turn(ROMI_E_K1, 1);             /* HARD; C's kick pauses by hand */
+                for (k = 12; k < 16; k++) romi_project()->pat[2].tr[ROMI_KICK].step[k].flags = 0;
+            }
+            CHECK(romi_project()->order == 1 && romi_project()->mode == mode, "kick test setup");
+            tap_button(ROMI_B_PLAY);
+            for (changes = 0, k = 0; k < 64 * 4 * 30; k++) {
+                const romi_track_t *ka = &romi_project()->pat[0].tr[ROMI_KICK];
+                int g0 = romi_state(ROMI_Q_GSTEP), j;
+                uint8_t now[5] = {ka->p[1], ka->p[2], ka->p[3], ka->q[1], (uint8_t)ka->step[0].note};
+                while (romi_state(ROMI_Q_GSTEP) == g0) run(0.004, 0, 0, 0);
+                frame(0);
+                if (k && memcmp(now, last, 5)) {
+                    changes++;
+                    CHECK((g0 & 255) >= 128 + 12 && (g0 & 255) < 192, "mode %d: the kick changed outside C (%d)", mode, g0 & 255);
+                }
+                memcpy(last, now, 5);
+                for (j = 1; j < 4; j++) {
+                    const romi_track_t *kj = &romi_project()->pat[j].tr[ROMI_KICK];
+                    CHECK(kj->p[1] == ka->p[1] && kj->p[2] == ka->p[2] && kj->p[3] == ka->p[3] && kj->q[1] == ka->q[1] &&
+                          kj->step[0].note == ka->step[0].note, "mode %d: pattern %c's kick not A's", mode, 'A' + j);
+                }
+            }
+            tap_button(ROMI_B_PLAY);
+            printf("kick: mode %d, %d new kicks in 30 visits of C\n", mode, changes);
+            CHECK(changes >= 3 && changes <= 20, "mode %d: %d new kicks in 30 visits", mode, changes);
+        }
     }
 
     /* MIDI: channel 1 plays the kick */

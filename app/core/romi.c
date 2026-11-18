@@ -138,6 +138,8 @@ static struct {
     uint8_t base_changed;               /* A changed: B..D to be made again */
     romi_pattern_t aside[3];            /* HARD's B..D, kept while LAZY plays its own (and loaded there in LAZY) */
     uint8_t aside_ok;                   /* bit k: aside[k] holds a HARD pattern */
+    volatile uint8_t kick_roll;         /* C paused its kick before the bar: the main loop throws for a new kick */
+    uint8_t kick_rolled;                /* thrown once in this visit of C */
     uint8_t density;                    /* the generator's: 0 sparse, 1 medium, 2 busy (set by a whole NEW) */
     uint8_t eu_armed;                   /* the next turn on the EUCLID page keeps an undo first */
     uint32_t btn, keys, now;
@@ -486,6 +488,18 @@ static void seq_step(void)
     if (R.pending_pat != 0xFFu && (R.gstep & 15u) == 0u) {
         R.prj.cur_pat = R.pending_pat;
         R.pending_pat = 0xFFu;
+    }
+    if (R.prj.cur_pat != 2u) {
+        R.kick_rolled = 0;
+    } else if ((R.gstep & 15u) == 12u && !R.kick_rolled) {   /* C: the kick pauses on 13..16? */
+        const romi_track_t *kc = &PAT->tr[ROMI_KICK];
+        uint32_t i, any = 0;
+        for (i = 12; i < 16; i++)
+            any |= kc->step[i].flags & ROMI_ST_ON;
+        if (kc->len == 16 && !any) {
+            R.kick_roll = 1;
+            R.kick_rolled = 1;
+        }
     }
     for (t = 0; t < ROMI_TRACKS; t++) {
         int k;
@@ -1154,7 +1168,7 @@ static void gen_all(void)
  *   C  rolls into the next bar: hats rolling up to a fourfold ratchet in the last four steps, percussion and
  *      clicks rolling with them, the kick pausing for those four steps (or a kick pickup), a sub pickup.
  *   D  A in a related key: the subdominant, the dominant, the seventh or the third (by its dice); stab, percussion
- *      and a free sub move with it, a following sub follows the stab, the kick is tuned to the new root. */
+ *      and a free sub move with it, a following sub follows the stab. The kick stays A's. */
 static uint32_t vr_state;
 static uint32_t vrand(uint32_t n) { return xs32(&vr_state) % n; }
 static int fold(int n, int lo, int hi)
@@ -1288,20 +1302,16 @@ static void rolls(romi_pattern_t *d)
 
 static void to_key(romi_pattern_t *d)
 {
-    int iv = key_step(), kn;
+    int iv = key_step();
     uint32_t i;
-    romi_track_t *kk = &d->tr[ROMI_KICK], *sb = &d->tr[ROMI_SUB];
+    romi_track_t *sb = &d->tr[ROMI_SUB];
     for (i = 0; i < ROMI_STEPS; i++) {
         d->tr[ROMI_STAB].step[i].note = (int8_t)fold(d->tr[ROMI_STAB].step[i].note + iv, -7, 12);
         d->tr[ROMI_PERC].step[i].note = (int8_t)fold(d->tr[ROMI_PERC].step[i].note + iv, -5, 14);
         if (!sb->follow)
             sb->step[i].note = (int8_t)fold(sb->step[i].note + iv, -7, 12);
     }
-    kn = kick_in_key(kk, iv);
-    for (i = 0; i < ROMI_STEPS; i++)
-        if (kk->step[i].flags & ROMI_ST_ON)
-            kk->step[i].note = (int8_t)kn;
-}
+}                                       /* (the kick stays A's: it changes only after C's pause, kick_change) */
 
 static void derive(int k)                           /* pattern k (1..3: B..D) made from A */
 {
@@ -2287,6 +2297,34 @@ static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v;
 
 /* LAZY <-> HARD. Into HARD: B..D are the HARD patterns kept aside (if there are), else copies of A ("all the same,
  * vary them yourself"). Into LAZY: B..D go aside (nothing is lost) and are made from A again. */
+/* C paused the kick on 13..16: one time in three the kick becomes another, in every pattern alike, until it is
+ * edited by hand or C's pause throws again. Another tuning (the root or its fifth), decay, pitch sweep, click and
+ * drive moved a little. In LAZY it is A's kick (B..D follow); in HARD all four patterns get it. */
+static int8_t knudge(int v, int by, int lo, int hi) { return (int8_t)clampi(v + (int)urand((uint32_t)(2 * by + 1)) - by, lo, hi); }
+static void kick_change(void)
+{
+    const romi_track_t *src = R.prj.mode ? &PAT->tr[ROMI_KICK] : &BASE->tr[ROMI_KICK];
+    romi_track_t nk = *src;
+    int on = -99, k, i, n;
+    for (i = 0; i < 16 && on == -99; i++)
+        if (src->step[i].flags & ROMI_ST_ON)
+            on = src->step[i].note;
+    n = kick_in_key(src, on == kick_in_key(src, 0) ? 7 : 0);
+    nk.p[1] = (uint8_t)knudge(nk.p[1], 18, 20, 110);
+    nk.p[2] = (uint8_t)knudge(nk.p[2], 18, 10, 120);
+    nk.p[3] = (uint8_t)knudge(nk.p[3], 12, 0, 90);
+    nk.q[1] = (uint8_t)knudge(nk.q[1], 16, 0, 100);
+    for (k = R.prj.mode ? 0 : ROMI_PATTERNS - 1; k < ROMI_PATTERNS; k++) {
+        romi_track_t *tr = &R.prj.pat[R.prj.mode ? k : 0].tr[ROMI_KICK];
+        tr->p[1] = nk.p[1]; tr->p[2] = nk.p[2]; tr->p[3] = nk.p[3]; tr->q[1] = nk.q[1];
+        for (i = 0; i < ROMI_STEPS; i++)
+            tr->step[i].note = (int8_t)n;
+    }
+    R.base_changed = 1;
+    R.unsaved = 1;
+    romi_message("KICK", "CHANGED");
+}
+
 static void set_mode(uint8_t pro)
 {
     int k;
@@ -2629,6 +2667,11 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 changed();
             }
         }
+    }
+    if (R.kick_roll) {                  /* C paused the kick: one time in three a new kick, everywhere */
+        R.kick_roll = 0;
+        if (urand(3) == 0)
+            kick_change();
     }
     if (R.evolve) {                     /* EVOLVE came round: new variations of A */
         R.evolve = 0;

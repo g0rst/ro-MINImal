@@ -43,7 +43,9 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Ein Groove, vier Spielarten.** Pattern A ist der Groove; B, C und D werden immer aus A gemacht und ziehen
   nach, sobald sich A ändert: B spielt ihn variiert (gleiche Harmonie, anderer Beat), C mit Drum-Rolls zum Takt,
   D in einer verwandten Tonart. B lässt dabei ab und zu einen Kick-Schlag weg, C pausiert die Kick oft in den
-  letzten vier Steps vor dem Takt. Mit CHAIN EVOLVE entstehen nach jeder Runde A–D neue B, C und D: ein Set,
+  letzten vier Steps vor dem Takt. Setzt sie in C auf 13 bis 16 aus, wird mit Chance eins zu drei die Kick eine
+  andere (Grundton oder Quinte, Ausklang, Sweep, Click, Drive) – ab D in allen Patterns gleich, auch in A, bis du
+  sie von Hand änderst oder Cs Pause wieder würfelt. D behält sonst die Kick von A. Mit CHAIN EVOLVE entstehen nach jeder Runde A–D neue B, C und D: ein Set,
   das sich ständig weiterentwickelt.
 - **Zwei Modi (GLO zweimal: GLOBAL 2).** **LAZY** ist das oben: B bis D entstehen von selbst, gespeichert werden
   nur A und die Einstellungen. **HARD**: B bis D sind beim ersten Umschalten Kopien von A und danach eigenständig;
