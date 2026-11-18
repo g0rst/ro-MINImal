@@ -48,13 +48,13 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Swing** verschiebt jede zweite Sechzehntel (50 bis 75 %).
 - **Drift** bewegt Klangfarbe, Ausklang, Lautstärke und Mikrotiming langsam und zufällig. Die Kick bleibt
   davon im Timing unberührt.
-- **Der Generator macht einen Groove, nicht sechs Würfel.** NEW wählt zuerst eine Dichte (sparsam, mittel, dicht;
-  schnelle Tempi eher sparsam), dann entstehen die Spuren in einer Reihenfolge, in der jede sich auf die vorigen
-  stützt: Die Kick ist das Raster und wird auf den Grundton gestimmt, der Stab bildet die Harmonie, der Sub rollt
+- **Der Generator macht einen Groove, nicht sechs Würfel.** NEW (oder `SEL`) erneuert nur die gewählte Spur,
+  passend zu den anderen. NEW gehalten macht einen ganz neuen Groove: zuerst eine Dichte (sparsam, mittel, dicht;
+  schnelle Tempi eher sparsam), dann die Spuren in einer Reihenfolge, in der jede sich auf die vorigen stützt: Die Kick ist das Raster und wird auf den Grundton gestimmt, der Stab bildet die Harmonie, der Sub rollt
   zwischen den Kicks und beginnt auf dem Grundton, die Hats sitzen auf dem Offbeat, die Percussion läuft in eigener
   Länge und so gedreht, dass sie die Kick möglichst meidet, alle Töne bleiben in der Skala. Auch die Klangfarbe von
   Hat, Percussion, Stab und Click ändert sich in passenden Grenzen; Pegel, Mix und das Fundament aus Kick und Sub
-  bleiben. `SEL` macht dasselbe für eine Spur, `ARP` verändert sie um einen Schritt, UNDO nimmt beides zurück.
+  bleiben. `ARP` verändert eine Spur um einen Schritt. UNDO nimmt alles zurück.
 - **Sidechain pro Spur.** Eine Quelle (ab Werk die Kick) duckt jede Spur um deren eigenen Anteil, dazu Delay
   und Reverb. Ist die Quelle stumm, duckt sie weiter (Ghost-Kick).
 - **Verknüpfte Spuren (LINK).** Die Steps einer Spur können davon abhängen, ob eine andere Spur an dieser
@@ -88,7 +88,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | auf Seite EDIT: weiße Taste halten + K1 bis K4 | Parameter-Lock: der Klangwert gilt nur für diesen Step |
 | weiße Taste halten + SEL | Locks und Verschiebung dieses Steps löschen |
 | schwarze Tasten 1 bis 6 | Spur wählen: KICK, SUB, HAT, PERC, STAB, CLICK |
-| schwarze Tasten 7 bis 11 | Spur leeren, nach links, nach rechts, ganzer Groove neu, Undo |
+| schwarze Tasten 7 bis 11 | Spur leeren, nach links, nach rechts, Spur neu (gehalten: ganzer Groove neu), Undo |
 | SELECT, OCT−, OCT+ | Spur wählen |
 | ALGO | Looplänge der Spur |
 | PRESET | Pattern A bis D (wechselt zum nächsten Takt) |

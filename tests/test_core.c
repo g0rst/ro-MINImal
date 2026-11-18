@@ -591,7 +591,9 @@ int main(int argc, char **argv)
             romi_init(9000u + (uint32_t)throw_ * 101u);
             romi_project()->scale = (uint8_t)sc;
             romi_project()->root = (uint8_t)root;
-            tap_key(22);                            /* black key 9: NEW, the whole groove */
+            held_k = 1u << 22;                      /* NEW held: the whole groove */
+            for (k = 0; k < 32; k++) frame(0);
+            held_k = 0; frame(0);
             pt = &romi_project()->pat[0];
             /* the kick: four on the floor, all on one note, which puts its pitch on the root */
             for (k = 0; k < 16; k += 4)
@@ -657,6 +659,32 @@ int main(int argc, char **argv)
         CHECK(nseen >= 195, "only %d different grooves in 200", nseen);
         CHECK(perc_on_kick * 6 <= perc_hits, "the percussion on the kick: %d of %d", perc_on_kick, perc_hits);
         CHECK(dens[0] && dens[1] && dens[2], "a density never chosen");
+    }
+
+    /* NEW tapped: the selected track alone, the other five as they were; UNDO brings the track back */
+    {
+        static romi_pattern_t before;
+        int t2, k, changed_tr = 0;
+        romi_init(77);
+        tap_key(8);                                 /* PERC */
+        before = romi_project()->pat[0];
+        tap_key(22);                                /* NEW, tapped */
+        for (t2 = 0; t2 < ROMI_TRACKS; t2++) {
+            int same = !memcmp(&before.tr[t2], &romi_project()->pat[0].tr[t2], sizeof(romi_track_t));
+            if (t2 != ROMI_PERC) CHECK(same, "NEW tapped changed track %d too", t2);
+            else changed_tr = !same;
+        }
+        CHECK(changed_tr, "NEW tapped left the selected track as it was");
+        tap_key(25);                                /* UNDO */
+        CHECK(!memcmp(&before, &romi_project()->pat[0], sizeof before), "UNDO after NEW: not as before");
+        held_k = 1u << 22;                          /* NEW held: every track */
+        for (k = 0; k < 32; k++) frame(0);
+        held_k = 0; frame(0);
+        for (k = 0, t2 = 0; t2 < ROMI_TRACKS; t2++)
+            k += !!memcmp(&before.tr[t2], &romi_project()->pat[0].tr[t2], sizeof(romi_track_t));
+        CHECK(k >= 5, "NEW held changed only %d tracks", k);
+        tap_key(25);
+        CHECK(!memcmp(&before, &romi_project()->pat[0], sizeof before), "UNDO after NEW held: not as before");
     }
 
     /* MIDI: channel 1 plays the kick */

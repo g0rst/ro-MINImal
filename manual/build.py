@@ -130,9 +130,9 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       (T("black keys 1 – 6", "schwarze Tasten 1 – 6", "clapele negre 1 – 6"),
        SAME("KICK, SUB, HAT, PERC, STAB, CLICK")),
       (T("black keys 7 – 11", "schwarze Tasten 7 – 11", "clapele negre 7 – 11"),
-       T("clear the track, shift it left, shift it right, a whole new groove, undo",
-         "Spur leeren, nach links schieben, nach rechts schieben, ganzer Groove neu, Undo",
-         "golește pista, mut-o la stânga, mut-o la dreapta, un groove complet nou, undo")))
+       T("clear the track, shift it left, shift it right, the track new (held: the whole groove), undo",
+         "Spur leeren, nach links schieben, nach rechts schieben, Spur neu (gehalten: ganzer Groove), Undo",
+         "golește pista, mut-o la stânga, mut-o la dreapta, pista nouă (ținut: tot groove-ul), undo")))
 
 h("a", 5, T("the screen", "das display", "ecranul"))
 img("groove", T("Six lanes, one per track. The selected track is marked white.",
@@ -187,21 +187,23 @@ table(T(["track", "sound", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["spur", "klang"
                   "un grăunte de zgomot printr-un filtru rezonant, undeva în câmpul stereo"),
        "DECAY", "FREQ", "RESO", "SCATTER"))
 
-p(T("NEW (the fourth black key from the right) makes a whole groove, not six dice: it picks a density, tunes the "
-    "kick to the key, writes the stab's phrase, rolls the sub between the kicks starting on the root, puts the hats "
-    "on the off-beat and turns the percussion off the kick. Every note stays in the scale. The colour of hat, "
-    "percussion, stab and click changes too, within ranges that suit them; levels, the mix and the kick and sub "
-    "stay. [[SEL]] does the same for one track. UNDO takes it back.",
-    "NEW (die vierte schwarze Taste von rechts) macht einen ganzen Groove, nicht sechs Würfel: Es wählt eine Dichte, "
-    "stimmt die Kick auf die Tonart, schreibt die Phrase des Stabs, lässt den Sub zwischen den Kicks rollen, auf dem "
-    "Grundton beginnend, setzt die Hats auf den Offbeat und dreht die Percussion von der Kick weg. Jeder Ton bleibt "
-    "in der Skala. Auch die Klangfarbe von Hat, Percussion, Stab und Click ändert sich, in passenden Grenzen; "
-    "Pegel, Mix sowie Kick und Sub bleiben. [[SEL]] macht dasselbe für eine Spur. UNDO nimmt es zurück.",
-    "NEW (a patra clapă neagră de la dreapta) face un groove întreg, nu șase zaruri: alege o densitate, acordează "
-    "kick-ul în tonalitate, scrie fraza stab-ului, lasă sub-ul să se rostogolească între kick-uri începând pe "
-    "fundamentală, pune hat-urile pe contratimp și rotește percuția departe de kick. Fiecare notă rămâne în gamă. Se "
-    "schimbă și culoarea pentru hat, percuție, stab și click, în limite potrivite; nivelurile, mixul, kick-ul și "
-    "sub-ul rămân. [[SEL]] face la fel pentru o pistă. UNDO anulează."))
+p(T("NEW (the fourth black key from the right) renews the selected track, and only it, in the groove the others "
+    "make: the kick tuned to the key, the sub between the kicks starting on the root, the hats on the off-beat, the "
+    "percussion turned off the kick, the stab a phrase in the scale. Its colour (for hat, percussion, stab and "
+    "click) changes too, within ranges that suit it; level, pan and sends stay. Hold NEW for half a second for a "
+    "whole new groove: a new density, then every track in turn. [[SEL]] renews the track too. UNDO takes it back.",
+    "NEW (die vierte schwarze Taste von rechts) erneuert die gewählte Spur, und nur sie, passend zum Groove der "
+    "anderen: die Kick auf die Tonart gestimmt, der Sub zwischen den Kicks und auf dem Grundton beginnend, die Hats "
+    "auf dem Offbeat, die Percussion von der Kick weggedreht, der Stab als Phrase in der Skala. Auch ihre "
+    "Klangfarbe (bei Hat, Percussion, Stab und Click) ändert sich, in passenden Grenzen; Pegel, Pan und Sends "
+    "bleiben. NEW eine halbe Sekunde halten: ein ganz neuer Groove, erst eine neue Dichte, dann alle Spuren der "
+    "Reihe nach. [[SEL]] erneuert die Spur ebenfalls. UNDO nimmt es zurück.",
+    "NEW (a patra clapă neagră de la dreapta) reînnoiește pista selectată, și doar pe ea, în groove-ul celorlalte: "
+    "kick-ul acordat în tonalitate, sub-ul între kick-uri începând pe fundamentală, hat-urile pe contratimp, "
+    "percuția rotită departe de kick, stab-ul o frază în gamă. Se schimbă și culoarea ei (la hat, percuție, stab și "
+    "click), în limite potrivite; nivelul, pan-ul și send-urile rămân. Ține NEW o jumătate de secundă pentru un "
+    "groove complet nou: o densitate nouă, apoi toate pistele pe rând. [[SEL]] reînnoiește și el pista. UNDO "
+    "anulează."))
 
 h("b", 2, T("steps", "steps", "pași"))
 p(T("Tap a white key: the step turns on or off. Hold a white key and turn: the knobs edit that step alone.",

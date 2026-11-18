@@ -126,6 +126,7 @@ static struct {
     int8_t octave;
     volatile int8_t solo;               /* the one track heard, -1: all */
     uint32_t lfo_t;                     /* LFO went down (0: not held, or its hold already acted) */
+    uint32_t new_t;                     /* NEW went down (0: not held, or its hold already acted) */
     uint8_t cursor;                     /* the TIMING page: the step its first knob moves */
     uint32_t saved_sum[ROMI_NOBJ];      /* each object's sum as last loaded or saved (0: never) */
     uint8_t density;                    /* the generator's: 0 sparse, 1 medium, 2 busy (set by a whole NEW) */
@@ -2055,6 +2056,14 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         romi_message("SOLO", R.solo < 0 ? "OFF" : TRACK_NAME[R.track]);
         R.dirty |= STRIP_ALL;
     }
+    if (R.new_t && (R.keys_mode || !(keys >> 22 & 1u)))   /* NEW let go (black key 10: key 22) */
+        R.new_t = 0;
+    if (R.new_t && now_ms - R.new_t >= 450u) {        /* NEW held: the whole groove (UNDO: back to before the press) */
+        R.new_t = 0;
+        gen_all();
+        romi_message("NEW", "GROOVE");
+        changed();
+    }
     if (R.lfo_t && !(buttons & 1u << ROMI_B_LFO)) {
         R.lfo_t = 0;
         tr->mute ^= 1u;
@@ -2178,10 +2187,11 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 keep_undo();
                 rotate_track(R.track, i == 8 ? 1 : -1);
                 changed();
-            } else if (i == 9) {
+            } else if (i == 9) {            /* NEW: the selected track, at once; held, the whole groove */
                 keep_undo();
-                gen_all();
-                romi_message("NEW", "GROOVE");
+                gen_track(R.track);
+                romi_message("NEW", TRACK_NAME[R.track]);
+                R.new_t = now_ms ? now_ms : 1u;
                 changed();
             } else if (R.undo_ok && R.undo_pat == R.prj.cur_pat) {
                 static romi_pattern_t now;      /* (static: not on a small stack) */
