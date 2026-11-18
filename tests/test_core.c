@@ -182,7 +182,7 @@ int main(int argc, char **argv)
         uint32_t len[ROMI_NOBJ], m;
         int k;
         m = romi_save_wanted();
-        CHECK(m == (1u << ROMI_NOBJ) - 1u && romi_save_wanted() == 0, "first save: mask %x", m);
+        CHECK(m == 3u && romi_save_wanted() == 0, "first save: mask %x (the settings and A only)", m);
         for (k = 0; k < ROMI_NOBJ; k++) {
             len[k] = romi_store_get(k, obj[k], sizeof obj[k]);
             CHECK(len[k] > 0 && len[k] <= ROMI_OBJ_MAX && len[k] <= 3840, "object %d: %u bytes", k, len[k]);
@@ -321,22 +321,9 @@ int main(int argc, char **argv)
     tap_key(25);                                    /* UNDO */
     CHECK(romi_state(ROMI_Q_STEPS_ON) == v, "undo after euclid: %d, was %d", romi_state(ROMI_Q_STEPS_ON), v);
 
-    /* SAVE held: PRESETS copies the pattern, SELECT the track; a tap still saves */
+    /* SAVE tapped: a save */
     romi_init(22);
     romi_save_wanted();
-    held_b = 1u << ROMI_B_SAVE; frame(0);
-    turn(ROMI_E_PRESET, 2);
-    held_b = 0; frame(0);
-    CHECK(!memcmp(&romi_project()->pat[0], &romi_project()->pat[2], sizeof(romi_pattern_t)), "pattern A not copied to C");
-    CHECK(romi_state(ROMI_Q_PATTERN) == 0 && romi_save_wanted() == 0, "a copy changed the pattern or saved");
-    CHECK(memcmp(&romi_project()->pat[0].tr[1], &romi_project()->pat[3].tr[1], sizeof(romi_track_t)), "D is A already");
-    tap_key(3);                                     /* SUB */
-    held_b = 1u << ROMI_B_SAVE; frame(0);
-    turn(ROMI_E_SELECT, 3);
-    held_b = 0; frame(0);
-    CHECK(romi_state(ROMI_Q_TRACK) == ROMI_SUB, "SELECT under SAVE moved the track");
-    CHECK(!memcmp(&romi_project()->pat[0].tr[1], &romi_project()->pat[3].tr[1], sizeof(romi_track_t)), "track not copied to D");
-    CHECK(memcmp(&romi_project()->pat[0].tr[2], &romi_project()->pat[3].tr[2], sizeof(romi_track_t)), "more than the track was copied");
     tap_button(ROMI_B_SAVE);
     CHECK(romi_save_wanted() != 0, "a tap on SAVE did not save");
 
@@ -848,6 +835,109 @@ int main(int argc, char **argv)
         turn(ROMI_E_K3, 20);
         CHECK(romi_project()->pat[0].tr[ROMI_STAB].lfo[0].target == 11, "LFO target: %d",
               romi_project()->pat[0].tr[ROMI_STAB].lfo[0].target);
+    }
+
+    /* the variations: B, C, D made from A. Over many grooves and every scale: each differs from A; all keep the
+     * kick four on the floor; B keeps A's harmony (its stab notes are A's, in another order), C rolls in its last
+     * four hat steps, D is A's stab moved by its key step; an edit made while B plays goes to A and B follows;
+     * NEW on B throws only B again; EVOLVE gives new B..D after a round; the store keeps only the settings and
+     * A and makes B..D again from them */
+    {
+        static const uint8_t SC[4][7] = {{0, 2, 3, 5, 7, 8, 10}, {0, 2, 3, 5, 7, 9, 10}, {0, 1, 3, 5, 7, 8, 10},
+                                         {0, 3, 5, 7, 10, 12, 15}};
+        static romi_pattern_t keep_b, keep_c, keep_d;
+        static uint8_t obj[ROMI_NOBJ][ROMI_OBJ_MAX];
+        uint32_t len[ROMI_NOBJ];
+        int g, k, t2;
+        for (g = 0; g < 80; g++) {
+            const romi_pattern_t *pa, *pb, *pc2, *pd;
+            int sa[16], sb2[16], na = 0, nb = 0, iv, sc = g % 4, m, j, ok;
+            romi_init(12000u + (uint32_t)g * 37u);
+            romi_project()->scale = (uint8_t)sc;
+            held_k = 1u << 22; for (k = 0; k < 32; k++) frame(0); held_k = 0; frame(0);   /* a whole groove */
+            pa = &romi_project()->pat[0]; pb = &romi_project()->pat[1];
+            pc2 = &romi_project()->pat[2]; pd = &romi_project()->pat[3];
+            CHECK(memcmp(pa, pb, sizeof *pa) && memcmp(pa, pc2, sizeof *pa) && memcmp(pa, pd, sizeof *pa),
+                  "groove %d: a variation the same as A", g);
+            for (t2 = 1; t2 < 4; t2++)
+                for (k = 0; k < 16; k += 4)
+                    CHECK(romi_project()->pat[t2].tr[ROMI_KICK].step[k].flags & ROMI_ST_ON,
+                          "groove %d: pattern %c without the kick on %d", g, 'A' + t2, k);
+            for (k = 0; k < 16; k++) {              /* B: the same chords, maybe in another order */
+                if (pa->tr[ROMI_STAB].step[k].flags & ROMI_ST_ON) sa[na++] = pa->tr[ROMI_STAB].step[k].note;
+                if (pb->tr[ROMI_STAB].step[k].flags & ROMI_ST_ON) sb2[nb++] = pb->tr[ROMI_STAB].step[k].note;
+            }
+            CHECK(na == nb, "groove %d: B has %d stab hits, A %d", g, nb, na);
+            for (k = 0; k < na && na == nb; k++) {
+                for (ok = 0, j = 0; j < nb; j++) ok |= sa[k] == sb2[j];
+                CHECK(ok, "groove %d: B's stab has a chord A has not", g);
+            }
+            for (k = 12; k < 16; k++)               /* C: rolling hats */
+                CHECK((pc2->tr[ROMI_HAT].step[k].flags & ROMI_ST_ON) && ROMI_ST_RATCH(pc2->tr[ROMI_HAT].step[k].flags) >= 2,
+                      "groove %d: C without a roll on %d", g, k);
+            iv = romi_state(ROMI_Q_KEY_STEP);       /* D: A's stab, moved by the key step */
+            for (k = 0; k < 16; k++)
+                if (pa->tr[ROMI_STAB].step[k].flags & ROMI_ST_ON) {
+                    m = ((pd->tr[ROMI_STAB].step[k].note - pa->tr[ROMI_STAB].step[k].note - iv) % 12 + 12) % 12;
+                    CHECK(m == 0, "groove %d: D's stab not moved by %d", g, iv);
+                    m = ((pd->tr[ROMI_STAB].step[k].note - iv) % 12 + 12) % 12;
+                    for (ok = 0, j = 0; j < 7; j++) ok |= SC[sc][j] % 12 == m;
+                    CHECK(ok, "groove %d: D's note %d not in the scale moved by %d", g, pd->tr[ROMI_STAB].step[k].note, iv);
+                }
+            for (k = 0; k < 16; k++)                /* B and C: every melodic note in the scale */
+                for (t2 = ROMI_PERC; t2 <= ROMI_STAB; t2++)
+                    for (j = 1; j <= 2; j++) {
+                        const romi_step_t *st = &romi_project()->pat[j].tr[t2].step[k];
+                        int q, hit = 0;
+                        if (!(st->flags & ROMI_ST_ON) || k >= romi_project()->pat[j].tr[t2].len) continue;
+                        m = ((st->note % 12) + 12) % 12;
+                        for (q = 0; q < 7; q++) hit |= SC[sc][q] % 12 == m;
+                        CHECK(hit, "groove %d: pattern %c track %d note %d not in the scale", g, 'A' + j, t2, st->note);
+                    }
+        }
+        /* an edit while B plays goes to A, and B follows */
+        romi_init(13);
+        turn(ROMI_E_PRESET, 1);
+        CHECK(romi_state(ROMI_Q_PATTERN) == 1, "PRESETS: pattern %d", romi_state(ROMI_Q_PATTERN));
+        tap_button(ROMI_B_ENV);
+        turn(ROMI_E_K1, -5);                        /* the kick's level, on B: 120 - 5 x 4 (a fast turn) */
+        CHECK(romi_project()->pat[0].tr[ROMI_KICK].level == 100 && romi_project()->pat[1].tr[ROMI_KICK].level == 100 &&
+              romi_project()->pat[3].tr[ROMI_KICK].level == 100, "an edit on B: A %d B %d D %d",
+              romi_project()->pat[0].tr[ROMI_KICK].level, romi_project()->pat[1].tr[ROMI_KICK].level,
+              romi_project()->pat[3].tr[ROMI_KICK].level);
+        /* NEW on B: B again, A, C and D as they were */
+        keep_c = romi_project()->pat[2]; keep_d = romi_project()->pat[3]; keep_b = romi_project()->pat[1];
+        {
+            static romi_pattern_t keep_a;
+            keep_a = romi_project()->pat[0];
+            tap_key(22);
+            CHECK(!memcmp(&keep_a, &romi_project()->pat[0], sizeof keep_a), "NEW on B changed A");
+        }
+        CHECK(memcmp(&keep_b, &romi_project()->pat[1], sizeof keep_b), "NEW on B: B the same");
+        CHECK(!memcmp(&keep_c, &romi_project()->pat[2], sizeof keep_c) &&
+              !memcmp(&keep_d, &romi_project()->pat[3], sizeof keep_d), "NEW on B changed C or D");
+        /* the store: the settings and A make B..D again, the same */
+        turn(ROMI_E_PRESET, -1);
+        tap_button(ROMI_B_SAVE);
+        CHECK(romi_save_wanted() == 3u, "save: not the settings and A");
+        for (k = 0; k < ROMI_NOBJ; k++) len[k] = romi_store_get(k, obj[k], sizeof obj[k]);
+        keep_b = romi_project()->pat[1]; keep_c = romi_project()->pat[2]; keep_d = romi_project()->pat[3];
+        romi_init(14);
+        CHECK(romi_store_set(0, obj[0], len[0]) == 0 && romi_store_set(1, obj[1], len[1]) == 0, "load");
+        CHECK(!memcmp(&keep_b, &romi_project()->pat[1], sizeof keep_b) && !memcmp(&keep_c, &romi_project()->pat[2],
+              sizeof keep_c) && !memcmp(&keep_d, &romi_project()->pat[3], sizeof keep_d), "B..D not made again the same");
+        /* EVOLVE: after a round A-D, new B..D */
+        romi_init(15);
+        romi_project()->chain = 4;
+        keep_b = romi_project()->pat[1];
+        tap_button(ROMI_B_PLAY);
+        for (k = 0; k < 16 * 16 + 8; k++) {         /* a little over four times four bars, a frame a step */
+            int g0 = romi_state(ROMI_Q_GSTEP);
+            while (romi_state(ROMI_Q_GSTEP) == g0) run(0.01, 0, 0, 0);
+            frame(0);
+        }
+        tap_button(ROMI_B_PLAY);
+        CHECK(memcmp(&keep_b, &romi_project()->pat[1], sizeof keep_b), "EVOLVE: B the same after a round");
     }
 
     /* MIDI: channel 1 plays the kick */

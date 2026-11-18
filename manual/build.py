@@ -103,7 +103,8 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[SELECT]]", T("selects the track; on the TIMING page it steps from hit to hit",
                        "wählt die Spur; auf der Seite TIMING springt es von Schlag zu Schlag",
                        "alege pista; pe pagina TIMING sare de la o lovitură la alta")),
-      ("[[PRESETS]]", T("pattern A to D", "Pattern A bis D", "pattern-ul A până la D")),
+      ("[[PRESETS]]", T("pattern A, or one of its variations B to D", "Pattern A oder eine seiner Spielarten B bis D",
+                        "pattern-ul A sau una dintre variantele lui, B până la D")),
       ("[[ALGORITHM]]", T("loop length of the track, 1 to 16 steps", "Looplänge der Spur, 1 bis 16 Steps",
                           "lungimea buclei pistei, 1 până la 16 pași")),
       ("[[KNOB1]] – [[KNOB4]]", T("the four values shown on the screen", "die vier Werte im Display",
@@ -129,7 +130,7 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
                     "pagina LFO 1 a pistei; apăsat din nou: LFO 2")),
       ("[[REC]]", T("keys mode: the keys play the track", "Tastenmodus: die Tasten spielen die Spur",
                     "modul clape: clapele cântă pista")),
-      ("[[SAVE]]", T("tap: save. Hold: copy", "kurz: speichern. Halten: kopieren", "scurt: salvează. Ținut: copiază")),
+      ("[[SAVE]]", T("save", "speichern", "salvează")),
       ("[[PLAY STOP]]", T("start and stop", "Start und Stopp", "pornire și oprire")),
       (T("16 white keys", "16 weiße Tasten", "16 clape albe"),
        T("the steps of the selected track", "die Steps der gewählten Spur", "pașii pistei selectate")),
@@ -408,27 +409,47 @@ p(T("Press [[FX]] twice. One track is the source, the kick by default. Each hit 
 
 # ------------------------------------------------------------------ side d ---
 h("d", 1, T("patterns", "patterns", "pattern-uri"))
-ul(T("A project holds four patterns, A to D. [[PRESETS]] changes the pattern; while playing, at the next bar.",
-     "Ein Projekt hält vier Patterns, A bis D. [[PRESETS]] wechselt das Pattern; im Lauf zum nächsten Takt.",
-     "Un proiect ține patru pattern-uri, de la A la D. [[PRESETS]] schimbă pattern-ul; în timpul redării, la măsura următoare."),
-   T("CHAIN on the GLOBAL page plays A-B, A-C or A-D in turn, four bars each.",
-     "CHAIN auf der Seite GLOBAL spielt A-B, A-C oder A-D nacheinander, je vier Takte.",
-     "CHAIN de pe pagina GLOBAL cântă A-B, A-C sau A-D pe rând, câte patru măsuri."),
-   T("Copy a pattern: hold [[SAVE]], turn [[PRESETS]] to the target, let go.",
-     "Pattern kopieren: [[SAVE]] halten, [[PRESETS]] zum Ziel drehen, loslassen.",
-     "Copiază un pattern: ține [[SAVE]], rotește [[PRESETS]] până la țintă, eliberează."),
-   T("Copy only the selected track: hold [[SAVE]], turn [[SELECT]] to the target pattern, let go.",
-     "Nur die gewählte Spur kopieren: [[SAVE]] halten, [[SELECT]] zum Ziel-Pattern drehen, loslassen.",
-     "Copiază doar pista selectată: ține [[SAVE]], rotește [[SELECT]] până la pattern-ul țintă, eliberează."),
+p(T("Pattern A is the groove. B, C and D are never other songs: they are ways of playing A, made from it and "
+    "made again the moment A changes. B plays A varied: a few hats turned over, percussion and clicks turned on "
+    "their loops, a sub hit moved, the same chords in another order, a ghost kick that comes or goes. C plays A "
+    "with drum rolls into the next bar: rolling hats, percussion and clicks, a kick and a sub pickup. D plays A in "
+    "a related key: the subdominant, the dominant, the seventh or the third; the stab, the percussion and the sub "
+    "move with it and the kick is tuned to the new root. The screen's bottom line says which one plays.",
+    "Pattern A ist der Groove. B, C und D sind nie andere Songs: Sie sind Spielarten von A, aus A gemacht und neu "
+    "gemacht, sobald A sich ändert. B spielt A variiert: ein paar Hats gedreht, Percussion und Clicks auf ihren "
+    "Loops verschoben, ein Sub-Schlag versetzt, dieselben Akkorde in anderer Reihenfolge, eine Ghost-Kick, die kommt "
+    "oder geht. C spielt A mit Drum-Rolls in den nächsten Takt: rollende Hats, Percussion und Clicks, ein Auftakt "
+    "von Kick und Sub. D spielt A in einer verwandten Tonart: Subdominante, Dominante, Septime oder Terz; Stab, "
+    "Percussion und Sub wandern mit, die Kick wird auf den neuen Grundton gestimmt. Die unterste Zeile im Display "
+    "sagt, welche gerade läuft.",
+    "Pattern-ul A este groove-ul. B, C și D nu sunt niciodată alte piese: sunt moduri de a cânta A, făcute din el "
+    "și refăcute în clipa în care A se schimbă. B cântă A variat: câteva hat-uri întoarse, percuția și click-urile "
+    "rotite pe buclele lor, o lovitură de sub mutată, aceleași acorduri în altă ordine, un ghost kick care apare "
+    "sau dispare. C cântă A cu drum roll-uri spre măsura următoare: hat-uri, percuție și click-uri care se "
+    "rostogolesc, un preambul de kick și sub. D cântă A într-o tonalitate înrudită: subdominanta, dominanta, "
+    "septima sau terța; stab-ul, percuția și sub-ul se mută cu ea, iar kick-ul se acordează pe noua fundamentală. "
+    "Ultimul rând al ecranului spune care cântă."))
+ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever you change, you change in A, even "
+     "while B, C or D plays; they follow at once.",
+     "[[PRESETS]] wechselt das Pattern; im Lauf zum nächsten Takt. Was du änderst, änderst du in A, auch während "
+     "B, C oder D läuft; sie ziehen sofort nach.",
+     "[[PRESETS]] schimbă pattern-ul; în timpul redării, la măsura următoare. Orice schimbi, schimbi în A, chiar "
+     "când cântă B, C sau D; ele urmează imediat."),
+   T("NEW on B, C or D throws that variation again; A stays.",
+     "NEW auf B, C oder D würfelt diese Spielart neu; A bleibt.",
+     "NEW pe B, C sau D aruncă din nou acea variantă; A rămâne."),
+   T("CHAIN on the GLOBAL page plays A-B, A-C or A-D in turn, four bars each. EVOLVE plays A-D and then makes new "
+     "B, C and D for the next round: a set that keeps moving.",
+     "CHAIN auf der Seite GLOBAL spielt A-B, A-C oder A-D nacheinander, je vier Takte. EVOLVE spielt A-D und macht "
+     "danach neue B, C und D für die nächste Runde: ein Set, das sich ständig weiterentwickelt.",
+     "CHAIN de pe pagina GLOBAL cântă A-B, A-C sau A-D pe rând, câte patru măsuri. EVOLVE cântă A-D și apoi face "
+     "B, C și D noi pentru runda următoare: un set care se tot mișcă."),
    T("A tap on [[SAVE]] writes the changes to the device. The sound stops for a moment. Nothing is saved on its own.",
      "Ein kurzer Druck auf [[SAVE]] schreibt das Projekt ins Gerät. Der Ton setzt kurz aus. Nichts wird von selbst gespeichert.",
      "O apăsare scurtă pe [[SAVE]] scrie proiectul în aparat. Sunetul se oprește o clipă. Nimic nu se salvează singur."),
-   T("UNDO, the last black key, takes back the last change to a pattern. Pressed again, it brings the change back. "
-     "After a copy, press it in the target pattern.",
-     "UNDO, die letzte schwarze Taste, nimmt die letzte Änderung an einem Pattern zurück. Nochmal gedrückt, holt "
-     "es sie wieder. Nach einem Kopieren im Ziel-Pattern drücken.",
-     "UNDO, ultima clapă neagră, anulează ultima schimbare a unui pattern. Apăsat din nou, o readuce. "
-     "După o copiere, apasă-l în pattern-ul țintă."))
+   T("UNDO, the last black key, takes back the last change to A. Pressed again, it brings the change back.",
+     "UNDO, die letzte schwarze Taste, nimmt die letzte Änderung an A zurück. Nochmal gedrückt, holt es sie wieder.",
+     "UNDO, ultima clapă neagră, anulează ultima schimbare a lui A. Apăsat din nou, o readuce."))
 
 h("d", 2, T("keys and midi", "tasten und midi", "clape și midi"))
 ul(T("[[REC]] turns the keys into a keyboard for the selected track. C4 is the track's base note. "
@@ -474,9 +495,9 @@ table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
          "HAT: [[SEQ]] dreimal, TRACK auf +3. Dann [[EDIT]], einzelne Steps halten und DECAY drehen.",
          "HAT: [[SEQ]] de trei ori, TRACK la +3. Apoi [[EDIT]], ține pași separați și rotește DECAY.")),
       (T("eight bars that keep moving", "acht Takte, die sich bewegen", "opt măsuri care se tot mișcă"),
-       T("Hold [[SAVE]], [[PRESETS]] to B, let go. In B press [[ARP]] on a few tracks. [[GLO]], CHAIN A-B. DRIFT near 60.",
-         "[[SAVE]] halten, [[PRESETS]] auf B, loslassen. In B auf ein paar Spuren [[ARP]] drücken. [[GLO]], CHAIN A-B. DRIFT um 60.",
-         "Ține [[SAVE]], [[PRESETS]] la B, eliberează. În B apasă [[ARP]] pe câteva piste. [[GLO]], CHAIN A-B. DRIFT în jur de 60.")))
+       T("[[GLO]], CHAIN EVOLVE. DRIFT near 60. Let it run; touch A now and then.",
+         "[[GLO]], CHAIN EVOLVE. DRIFT um 60. Laufen lassen; ab und zu an A drehen.",
+         "[[GLO]], CHAIN EVOLVE. DRIFT în jur de 60. Lasă-l să meargă; atinge A din când în când.")))
 
 h("d", 4, T("small print", "kleingedrucktes", "litere mici"))
 ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A step moves at most 7/16 of a step, "
@@ -497,13 +518,13 @@ ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A ste
      "solo, tot groove-ul."),
    T("Muting several tracks at once: hold [[SEL]] and press their black keys, together or one after the other; "
      "each switches its own track off or on, and the selected track stays. Letting go of [[SEL]] then does "
-     "nothing more. Mutes belong to the pattern.",
+     "nothing more. Mutes belong to A, so they hold in B, C and D too.",
      "Mehrere Spuren auf einmal stumm: [[SEL]] halten und ihre schwarzen Tasten drücken, zusammen oder "
      "nacheinander; jede schaltet ihre Spur aus oder an, die gewählte Spur bleibt. Das Loslassen von [[SEL]] tut "
-     "dann nichts weiter. Mutes gehören zum Pattern.",
+     "dann nichts weiter. Mutes gehören zu A und gelten damit auch in B, C und D.",
      "Mai multe piste pe mut deodată: ține [[SEL]] și apasă clapele lor negre, împreună sau una după alta; fiecare "
      "își oprește sau pornește pista, iar pista selectată rămâne. Eliberarea lui [[SEL]] nu mai face nimic. "
-     "Mute-urile aparțin pattern-ului."),
+     "Mute-urile aparțin lui A, deci se aplică și în B, C și D."),
    T("At slow tempos a long delay time does not fit; the delay then takes the next shorter value.",
      "Bei langsamen Tempi passt eine lange Delay-Zeit nicht; das Delay nimmt dann den nächstkürzeren Wert.",
      "La tempo lent, un timp lung de delay nu încape; delay-ul ia atunci valoarea mai scurtă următoare."),

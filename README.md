@@ -40,6 +40,10 @@ zurückkommt (Installer von fm1-base, `base/README.md`).
 
 Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bewegen. Daraus folgt der Aufbau:
 
+- **Ein Groove, vier Spielarten.** Pattern A ist der Groove; B, C und D werden immer aus A gemacht und ziehen
+  nach, sobald sich A ändert: B spielt ihn variiert (gleiche Harmonie, anderer Beat), C mit Drum-Rolls zum Takt,
+  D in einer verwandten Tonart. Gespeichert werden nur A und die Einstellungen. Mit CHAIN EVOLVE entstehen nach
+  jeder Runde A–D neue B, C und D: ein Set, das sich ständig weiterentwickelt.
 - **Die Kick ist das Raster.** Vier auf dem Boden, nichts sonst ist sicher.
 - **Jede Spur hat ihre eigene Looplänge** (1 bis 16 Steps). Percussion und Clicks laufen auf 7, 9, 11 oder 13
   Steps gegen die 16 der Kick. Der Takt wiederholt sich dadurch erst nach vielen Takten.
@@ -104,7 +108,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
-| GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, Chain (Patterns A bis D nacheinander, je vier Takte) |
+| GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
 | SEL halten + schwarze Tasten 1 bis 6 | jede Spur direkt stumm oder an, auch mehrere zugleich; die gewählte Spur bleibt |
 | ARP | Spur leicht verändern |
@@ -113,9 +117,9 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
 | SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |
 | SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach). K3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk: SUB folgt STAB; OFF schaltet es ab) |
-| SAVE | kurz: Projekt im Flash sichern. Geschrieben wird nur, was sich geändert hat: die Einstellungen und jedes Pattern liegen getrennt |
-| SAVE halten + PRESETS | ganzes Pattern in ein anderes kopieren (A bis D); Loslassen kopiert |
-| SAVE halten + SELECT | nur die gewählte Spur in ein anderes Pattern kopieren |
+| SAVE | Projekt im Flash sichern (Einstellungen und Pattern A; B bis D entstehen daraus) |
+| PRESETS | Pattern A bis D, im Lauf zum nächsten Takt. Bearbeitet wird immer A, auch wenn B, C oder D läuft |
+| NEW auf B, C oder D | diese Spielart neu würfeln; A bleibt |
 | MASTER | Lautstärke |
 
 LEDs: gesetzte Steps leuchten, die Looplänge glimmt, der Playhead invertiert seinen Step.
@@ -125,10 +129,11 @@ meldet sich nicht als Audio-Interface.
 
 ### Speicher
 
-Gespeichert wird in fünf Objekten: Einstellungen (24 Bytes) und jedes Pattern für sich (388 Bytes, mit 32 Locks
-484 Bytes). Ein Step belegt dabei 2 Bytes, Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
+Gespeichert werden zwei Objekte: die Einstellungen (30 Bytes, darin die Würfel für B bis D) und Pattern A
+(388 Bytes, mit 32 Locks 484 Bytes). B, C und D entstehen beim Laden daraus; ihre drei Objekte bleiben im Flash
+reserviert, werden aber nicht beschrieben. Ein Step belegt dabei 2 Bytes, Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
 32 Locks pro Pattern (sonst „LOCKS FULL“), Verschiebung eines Steps ±7/16, Noten −32 bis +31 Halbtöne um den Grundton.
-Ein beschädigtes Pattern lässt die anderen unberührt.
+Ein beschädigtes Objekt lässt das andere unberührt.
 
 Die Objekte liegen im Flash bei `0xB1000–0xBAFFF`: auf dem FM-1 im Datenbereich von fm1-base, auf dem SMK-37 im
 Fenster, das das Porting-Playbook für zusätzliche Objekte vorsieht. Keins berührt die Bereiche, die auf einem der

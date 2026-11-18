@@ -89,7 +89,9 @@ typedef struct {
     uint8_t dly_fb, rev_size, rev_damp; /* 0..127 */
     uint8_t clock_out;                  /* MIDI clock and start / stop out */
     uint8_t cur_pat;
-    uint8_t chain;                      /* 0: off; 1..3: patterns A-B, A-C, A-D in turn, four bars each */
+    uint8_t chain;                      /* 0: off; 1..3: patterns A-B, A-C, A-D in turn, four bars each;
+                                         * 4: EVOLVE, A-D and new variations of B-D after each round */
+    uint16_t var_seed[3];               /* the variations B, C, D of A: each one's dice */
     uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
     uint8_t sc_rel;                     /* 0..127: how fast the ducking lets go */
     romi_pattern_t pat[ROMI_PATTERNS];
@@ -101,8 +103,10 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 10u
-#define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D */
+#define ROMI_VERSION 11u
+#define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. Only 0 and 1 are kept:
+                                         * B..D are made from A (romi.c, "variations"); their objects load as
+                                         * nothing and are never asked to be saved */
 #define ROMI_OBJ_MAX 488u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */
@@ -136,7 +140,7 @@ void romi_store_saved(int obj);
 /* ---- for tests and the simulator ---- */
 int romi_state(int what);
 enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI_Q_PATTERN, ROMI_Q_KEYS_MODE,
-       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY, ROMI_Q_LFO_PAGE,
+       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY, ROMI_Q_LFO_PAGE, ROMI_Q_KEY_STEP,
        ROMI_Q_HITS = 100,              /* + track: hits sounded since PLAY */
        ROMI_Q_NOTE = 110 };            /* + track: the note of its last hit, as played (semitones from its base) */
 romi_project_t *romi_project(void);
