@@ -187,6 +187,22 @@ table(T(["track", "sound", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["spur", "klang"
                   "un grăunte de zgomot printr-un filtru rezonant, undeva în câmpul stereo"),
        "DECAY", "FREQ", "RESO", "SCATTER"))
 
+p(T("NEW (the fourth black key from the right) makes a whole groove, not six dice: it picks a density, tunes the "
+    "kick to the key, writes the stab's phrase, rolls the sub between the kicks starting on the root, puts the hats "
+    "on the off-beat and turns the percussion off the kick. Every note stays in the scale. The colour of hat, "
+    "percussion, stab and click changes too, within ranges that suit them; levels, the mix and the kick and sub "
+    "stay. [[SEL]] does the same for one track. UNDO takes it back.",
+    "NEW (die vierte schwarze Taste von rechts) macht einen ganzen Groove, nicht sechs Würfel: Es wählt eine Dichte, "
+    "stimmt die Kick auf die Tonart, schreibt die Phrase des Stabs, lässt den Sub zwischen den Kicks rollen, auf dem "
+    "Grundton beginnend, setzt die Hats auf den Offbeat und dreht die Percussion von der Kick weg. Jeder Ton bleibt "
+    "in der Skala. Auch die Klangfarbe von Hat, Percussion, Stab und Click ändert sich, in passenden Grenzen; "
+    "Pegel, Mix sowie Kick und Sub bleiben. [[SEL]] macht dasselbe für eine Spur. UNDO nimmt es zurück.",
+    "NEW (a patra clapă neagră de la dreapta) face un groove întreg, nu șase zaruri: alege o densitate, acordează "
+    "kick-ul în tonalitate, scrie fraza stab-ului, lasă sub-ul să se rostogolească între kick-uri începând pe "
+    "fundamentală, pune hat-urile pe contratimp și rotește percuția departe de kick. Fiecare notă rămâne în gamă. Se "
+    "schimbă și culoarea pentru hat, percuție, stab și click, în limite potrivite; nivelurile, mixul, kick-ul și "
+    "sub-ul rămân. [[SEL]] face la fel pentru o pistă. UNDO anulează."))
+
 h("b", 2, T("steps", "steps", "pași"))
 p(T("Tap a white key: the step turns on or off. Hold a white key and turn: the knobs edit that step alone.",
     "Weiße Taste tippen: Der Step geht an oder aus. Weiße Taste halten und drehen: Die Knöpfe ändern nur diesen Step.",

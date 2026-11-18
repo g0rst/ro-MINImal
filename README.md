@@ -48,9 +48,13 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Swing** verschiebt jede zweite Sechzehntel (50 bis 75 %).
 - **Drift** bewegt Klangfarbe, Ausklang, Lautstärke und Mikrotiming langsam und zufällig. Die Kick bleibt
   davon im Timing unberührt.
-- **Der Generator** kennt die Rollen: Hats auf dem Offbeat, ein rollender Sub zwischen den Kicks, euklidische
-  Percussion, seltene Akkord-Stabs, Clicks mit niedriger Chance. `SEL` würfelt eine Spur neu, `ARP` verändert
-  sie um einen Schritt.
+- **Der Generator macht einen Groove, nicht sechs Würfel.** NEW wählt zuerst eine Dichte (sparsam, mittel, dicht;
+  schnelle Tempi eher sparsam), dann entstehen die Spuren in einer Reihenfolge, in der jede sich auf die vorigen
+  stützt: Die Kick ist das Raster und wird auf den Grundton gestimmt, der Stab bildet die Harmonie, der Sub rollt
+  zwischen den Kicks und beginnt auf dem Grundton, die Hats sitzen auf dem Offbeat, die Percussion läuft in eigener
+  Länge und so gedreht, dass sie die Kick möglichst meidet, alle Töne bleiben in der Skala. Auch die Klangfarbe von
+  Hat, Percussion, Stab und Click ändert sich in passenden Grenzen; Pegel, Mix und das Fundament aus Kick und Sub
+  bleiben. `SEL` macht dasselbe für eine Spur, `ARP` verändert sie um einen Schritt, UNDO nimmt beides zurück.
 - **Sidechain pro Spur.** Eine Quelle (ab Werk die Kick) duckt jede Spur um deren eigenen Anteil, dazu Delay
   und Reverb. Ist die Quelle stumm, duckt sie weiter (Ghost-Kick).
 - **Verknüpfte Spuren (LINK).** Die Steps einer Spur können davon abhängen, ob eine andere Spur an dieser
