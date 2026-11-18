@@ -127,7 +127,8 @@ static struct {
     uint8_t track, page, keys_mode, unsaved, save_wanted;
     int8_t octave;
     volatile int8_t solo;               /* the one track heard, -1: all */
-    uint32_t sel_t;                     /* SEL went down (0: not held, or its hold already acted) */
+    uint32_t sel_t;                     /* SEL went down (0: not held) */
+    uint8_t sel_used;                   /* track keys were pressed while SEL was held */
     uint32_t new_t;                     /* NEW went down (0: not held, or its hold already acted) */
     uint8_t cursor;                     /* the TIMING page: the step its first knob moves */
     uint32_t saved_sum[ROMI_NOBJ];      /* each object's sum as last loaded or saved (0: never) */
@@ -2138,20 +2139,15 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.step_edited = 1;
         romi_message("STEP", "PLAIN");
         changed();
-    } else if (pressed & 1u << ROMI_B_SEL) {   /* a tap mutes the track, a hold solos it */
+    } else if (pressed & 1u << ROMI_B_SEL) {   /* decided at the release: see below */
         R.sel_t = now_ms ? now_ms : 1u;
+        R.sel_used = 0;
     }
     if (pressed & 1u << ROMI_B_ARP) {
         keep_undo();
         mutate_track(R.track);
         romi_message("MUTATE", TRACK_NAME[R.track]);
         changed();
-    }
-    if (R.sel_t && (buttons & 1u << ROMI_B_SEL) && now_ms - R.sel_t >= 450u) {
-        R.sel_t = 0;
-        R.solo = (int8_t)(R.solo == (int)R.track ? -1 : (int)R.track);
-        romi_message("SOLO", R.solo < 0 ? "OFF" : TRACK_NAME[R.track]);
-        R.dirty |= STRIP_ALL;
     }
     if (R.new_t && (R.keys_mode || !(keys >> 22 & 1u)))   /* NEW let go (black key 10: key 22) */
         R.new_t = 0;
@@ -2161,10 +2157,20 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         romi_message("NEW", "GROOVE");
         changed();
     }
+    /* SEL let go: a tap mutes the selected track, a hold (half a second) solos it; but if track keys were pressed
+     * while it was held (each muting its own track), nothing more */
     if (R.sel_t && !(buttons & 1u << ROMI_B_SEL)) {
+        if (R.sel_used) {
+            /* (the track keys did it) */
+        } else if (now_ms - R.sel_t < 450u) {
+            tr->mute ^= 1u;
+            changed();
+        } else {
+            R.solo = (int8_t)(R.solo == (int)R.track ? -1 : (int)R.track);
+            romi_message("SOLO", R.solo < 0 ? "OFF" : TRACK_NAME[R.track]);
+            R.dirty |= STRIP_ALL;
+        }
         R.sel_t = 0;
-        tr->mute ^= 1u;
-        changed();
     }
 
     /* K1 .. K4: the held step, or the page */
@@ -2265,7 +2271,13 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         for (i = 0; i < 11; i++) {
             if (!(kdown >> BK[i] & 1u))
                 continue;
-            if (i < ROMI_TRACKS) {      /* the first six black keys: the tracks, heard as chosen */
+            if (i < ROMI_TRACKS && (buttons & 1u << ROMI_B_SEL) && R.sel_t) {
+                /* SEL held: the track key mutes its track or lets it play, the selection stays */
+                PAT->tr[i].mute ^= 1u;
+                R.sel_used = 1;
+                romi_message(PAT->tr[i].mute ? "MUTE" : "PLAY", TRACK_NAME[i]);
+                changed();
+            } else if (i < ROMI_TRACKS) {   /* the first six black keys: the tracks, heard as chosen */
                 R.track = (uint8_t)i;
                 R.eu_armed = 1;
                 tr = &PAT->tr[R.track];

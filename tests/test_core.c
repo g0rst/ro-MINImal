@@ -747,6 +747,41 @@ int main(int argc, char **argv)
         CHECK(h0 != h1, "a decay LFO changed nothing");
     }
 
+    /* SEL held + track keys: each mutes its own track, the selection stays; letting go adds no mute or solo;
+     * pressed again under SEL, a track plays again; a long hold alone is still solo */
+    {
+        int k;
+        romi_init(88);
+        tap_key(8);                                 /* PERC selected */
+        held_b = 1u << ROMI_B_SEL;
+        for (k = 0; k < 40; k++) frame(0);         /* longer than a solo's hold */
+        tap_key(1);                                 /* KICK */
+        tap_key(5);                                 /* HAT */
+        held_k = (1u << 3) | (1u << 10); frame(0); held_k = 0; frame(0);   /* SUB and STAB at once */
+        held_b = 0; frame(0);
+        CHECK(romi_project()->pat[0].tr[ROMI_KICK].mute && romi_project()->pat[0].tr[ROMI_HAT].mute &&
+              romi_project()->pat[0].tr[ROMI_SUB].mute && romi_project()->pat[0].tr[ROMI_STAB].mute,
+              "SEL + track keys: mutes %d %d %d %d", romi_project()->pat[0].tr[ROMI_KICK].mute,
+              romi_project()->pat[0].tr[ROMI_HAT].mute, romi_project()->pat[0].tr[ROMI_SUB].mute,
+              romi_project()->pat[0].tr[ROMI_STAB].mute);
+        CHECK(romi_state(ROMI_Q_TRACK) == ROMI_PERC && !romi_project()->pat[0].tr[ROMI_PERC].mute &&
+              !romi_project()->pat[0].tr[ROMI_CLICK].mute && romi_state(ROMI_Q_SOLO) == -1,
+              "SEL + track keys: track %d perc mute %d solo %d", romi_state(ROMI_Q_TRACK),
+              romi_project()->pat[0].tr[ROMI_PERC].mute, romi_state(ROMI_Q_SOLO));
+        held_b = 1u << ROMI_B_SEL; frame(0);
+        tap_key(1);                                 /* KICK plays again */
+        held_b = 0; frame(0);
+        CHECK(!romi_project()->pat[0].tr[ROMI_KICK].mute && romi_project()->pat[0].tr[ROMI_HAT].mute,
+              "SEL + KICK again: kick %d hat %d", romi_project()->pat[0].tr[ROMI_KICK].mute,
+              romi_project()->pat[0].tr[ROMI_HAT].mute);
+        held_b = 1u << ROMI_B_SEL;
+        for (k = 0; k < 40; k++) frame(0);
+        held_b = 0; frame(0);
+        CHECK(romi_state(ROMI_Q_SOLO) == ROMI_PERC, "SEL held alone: solo %d", romi_state(ROMI_Q_SOLO));
+        tap_button(ROMI_B_SEL);
+        CHECK(romi_project()->pat[0].tr[ROMI_PERC].mute, "SEL tapped: not muted");
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

@@ -120,8 +120,9 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[SEQ]]", T("back to the steps; pages EUCLID, LINK, TIMING in turn",
                     "zurück zu den Steps; Seiten EUCLID, LINK, TIMING der Reihe nach",
                     "înapoi la pași; paginile EUCLID, LINK, TIMING pe rând")),
-      ("[[SEL]]", T("tap: mute the track. Hold: solo", "kurz: Spur stumm. Halten: Solo",
-                    "scurt: pista pe mut. Ținut: solo")),
+      ("[[SEL]]", T("tap: mute the track. Hold: solo. Held, the track keys mute their tracks",
+                    "kurz: Spur stumm. Halten: Solo. Gehalten schalten die Spurtasten ihre Spuren stumm",
+                    "scurt: pista pe mut. Ținut: solo. Ținut, clapele pistelor le pun pe mut")),
       ("[[ARP]]", T("mutate: one small change", "Mutate: eine kleine Änderung", "mutate: o schimbare mică")),
       ("[[LFO]]", T("page LFO 1 of the track; pressed again: LFO 2", "Seite LFO 1 der Spur; nochmal: LFO 2",
                     "pagina LFO 1 a pistei; apăsat din nou: LFO 2")),
@@ -465,6 +466,15 @@ ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A ste
      "Solo, ganzer Groove.",
      "Un singur nivel de undo pe schimbare. [[SEL]] sau NEW ținut cam o jumătate de secundă face a doua treabă: "
      "solo, tot groove-ul."),
+   T("Muting several tracks at once: hold [[SEL]] and press their black keys, together or one after the other; "
+     "each switches its own track off or on, and the selected track stays. Letting go of [[SEL]] then does "
+     "nothing more. Mutes belong to the pattern.",
+     "Mehrere Spuren auf einmal stumm: [[SEL]] halten und ihre schwarzen Tasten drücken, zusammen oder "
+     "nacheinander; jede schaltet ihre Spur aus oder an, die gewählte Spur bleibt. Das Loslassen von [[SEL]] tut "
+     "dann nichts weiter. Mutes gehören zum Pattern.",
+     "Mai multe piste pe mut deodată: ține [[SEL]] și apasă clapele lor negre, împreună sau una după alta; fiecare "
+     "își oprește sau pornește pista, iar pista selectată rămâne. Eliberarea lui [[SEL]] nu mai face nimic. "
+     "Mute-urile aparțin pattern-ului."),
    T("At slow tempos a long delay time does not fit; the delay then takes the next shorter value.",
      "Bei langsamen Tempi passt eine lange Delay-Zeit nicht; das Delay nimmt dann den nächstkürzeren Wert.",
      "La tempo lent, un timp lung de delay nu încape; delay-ul ia atunci valoarea mai scurtă următoare."),
