@@ -464,6 +464,15 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "B, C și D încep ca și copii ale lui A și apoi sunt ale tale; editezi pattern-ul care cântă, NEW reînnoiește "
      "pista lui (ținut: tot pattern-ul), toate patru se salvează, EVOLVE stă. Înapoi în LAZY, pattern-urile HARD "
      "așteaptă deoparte și revin cu HARD."),
+   T("PLAY, the second knob on GLOBAL 2, works in both modes. LOOP stays on the pattern (or follows CHAIN). "
+     "A-D plays A, B, C and D, four bars each, and starts again at A. RANDOM jumps to another pattern every four "
+     "bars. With CHAIN on EVOLVE, LAZY makes new B, C and D every sixteen bars.",
+     "PLAY, der zweite Regler auf GLOBAL 2, wirkt in beiden Modi. LOOP bleibt beim Pattern (oder folgt CHAIN). "
+     "A-D spielt A, B, C und D, je vier Takte, und beginnt wieder bei A. RANDOM springt alle vier Takte zu einem "
+     "anderen Pattern. Steht CHAIN auf EVOLVE, macht LAZY alle sechzehn Takte neue B, C und D.",
+     "PLAY, al doilea buton de pe GLOBAL 2, merge în ambele moduri. LOOP rămâne pe pattern (sau urmează CHAIN). "
+     "A-D cântă A, B, C și D, câte patru măsuri, și o ia de la capăt cu A. RANDOM sare la alt pattern la fiecare "
+     "patru măsuri. Cu CHAIN pe EVOLVE, LAZY face B, C și D noi la fiecare șaisprezece măsuri."),
    T("A tap on [[SAVE]] writes the changes to the device. The sound stops for a moment. Nothing is saved on its own.",
      "Ein kurzer Druck auf [[SAVE]] schreibt das Projekt ins Gerät. Der Ton setzt kurz aus. Nichts wird von selbst gespeichert.",
      "O apăsare scurtă pe [[SAVE]] scrie proiectul în aparat. Sunetul se oprește o clipă. Nimic nu se salvează singur."),
