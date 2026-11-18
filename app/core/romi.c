@@ -102,6 +102,7 @@ static struct {
     uint8_t hit[ROMI_TRACKS], hit_prev[ROMI_TRACKS], hit_early[ROMI_TRACKS];   /* did the track's step fire: now,
                                          * a step ago, and the early one's answer */
     volatile uint32_t hits[ROMI_TRACKS];
+    volatile int8_t last_note[ROMI_TRACKS];
     volatile uint8_t tq[16][3];         /* triggers from the main loop: track, note + 64, velocity */
     volatile uint8_t tq_w, tq_r;
     volatile uint8_t rt[16];            /* MIDI real-time bytes out */
@@ -186,6 +187,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
         p[li] = lock && lock[li] ? (uint8_t)(lock[li] - 1u) : tr->p[li];
     bus_update(t);
     R.flash[t] = 1;
+    R.last_note[t] = (int8_t)note;
     if (t == (int)R.prj.sc_src)
         R.duck_env = 1.0f;
     switch (t) {
@@ -325,9 +327,26 @@ static int eff_shift(const romi_track_t *tr, uint32_t pos)
     return v < -8 ? -8 : v > 8 ? 8 : v;
 }
 
+/* FOLLOW: the transposition the source track's harmony gives at global step g. The harmony is the note of the
+ * source's latest set step at or before g in its own loop (wrapping), whether it sounded or not (its chance, a
+ * mute): so the harmony is the written one and stays put. Folded to a fifth either way of the base. */
+static int harmony(int src, uint32_t g)
+{
+    const romi_track_t *st = &PAT->tr[src];
+    uint32_t len = st->len ? st->len : 1u, pos = g % len, k;
+    for (k = 0; k < len; k++) {
+        const romi_step_t *sp = &st->step[(pos + len - k) % len];
+        if (sp->flags & ROMI_ST_ON) {
+            int n = ((sp->note % 12) + 12) % 12;
+            return n > 6 ? n - 12 : n;
+        }
+    }
+    return 0;
+}
+
 /* one step of a track, to play base samples from now (plus its own shift); dur: that step's length.
  * Returns 1 if the step fired: a muted track's counts too (the sidechain and the LINK page follow it unheard) */
-static int schedule(int t, uint32_t pos, float base, float dur)
+static int schedule(int t, uint32_t pos, float base, float dur, uint32_t g)
 {
     static const uint8_t PROB[4] = {100, 75, 50, 25};
     const romi_track_t *tr = &PAT->tr[t];
@@ -345,6 +364,10 @@ static int schedule(int t, uint32_t pos, float base, float dur)
     }
     k = !R.pend[t][0].on ? 0 : !R.pend[t][1].on ? 1 : 0;
     R.pend[t][k].note = st.note;
+    if (tr->follow && tr->follow - 1 != t) {
+        int n = st.note + harmony(tr->follow - 1, g);
+        R.pend[t][k].note = (int8_t)(n < -48 ? -48 : n > 48 ? 48 : n);
+    }
     R.pend[t][k].si = (uint8_t)pos;
     R.pend[t][k].acc = (st.flags & ROMI_ST_ACC) != 0;
     R.pend[t][k].vel = (R.pend[t][k].acc ? 1.0f : 0.62f) * (1.0f + brand(&R.rng) * drift * 0.2f);
@@ -405,10 +428,10 @@ static void seq_step(void)
                 R.early[t] = 0;
                 R.hit[t] = R.hit_early[t];
             } else if (eff_shift(tr, pos) >= 0 || R.gstep == 0u || src >= 0) {
-                R.hit[t] = (uint8_t)(open && schedule(t, pos, 0.0f, dur));
+                R.hit[t] = (uint8_t)(open && schedule(t, pos, 0.0f, dur, R.gstep));
             }
             if (src < 0 && eff_shift(tr, npos) < 0) {
-                R.hit_early[t] = (uint8_t)schedule(t, npos, dur, next);
+                R.hit_early[t] = (uint8_t)schedule(t, npos, dur, next, R.gstep + 1u);
                 R.early[t] = 1;
             }
         }
@@ -821,11 +844,13 @@ static void gen_track(int t)
         static const uint8_t ROLL[4][6] = {{2, 3, 6, 10, 11, 14}, {2, 6, 7, 10, 14, 15}, {3, 6, 10, 11, 14, 255},
                                           {2, 3, 7, 10, 13, 14}};
         static const int8_t DEG[8] = {0, 0, 0, 0, -1, 2, 4, -3};   /* mostly the root */
+        static const int8_t CHORD_TONE[8] = {0, 0, 0, 0, 7, 12, 3, -5};   /* following: the chord's own tones */
         const uint8_t *r = ROLL[urand(4)];
         tr->len = urand(4) ? 16 : 12;
         for (i = 0; i < 6; i++)
             if (r[i] != 255u && r[i] < tr->len)
-                set_step(tr, r[i], urand(4) == 0, urand(5) == 0 ? 1 : 0, scale_note(DEG[urand(8)]));
+                set_step(tr, r[i], urand(4) == 0, urand(5) == 0 ? 1 : 0,
+                         tr->follow ? CHORD_TONE[urand(8)] : scale_note(DEG[urand(8)]));
         break;
     }
     case ROMI_HAT:
@@ -958,6 +983,8 @@ static void pattern_defaults(romi_pattern_t *p)
         tr->mute = 0;
         tr->eu_hits = tr->eu_rot = tr->eu_acc = tr->dep_src = tr->dep_mode = 0;
         tr->tshift = 0;
+        tr->follow = t == ROMI_SUB ? ROMI_STAB + 1 : 0;   /* the bass follows the stab's chords */
+        tr->rsv2[0] = tr->rsv2[1] = tr->rsv2[2] = 0;
         tr->eu_prob = 3;
         tr->sc = t == ROMI_KICK ? 0 : 127;
         tr->len = 16;
@@ -1014,6 +1041,7 @@ static void prj_sanitize(romi_project_t *p)
             LIM(tr->dep_src, 0, ROMI_TRACKS);
             LIM(tr->dep_mode, 0, 2);
             LIM(tr->tshift, -8, 8);
+            LIM(tr->follow, 0, ROMI_TRACKS);
             LIM(tr->eu_hits, 0, tr->len);
             LIM(tr->eu_rot, 0, tr->len - 1);
             LIM(tr->eu_prob, 0, 3);
@@ -1290,6 +1318,7 @@ static int page_params(param_t p[4])
     case ROMI_PG_LINK:
         P(0, "SOURCE", &tr->dep_src, 0, ROMI_TRACKS, F_DEPSRC, 0);
         P(1, "MODE", &tr->dep_mode, 0, 2, F_DEPMODE, 0);
+        P(2, "FOLLOW", &tr->follow, 0, ROMI_TRACKS, F_DEPSRC, 0);
         break;
     case ROMI_PG_SC:
         P(0, "SOURCE", &R.prj.sc_src, 0, ROMI_TRACKS - 1, F_TRACK, 0);
@@ -1410,8 +1439,8 @@ void romi_draw(uint16_t *px, int strip)
         text(3, y + 5, TRACK_NAME[lane], cur ? C_BG : R.solo == lane ? C_ACC : quiet ? C_DIM : C_MID, 1);
         if (tr->mute)
             rect(2, y + 8, text_w(TRACK_NAME[lane], 1) + 2, 1, cur ? C_BG : C_DIM);
-        if (tr->dep_src && tr->dep_src - 1 != lane)
-            rect(37, y + 7, 3, 3, C_ACC);   /* linked to another track */
+        if ((tr->dep_src && tr->dep_src - 1 != lane) || (tr->follow && tr->follow - 1 != lane))
+            rect(37, y + 7, 3, 3, C_ACC);   /* linked to another track (its steps or its notes) */
         for (i = 0; i < ROMI_STEPS; i++) {
             int x = CELL_X + i * CELL_W, on, play;
             const romi_step_t *sp = &tr->step[i];
@@ -1980,6 +2009,8 @@ int romi_state(int what)
     case ROMI_Q_CURSOR: return R.cursor;
     case ROMI_Q_HITS + 0: case ROMI_Q_HITS + 1: case ROMI_Q_HITS + 2: case ROMI_Q_HITS + 3: case ROMI_Q_HITS + 4:
     case ROMI_Q_HITS + 5: return (int)R.hits[what - ROMI_Q_HITS];
+    case ROMI_Q_NOTE + 0: case ROMI_Q_NOTE + 1: case ROMI_Q_NOTE + 2: case ROMI_Q_NOTE + 3: case ROMI_Q_NOTE + 4:
+    case ROMI_Q_NOTE + 5: return R.last_note[what - ROMI_Q_NOTE];
     default: return -1;
     }
 }

@@ -465,6 +465,48 @@ int main(int argc, char **argv)
         CHECK(distinct_phrases >= 30, "only %d different phrases in 60 seeds", distinct_phrases);
     }
 
+    /* FOLLOW: the sub transposed by the stab's written chord, from the stab's step on, through a mute; off: not */
+    for (v = 0; v < 2; v++) {
+        romi_track_t *sub, *stab;
+        int got[16], k;
+        romi_init(31);
+        romi_project()->drift = 0;
+        sub = &romi_project()->pat[0].tr[ROMI_SUB];
+        stab = &romi_project()->pat[0].tr[ROMI_STAB];
+        CHECK(sub->follow == ROMI_STAB + 1, "the sub does not follow the stab by default: %d", sub->follow);
+        for (i = 0; i < ROMI_STEPS; i++) {
+            sub->step[i].flags = 0x80; sub->step[i].note = 0;
+            stab->step[i].flags = 0; stab->step[i].note = 0;
+        }
+        sub->len = stab->len = 16;
+        stab->step[2].flags = 0xB0; stab->step[2].note = 0;    /* chance 25 %: the harmony is the written one */
+        stab->step[6].flags = 0x80; stab->step[6].note = -4;   /* VI below */
+        stab->step[11].flags = 0x80; stab->step[11].note = 7;  /* v: folded to a fourth below */
+        stab->mute = 1;
+        if (v) {                                               /* LINK page of the sub: FOLLOW off */
+            tap_key(3);
+            tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ);
+            turn(ROMI_E_K3, -6);
+            CHECK(sub->follow == 0, "FOLLOW not off: %d", sub->follow);
+        }
+        tap_button(ROMI_B_PLAY);
+        for (k = 0; k < 16; k++) {                             /* the note of each sub hit, step by step */
+            int g0 = romi_state(ROMI_Q_GSTEP);
+            while (romi_state(ROMI_Q_GSTEP) == g0) run(0.003, 0, 0, 0);
+            run(0.02, 0, 0, 0);
+            got[k] = romi_state(ROMI_Q_NOTE + ROMI_SUB);
+        }
+        tap_button(ROMI_B_PLAY);
+        if (!v) {
+            /* (got[k] is step k + 1: read once the step after it has begun) the stab's chords on steps 3, 7, 12 */
+            static const int8_t WANT[16] = {-5, 0, 0, 0, 0, -4, -4, -4, -4, -4, -5, -5, -5, -5, -5, -5};
+            for (k = 0; k < 16; k++)
+                CHECK(got[k] == WANT[k], "follow: step %d note %d, want %d", k + 1, got[k], WANT[k]);
+        } else {
+            for (k = 0; k < 16; k++) CHECK(got[k] == 0, "FOLLOW off: step %d note %d", k, got[k]);
+        }
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

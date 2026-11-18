@@ -98,7 +98,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | LFO | kurz: Spur stumm; halten: Solo |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
 | SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |
-| SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach) |
+| SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach). K3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk: SUB folgt STAB; OFF schaltet es ab) |
 | SAVE | kurz: Projekt (Einstellungen und vier Patterns) im Flash sichern |
 | SAVE halten + PRESETS | ganzes Pattern in ein anderes kopieren (A bis D); Loslassen kopiert |
 | SAVE halten + SELECT | nur die gewählte Spur in ein anderes Pattern kopieren |

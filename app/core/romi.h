@@ -56,6 +56,8 @@ typedef struct {
     uint8_t dep_src;                    /* the LINK page: 0 none, else track + 1 whose hits gate this track's steps */
     int8_t tshift;                      /* microtiming of the whole track, -8..8, added to each step's shift */
     uint8_t dep_mode;                   /* 0 WITH: only on its hits; 1 GAPS: only where it is silent; 2 AFTER: a step later */
+    uint8_t follow;                     /* 0 none, else track + 1 whose notes transpose this track's (its harmony) */
+    uint8_t rsv2[3];
 } romi_track_t;
 
 typedef struct {
@@ -84,7 +86,7 @@ typedef struct {
 } romi_project_t;
 
 #define ROMI_MAGIC 0x314D4F52u          /* "ROM1" */
-#define ROMI_VERSION 6u
+#define ROMI_VERSION 7u
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */
@@ -115,7 +117,8 @@ int romi_save_wanted(void);             /* 1 once after SAVE: the platform write
 int romi_state(int what);
 enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI_Q_PATTERN, ROMI_Q_KEYS_MODE,
        ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR,
-       ROMI_Q_HITS = 100 };            /* + track: hits sounded since PLAY */
+       ROMI_Q_HITS = 100,              /* + track: hits sounded since PLAY */
+       ROMI_Q_NOTE = 110 };            /* + track: the note of its last hit, as played (semitones from its base) */
 romi_project_t *romi_project(void);
 
 #endif

@@ -229,7 +229,7 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[FX]] ×2", "SIDECHAIN", "SOURCE", "DEPTH", "RELEASE", "AMOUNT"),
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN", "CLOCK", "CHAIN"),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
-      ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "", ""),
+      ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", ""),
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", "", ""))
 p(T("DRIFT moves timbre, decay, level and timing slowly and at random. At zero the machine is exact. "
     "The kick's timing never drifts.",
@@ -283,6 +283,23 @@ grid([("KICK", "X...X...X...X..."), ("SUB", ".xxx.xxx.xxx.xxx")],
      T("SUB with all 16 steps set, linked to KICK in mode GAPS: it rolls between the kicks.",
        "SUB mit allen 16 Steps, verknüpft mit KICK im Modus GAPS: Er rollt zwischen den Kicks.",
        "SUB cu toți cei 16 pași, legat de KICK în modul GAPS: se rostogolește între kick-uri."))
+
+p(T("FOLLOW ([[KNOB3]]) links notes instead of steps: the track's notes move with the chords of another track. "
+    "From the source's latest written step on, everything the track plays is transposed by that chord's root, "
+    "whether the source sounded there or not. By default SUB follows STAB, so bass and chords change together. "
+    "Set FOLLOW to OFF to keep the track on its own notes.",
+    "FOLLOW ([[KNOB3]]) verknüpft Töne statt Steps: Die Töne der Spur wandern mit den Akkorden einer anderen Spur. "
+    "Ab dem letzten geschriebenen Step der Quelle wird alles, was die Spur spielt, um den Grundton dieses Akkords "
+    "verschoben, ob die Quelle dort erklungen ist oder nicht. Ab Werk folgt SUB dem STAB, Bass und Akkorde wechseln "
+    "also gemeinsam. FOLLOW auf OFF lässt die Spur bei ihren eigenen Tönen.",
+    "FOLLOW ([[KNOB3]]) leagă note, nu pași: notele pistei se mută odată cu acordurile altei piste. De la ultimul pas "
+    "scris al sursei, tot ce cântă pista este transpus cu fundamentala acelui acord, fie că sursa a sunat acolo, fie "
+    "că nu. Din fabrică SUB urmează STAB, deci basul și acordurile se schimbă împreună. FOLLOW pe OFF lasă pista pe "
+    "notele ei."))
+grid([("STAB", "..X...x....x...."), ("SUB", "xx.x.xx.x.xx.x.x")],
+     T("With FOLLOW, the sub plays under each stab chord in that chord's key.",
+       "Mit FOLLOW spielt der Sub unter jedem Stab-Akkord in dessen Tonart.",
+       "Cu FOLLOW, sub-ul cântă sub fiecare acord stab în tonalitatea acelui acord."))
 
 h("c", 4, SAME("timing"))
 p(T("Press [[SEQ]] three times. [[SELECT]] steps from hit to hit. A white key picks a step directly and leaves "
