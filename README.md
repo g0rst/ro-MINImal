@@ -49,6 +49,9 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
   nur A und die Einstellungen. **HARD**: B bis D sind beim ersten Umschalten Kopien von A und danach eigenständig;
   bearbeitet wird das Pattern, das gerade läuft, NEW erneuert dort Spur oder (halten) Pattern, alle vier werden
   gespeichert. Zurück in LAZY bleiben die HARD-Patterns beiseite und sind beim nächsten Wechsel wieder da.
+- **PLAY (GLOBAL 2, KNOB2), in beiden Modi:** LOOP spielt das Pattern weiter (oder die CHAIN von GLOBAL),
+  A-D spielt A, B, C, D je vier Takte und beginnt wieder bei A, RANDOM springt alle vier Takte zu einem anderen
+  Pattern. CHAIN EVOLVE erneuert in LAZY dabei alle sechzehn Takte B bis D.
 - **Die Kick ist das Raster.** Vier auf dem Boden in A und D, nichts sonst ist sicher.
 - **Jede Spur hat ihre eigene Looplänge** (1 bis 16 Steps). Percussion und Clicks laufen auf 7, 9, 11 oder 13
   Steps gegen die 16 der Kick. Der Takt wiederholt sich dadurch erst nach vielen Takten.
@@ -114,7 +117,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
-| GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns) |
+| GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns); PLAY LOOP, A-D oder RANDOM |
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
 | SEL halten + schwarze Tasten 1 bis 6 | jede Spur direkt stumm oder an, auch mehrere zugleich; die gewählte Spur bleibt |
 | ARP | Spur leicht verändern |

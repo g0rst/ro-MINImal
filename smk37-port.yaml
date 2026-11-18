@@ -49,7 +49,7 @@ storage:
     - 0xC2000-0xEAFFF       # USRFLASH: the stock synth's user presets. The playbook allows it for big objects of a
                             # firmware without samples; ro:MINImal does not need it and leaves the presets alone.
   objects:                  # each a pair of 4 KiB sectors; the same addresses on the FM-1 (fm1-base's data area)
-    settings: 0xB1000       # 31 bytes (with the dice for B..D and the mode LAZY/HARD)
+    settings: 0xB1000       # 32 bytes (with the dice for B..D, MODE and PLAY)
     pattern_a: 0xB3000      # 388 bytes, 484 with 32 locks
     pattern_b: 0xB5000      # LAZY: B..D are made from A and not written; HARD: written like A (488 bytes at most)
     pattern_c: 0xB7000

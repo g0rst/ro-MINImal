@@ -92,6 +92,7 @@ typedef struct {
     uint8_t chain;                      /* 0: off; 1..3: patterns A-B, A-C, A-D in turn, four bars each;
                                          * 4: EVOLVE, A-D and new variations of B-D after each round */
     uint16_t var_seed[3];               /* the variations B, C, D of A: each one's dice */
+    uint8_t order;                      /* 0 LOOP (CHAIN decides), 1 A-D and round again, 2 RANDOM; four bars each */
     uint8_t mode;                       /* 0 LAZY: B..D are made from A; 1 HARD: four patterns of their own */
     uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
     uint8_t sc_rel;                     /* 0..127: how fast the ducking lets go */
@@ -104,7 +105,7 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 12u
+#define ROMI_VERSION 13u
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
                                          * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects
                                          * 2..4 load aside: the HARD patterns, back when HARD is chosen again */

@@ -473,10 +473,14 @@ static void seq_step(void)
     float dur = (R.gstep & 1u) ? d_short : d_long, next = (R.gstep & 1u) ? d_long : d_short;
     uint32_t done = 0;
     int t, pass;
-    if (R.prj.chain && R.gstep && (R.gstep & 63u) == 0u && R.pending_pat == 0xFFu) {
+    if ((R.prj.chain || R.prj.order) && R.gstep && (R.gstep & 63u) == 0u && R.pending_pat == 0xFFu) {
         uint32_t np = R.prj.chain >= 3u ? 4u : R.prj.chain + 1u, next = (R.prj.cur_pat + 1u) % np;
-        if (next == 0u && R.prj.chain == 4u && !R.prj.mode)
-            R.evolve = 1;               /* (the main loop makes B..D anew, four bars before B plays) */
+        if (R.prj.order == 1u)          /* PLAY A-D: A, B, C, D and round again */
+            next = (R.prj.cur_pat + 1u) % ROMI_PATTERNS;
+        else if (R.prj.order == 2u)     /* PLAY RANDOM: any other pattern */
+            next = (R.prj.cur_pat + 1u + xs32(&R.rng) % (ROMI_PATTERNS - 1u)) % ROMI_PATTERNS;
+        if (R.prj.chain == 4u && !R.prj.mode && (R.prj.order ? (R.gstep & 255u) == 0u : next == 0u))
+            R.evolve = 1;               /* (the main loop makes B..D anew; with PLAY: every sixteen bars) */
         R.prj.cur_pat = (uint8_t)next;
     }
     if (R.pending_pat != 0xFFu && (R.gstep & 15u) == 0u) {
@@ -1458,6 +1462,7 @@ static void prj_sanitize(romi_project_t *p)
     LIM(p->cur_pat, 0, ROMI_PATTERNS - 1);
     LIM(p->chain, 0, 4);
     LIM(p->mode, 0, 1);
+    LIM(p->order, 0, 2);
     LIM(p->sc_src, 0, ROMI_TRACKS - 1);
     LIM(p->sc_rel, 0, 127);
     for (a = 0; a < ROMI_PATTERNS; a++)
@@ -1557,6 +1562,7 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
             d[n++] = (uint8_t)(p->var_seed[k] >> 8);
         }
         d[n++] = p->mode;
+        d[n++] = p->order;
     } else {
         const romi_pattern_t *pt = &R.prj.pat[obj - 1];
         uint32_t nl = 0, at;
@@ -1618,7 +1624,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
 {
     static romi_pattern_t in;
     const uint8_t *b = (const uint8_t *)src;
-    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + 2u * ROMI_STEPS) + 1u : 5u + 22u, n = 5, nl, j;
+    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + 2u * ROMI_STEPS) + 1u : 5u + 23u, n = 5, nl, j;
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
@@ -1638,6 +1644,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
         for (k = 0; k < 3; k++, n += 2)
             p->var_seed[k] = (uint16_t)(b[n] | b[n + 1] << 8);
         p->mode = b[n++];
+        p->order = b[n++];
     } else {
         for (t = 0; t < ROMI_TRACKS; t++) {
             romi_track_t *tr = &in.tr[t];
@@ -1854,7 +1861,7 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAME[ROMI_TRACKS] = {"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"};
@@ -1954,6 +1961,7 @@ static int page_params(param_t p[4])
         break;
     case ROMI_PG_GLOBAL2:
         P(0, "MODE", &R.prj.mode, 0, 1, F_MODE, 0);
+        P(1, "PLAY", &R.prj.order, 0, 2, F_ORDER, 0);
         break;
     default:
         P(0, "ROOT", &R.prj.root, 24, 47, F_ROOT, 0);
@@ -2012,6 +2020,7 @@ static void param_text(const param_t *p, char *t)
         break;
     }
     case F_MODE: cat(t, v ? "HARD" : "LAZY"); break;
+    case F_ORDER: cat(t, v == 1 ? "A-D" : v == 2 ? "RANDOM" : "LOOP"); break;
     case F_PITCH:                       /* semitones, 24 = none */
         if (v > 24)
             cat(t, "+");

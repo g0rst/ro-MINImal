@@ -996,6 +996,34 @@ int main(int argc, char **argv)
         CHECK(!memcmp(&hard_b, &romi_project()->pat[1], sizeof hard_b), "HARD: the B kept aside not back");
     }
 
+    /* PLAY on GLOBAL 2: LOOP stays on its pattern, A-D goes round, RANDOM picks another every four bars */
+    {
+        int o, k, seen[3][4] = {{0}}, order[8], no, same = 0;
+        for (o = 0; o < 3; o++) {
+            romi_init(31u + (uint32_t)o);
+            tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+            turn(ROMI_E_K2, o);
+            CHECK(romi_project()->order == o, "PLAY %d: %d", o, romi_project()->order);
+            tap_button(ROMI_B_PLAY);
+            for (no = 0, k = 0; k < 64 * 24 + 8; k++) {
+                int g0 = romi_state(ROMI_Q_GSTEP), pnow;
+                while (romi_state(ROMI_Q_GSTEP) == g0) run(0.01, 0, 0, 0);
+                frame(0);
+                pnow = romi_state(ROMI_Q_PATTERN);
+                seen[o][pnow]++;
+                if ((k & 63) == 32) {           /* the middle of each four bars */
+                    if (no && order[(no - 1) & 7] == pnow && o == 2) same++;
+                    order[no++ & 7] = pnow;
+                    if (o == 1) CHECK(pnow == (no - 1) % 4, "PLAY A-D: %d after %d rounds", pnow, no - 1);
+                }
+            }
+            tap_button(ROMI_B_PLAY);
+        }
+        CHECK(seen[0][0] && !seen[0][1] && !seen[0][2] && !seen[0][3], "PLAY LOOP left A");
+        CHECK(seen[2][0] && seen[2][1] && seen[2][2] && seen[2][3] && !same, "PLAY RANDOM: %d %d %d %d, %d repeats",
+              seen[2][0], seen[2][1], seen[2][2], seen[2][3], same);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);
