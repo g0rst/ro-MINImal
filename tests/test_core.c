@@ -415,6 +415,56 @@ int main(int argc, char **argv)
         CHECK(abs(first - (21000 + v * 2625 / 8)) < 200, "track shift %d: the kick at sample %d", v, first);
     }
 
+    /* the STAB generator: a phrase, not one tone. Over many seeds and all four scales: at least two hits, more than
+     * one pitch, every note in the scale, in a playable register, and the phrases differ from seed to
+     * seed */
+    {
+        static const uint8_t SC[4][7] = {{0, 2, 3, 5, 7, 8, 10}, {0, 2, 3, 5, 7, 9, 10}, {0, 1, 3, 5, 7, 8, 10},
+                                         {0, 3, 5, 7, 10, 12, 15}};
+        int seed, sc, one_tone = 0, total = 0, distinct_phrases = 0;
+        uint32_t seen[64];
+        int nseen = 0;
+        for (sc = 0; sc < 4; sc++)
+            for (seed = 0; seed < 60; seed++) {
+                const romi_track_t *tr;
+                int k, hits = 0, first = 99, lastn = 99, multi = 0, lastpos = -1;
+                uint32_t h = 2166136261u;
+                romi_init(5000u + (uint32_t)seed * 31u);
+                romi_project()->scale = (uint8_t)sc;
+                tap_key(10);                        /* STAB (black key 5) */
+                tap_button(ROMI_B_SEL);             /* new */
+                tr = &romi_project()->pat[0].tr[ROMI_STAB];
+                for (k = 0; k < tr->len; k++) {
+                    int nt = tr->step[k].note, m = ((nt % 12) + 12) % 12, j, ok = 0;
+                    if (!(tr->step[k].flags & ROMI_ST_ON))
+                        continue;
+                    hits++;
+                    if (first == 99) first = nt;
+                    if (nt != first) multi = 1;
+                    lastn = nt;
+                    lastpos = k;
+                    h = (h ^ (uint32_t)(k * 64 + nt + 32)) * 16777619u;
+                    for (j = 0; j < 7; j++)
+                        ok |= SC[sc][j] % 12 == m;
+                    CHECK(ok, "scale %d seed %d: note %d not in the scale", sc, seed, nt);
+                    CHECK(nt >= -7 && nt <= 12, "scale %d seed %d: note %d out of the register", sc, seed, nt);
+                }
+                (void)lastpos;
+                total++;
+                CHECK(hits >= 2, "scale %d seed %d: %d hits", sc, seed, hits);
+                if (!multi) one_tone++;
+                (void)lastn;
+                if (sc == 0) {
+                    int j, dup = 0;
+                    for (j = 0; j < nseen; j++) dup |= seen[j] == h;
+                    if (!dup && nseen < 64) { seen[nseen++] = h; distinct_phrases++; }
+                }
+            }
+        printf("stab: %d of %d phrases on one tone; %d different phrases in 60 seeds\n", one_tone, total, distinct_phrases);
+        CHECK(one_tone * 50 <= total, "too many one-tone phrases: %d of %d", one_tone, total);
+        CHECK(distinct_phrases >= 30, "only %d different phrases in 60 seeds", distinct_phrases);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

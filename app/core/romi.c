@@ -703,6 +703,81 @@ static int scale_note(int degree)
     }
     return sc[degree] + 12 * oct;
 }
+static void set_step(romi_track_t *tr, uint32_t i, int acc, int prob, int note);
+
+/* the degree's note, folded into the stab's register: a fifth below the root to an octave above it */
+static int stab_note(int degree)
+{
+    int n = scale_note(degree);
+    while (n > 12)
+        n -= 12;
+    while (n < -7)
+        n += 12;
+    return n;
+}
+/* the note dir (+1 or -1) scale steps away from note: the scale's next tone up or down */
+static int scale_step(int note, int dir)
+{
+    int d, best = note + dir * 2;
+    for (d = -14; d <= 21; d++) {
+        int n = scale_note(d);
+        if (dir > 0 && n > note && n < best + (best <= note))
+            best = n;
+        if (dir < 0 && n < note && n > best - (best >= note))
+            best = n;
+    }
+    return best;
+}
+
+/* STAB: a short phrase in the scale. Either chord changes (a progression a minor key knows: i - VI - VII, i - iv -
+ * v, ...) or a motif (a line that moves by steps and small leaps, starts on the root or the fifth and comes home at
+ * the end). The rhythm is one of a few stab figures off the kick; the first hit carries the accent. */
+static void gen_stab(romi_track_t *tr)
+{
+    static const uint8_t RHYTHM[8][6] = {     /* positions, 255: end */
+        {3, 6, 11, 14, 255},       {2, 7, 10, 15, 255},     {3, 10, 255},            {6, 14, 255},
+        {3, 6, 9, 14, 255},        {2, 5, 8, 11, 14, 255},  {1, 6, 11, 255},         {3, 7, 11, 13, 255},
+    };
+    static const int8_t PROG[8][4] = {        /* scale degrees from 0: i, iii, iv, v, VI, VII */
+        {0, 5, 6, 0}, {0, 6, 5, 6}, {0, 3, 4, 0}, {0, 2, 3, 6},
+        {0, 0, 5, 6}, {0, 3, 0, 4}, {0, 5, 3, 4}, {0, 6, 3, 0},
+    };
+    uint32_t i, n = 0, pos[6];
+    const uint8_t *rh;
+    tr->len = urand(4) ? 16 : 12;
+    rh = RHYTHM[urand(8)];
+    for (i = 0; i < 6 && rh[i] != 255u; i++)
+        if (rh[i] < tr->len)
+            pos[n++] = rh[i];
+    if (n < 2) {                              /* the figure did not fit twelve steps: sixteen it is */
+        tr->len = 16;
+        for (n = 0, i = 0; i < 6 && rh[i] != 255u; i++)
+            pos[n++] = rh[i];
+    }
+    if (urand(2)) {                           /* chord changes: the progression spread over the hits */
+        const int8_t *pg = PROG[urand(8)];
+        for (i = 0; i < n; i++) {
+            int k = n == 2 ? (int)i * (pg[1] != pg[0] ? 1 : 2) : (int)(i * 4 / n);   /* two hits: two chords */
+            set_step(tr, pos[i], i == 0, i == 0 ? 0 : (int)urand(2), stab_note(pg[k]));
+        }
+    } else {                                  /* a motif: steps and small leaps, home at the end */
+        static const int8_t MOVE[8] = {-2, -1, -1, 1, 1, 2, 3, -3};
+        int d = urand(3) ? 0 : 4, d0 = d, last;
+        for (i = 0; i < n; i++) {
+            if (i + 1 == n && n > 1) {        /* the last hit resolves: to the root, or the fifth if it came from there */
+                last = d;
+                d = (last == 3 || last == 5) && urand(2) ? 4 : 0;
+                if (last == 0 || (n == 2 && d == d0))
+                    d = d0 == 4 ? 0 : urand(2) ? 4 : -3;   /* (not the same tone again: the fifth, or VI below) */
+            }
+            set_step(tr, pos[i], i == 0, i == 0 || i + 1 == n ? 0 : (int)urand(2), stab_note(d));
+            d += MOVE[urand(8)];
+            if (d < -3) d = -3 + (int)urand(2);
+            if (d > 7) d = 7 - (int)urand(2);
+        }
+    }
+}
+
 static void step_plain(romi_step_t *st)   /* no shift, no locks */
 {
     st->shift = 0;
@@ -773,11 +848,7 @@ static void gen_track(int t)
         break;
     }
     case ROMI_STAB: {
-        static const uint8_t SPOT[6] = {3, 6, 11, 14, 9, 1};
-        uint32_t hits = 1 + urand(3);
-        tr->len = urand(3) ? 16 : 12;
-        for (i = 0; i < hits; i++)
-            set_step(tr, SPOT[urand(6)] % tr->len, i == 0, (int)urand(3), urand(4) ? 0 : scale_note((int)urand(7) - 2));
+        gen_stab(tr);
         break;
     }
     default: {
@@ -834,8 +905,11 @@ static void mutate_track(int t)
         if (st->flags & ROMI_ST_ON)
             st->flags = (uint8_t)((st->flags & ~0x30u) | (urand(4) << 4));
     } else if (kind == 2) {
-        if ((st->flags & ROMI_ST_ON) && t != ROMI_KICK && t != ROMI_HAT)
-            st->note = (int8_t)scale_note((int)urand(6) - 1);
+        if ((st->flags & ROMI_ST_ON) && t != ROMI_KICK && t != ROMI_HAT && t != ROMI_CLICK) {
+            int nn = scale_step(st->note, urand(2) ? 1 : -1);   /* one scale step, so the line stays a line */
+            if (nn >= -12 && nn <= 19)
+                st->note = (int8_t)nn;
+        }
     } else if (st->flags & ROMI_ST_ON) {
         st->flags ^= ROMI_ST_ACC;
     }
