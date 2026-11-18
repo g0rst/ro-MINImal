@@ -18,6 +18,32 @@ _Static_assert(ROMI_OBJ_MAX <= PLAT_STORE_MAX, "a packed object fits a store obj
 _Static_assert(ROMI_NOBJ == 5 && ROMI_PATTERNS == 4, "settings and four patterns: app.h's objects");
 _Static_assert(ROMI_W * ROMI_STRIP_H <= CV_MAX, "a strip fits the canvas");
 
+/* ---- the flash map: what the app may write, checked at compile time ----
+ * Each object is a pair of 4 KiB sectors. The FM-1 rules come from fm1-base (plat.h: the data area; the update's
+ * staging and its records from 0xE0000), the SMK-37 rules from the porting playbook (fm1-to-smk37 AGENTS.md, hard
+ * rule 1 and step 3). These asserts are the allow-list; widen none of them to make something fit. */
+#define ROMI_PAIR 0x2000u
+#define ROMI_IN(a, lo, hi) ((a) >= (lo) && (a) + ROMI_PAIR <= (hi))
+#define ROMI_OFF(a, lo, hi) ((a) + ROMI_PAIR <= (lo) || (a) >= (hi))
+/* never written on either board: header and boot loader, Bluetooth pairing, the SMK's factory calibration, the
+ * stock resources the SMK needs for a return to stock, key and MAC */
+#define ROMI_SAFE(a) (ROMI_OFF(a, 0x00000u, 0x04000u) && ROMI_OFF(a, 0xC0000u, 0xC2000u) && \
+                      ROMI_OFF(a, 0xF4000u, 0xFE000u) && ROMI_OFF(a, 0xFF000u, 0x100000u))
+/* ro:MINImal's own objects: in fm1-base's data area (FM-1) and in the playbook's window for a firmware's extra
+ * objects (SMK-37), which lies inside it */
+#define ROMI_OWN(a) (ROMI_IN(a, 0x97000u, 0xE0000u) && ROMI_IN(a, 0xB1000u, 0xBB000u) && ROMI_SAFE(a))
+_Static_assert(ROMI_OWN(ROMI_ADDR_SETTINGS) && ROMI_OWN(ROMI_ADDR_PAT_A) && ROMI_OWN(ROMI_ADDR_PAT_B) &&
+               ROMI_OWN(ROMI_ADDR_PAT_C) && ROMI_OWN(ROMI_ADDR_PAT_D), "flash map: an object outside the allowed window");
+_Static_assert(ROMI_IN(ROMI_ADDR_PANEL, 0x97000u, 0xE0000u) && ROMI_SAFE(ROMI_ADDR_PANEL),
+               "flash map: the panel calibration outside the FM-1 data area");
+_Static_assert((ROMI_ADDR_SETTINGS | ROMI_ADDR_PAT_A | ROMI_ADDR_PAT_B | ROMI_ADDR_PAT_C | ROMI_ADDR_PAT_D |
+                ROMI_ADDR_PANEL) % 0x1000u == 0u, "flash map: an object not on a sector boundary");
+_Static_assert(ROMI_ADDR_PAT_A >= ROMI_ADDR_SETTINGS + ROMI_PAIR && ROMI_ADDR_PAT_B >= ROMI_ADDR_PAT_A + ROMI_PAIR &&
+               ROMI_ADDR_PAT_C >= ROMI_ADDR_PAT_B + ROMI_PAIR && ROMI_ADDR_PAT_D >= ROMI_ADDR_PAT_C + ROMI_PAIR &&
+               (ROMI_ADDR_PANEL >= ROMI_ADDR_PAT_D + ROMI_PAIR || ROMI_ADDR_PANEL + ROMI_PAIR <= ROMI_ADDR_SETTINGS),
+               "flash map: two objects overlap");
+_Static_assert(OBJ_NOBJ == 6, "flash map: a new object needs its place above and its asserts");
+
 static uint8_t prj_buf[ROMI_OBJ_MAX];
 /* the core's objects (0 the settings, 1..4 patterns A..D) as the platform's */
 static const uint8_t PLAT_OBJ[ROMI_NOBJ] = {OBJ_SETTINGS, OBJ_PAT_A, OBJ_PAT_B, OBJ_PAT_C, OBJ_PAT_D};

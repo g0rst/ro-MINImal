@@ -117,6 +117,18 @@ Gespeichert wird in fünf Objekten: Einstellungen (24 Bytes) und jedes Pattern f
 32 Locks pro Pattern (sonst „LOCKS FULL“), Verschiebung eines Steps ±7/16, Noten −32 bis +31 Halbtöne um den Grundton.
 Ein beschädigtes Pattern lässt die anderen unberührt.
 
+Die Objekte liegen im Flash bei `0xB1000–0xBAFFF`: auf dem FM-1 im Datenbereich von fm1-base, auf dem SMK-37 im
+Fenster, das das Porting-Playbook für zusätzliche Objekte vorsieht. Keins berührt die Bereiche, die auf einem der
+beiden Geräte geschützt sind (Bootloader, Bluetooth, Werkskalibrierung, Werksressourcen, Schlüssel). `app/app.c`
+prüft das beim Übersetzen; ein Objekt außerhalb des erlaubten Fensters bricht den Build ab.
+
+### SMK-37
+
+Noch nicht unterstützt. `smk37-port.yaml` hält fest, was die Regeln des Porting-Playbooks
+([genkigenki/fm1-to-smk37](https://github.com/genkigenki/fm1-to-smk37)) schon entscheiden, und listet die offenen
+Bedienfragen. Ein Build für das SMK-37 bricht ab, solange es keine Board-Schicht gibt. Vor jeder Installation auf
+einem SMK-37: vollständige Flash-Sicherung, wie im Playbook beschrieben.
+
 ## Aufbau
 
     app/core/romi.h, romi.c   der ganze Synthesizer: portables C99 ohne libc und ohne Plattform-Aufrufe

@@ -1,0 +1,117 @@
+# smk37-port.yaml: every decision for the SMK-37 port of ro:MINImal, in one place.
+# The template and its rules: https://github.com/genkigenki/fm1-to-smk37 (smk37-port.yaml, AGENTS.md).
+#
+# STATUS: a draft, nothing ported. The FM-1 version comes first and is finished first (README, "Stand").
+# Filled here: what the playbook's hard rules and the flash map decide. Left open: every panel decision, which
+# per hard rule 8 comes only from the owner's answers. Proposals are comments ("proposal:"), not decisions.
+
+firmware:
+  name: ro:MINImal          # unchanged on the SMK-37 (no "xxx37"); same name, boot and look
+  upstream: ""              # ro:MINImal is the owner's own firmware
+  base: ""                  # the FM-1 release v1.0 the port starts from (not yet released)
+  family: other             # fm1-base (charlesvestal/fm1-base, with felucca-bsp): the X0X / FoMni-1 platform
+                            # (app/{plat_fm1,panel,main_fm1}.c there: device/ in fm1-base), not SLOOP or Felucca
+  board_layer: by_hand      # from genkigenki/fm1-fomni branch smk37 (the closest: same plat.h, panel.c,
+                            # main_fm1.c, storage.c; see the kit's examples/amb.yaml "lessons"), carried into
+                            # fm1-base itself: as a pull request to charlesvestal/fm1-base, or a fork until merged.
+                            # ro:MINImal's own code (app/, app/core/) needs no board code: the core is board-free.
+  lost_on_smk:
+    - the key LEDs (the SMK-37 has none): the steps and the tracks lit on the FM-1's keys move to the pads
+    - TRS MIDI IN (PH8 is a key-matrix row on the SMK): not used by ro:MINImal; USB MIDI in and out stay
+  priorities: []            # open: the owner's, most important first
+
+delivery:
+  mode: own                 # a new firmware of the owner's: no upstream pull request for the app
+  pr: ""                    # the board layer's pull request to fm1-base, once opened
+  fork: ""
+  package: ""               # proposal: rominimal-smk37.fwsc, rominimal-smk37-elite.fwsc, rominimal-smk37-mke.fwsc
+  identity: ""              # the FM-1 identity is FM-1_4700: keep the firmware's own number on the SMK
+                            # (SMK-37 Pro_4700 and the Elite's / MKE's), not a _9NN
+  usb_name: ""              # proposal: "ro:MINImal SMK-37"
+  data_family: ""           # open (1..7 of A-Z 0-9). proposal: ROMINI (own family: other firmwares' data is cleared
+                            # on a switch, and ro:MINImal's on a switch back)
+  copyright: ""
+
+models:                     # one package per model, all three from the start
+  - pro
+  - elite
+  - mke
+
+# ---- flash: decided by the rules, enforced in app/app.c (the flash map asserts) ----
+storage:
+  protected_never_written:  # hard rule 1; app.c asserts none of ro:MINImal's objects touch them
+    - 0x00000-0x03FFF       # header, second-stage boot loader, boot config
+    - 0xC0000-0xC0FFF       # BTIF: Bluetooth pairing
+    - 0xC1000-0xC1FFF       # USRTRIM: the unit's factory calibration (read only, never written)
+    - 0xF4000-0xFDFFF       # USR: stock resources (a return to stock needs them)
+    - 0xFF000-0xFFFFF       # key_mac
+  not_used:
+    - 0xC2000-0xEAFFF       # USRFLASH: the stock synth's user presets. The playbook allows it for big objects of a
+                            # firmware without samples; ro:MINImal does not need it and leaves the presets alone.
+  objects:                  # each a pair of 4 KiB sectors; the same addresses on the FM-1 (fm1-base's data area)
+    settings: 0xB1000       # 24 bytes
+    pattern_a: 0xB3000      # 316 bytes, 412 with 32 locks
+    pattern_b: 0xB5000
+    pattern_c: 0xB7000
+    pattern_d: 0xB9000      # ends at 0xBAFFF: the playbook's window for a firmware's extra objects is full
+    panel: ""               # the platform's panel calibration (FM-1: 0xDC000). On the SMK the board layer's
+                            # layout places it; app.h stops any SMK build until then (#error)
+  growth: >-
+    No room for more objects in the window. More patterns or 32 steps go into the same objects
+    (several patterns per object, up to 3840 bytes each), not into new ranges.
+
+# ---- the panel: open, the owner decides (hard rule 8). Proposals from the ro:MAXImal concept ----
+keys:
+  middle: ""                # proposal: fm1 (keys 5..31 = the FM-1's 27: steps, tracks and tools as on the FM-1)
+  outer: ""                 # proposal: custom (the lowest octave selects and mutes the tracks)
+  velocity: ""              # proposal: factory (the unit's curves, read from 0xC1000, never written)
+
+pads:
+  pattern: ""               # proposal: steps (pad = step of the selected track; hold a pad = edit the step)
+  order: reading
+  colours: ""               # proposal: chance as brightness, accent, lock and link in the screen's orange
+  idle: ""
+  playhead: ""
+  velocity: ""
+
+faders:
+  pattern: ""               # proposal: banks, A: KICK SUB HAT PERC levels, B: STAB CLICK DELAY REVERB
+  takeover: soft            # the playbook's default: a fader acts only once it moves (no jumps on a bank change)
+  bank_button: FADER BANK
+  banks: {}
+  screen: ""
+
+wheels:
+  pitch:
+    target: ""              # proposal: off, or a master filter (needs a new filter in the core: CPU, measure first)
+  mod:
+    target: ""              # proposal: macro, DRIFT
+  calibration: auto
+
+knobs:
+  layout: fm1               # K1 MASTER (virtual pot), K2 SELECT, K3 ALGORITHM, K4 PRESETS, K5-K8 KNOB 1-4
+
+buttons:
+  map: printed
+  names: firmware
+  extra:
+    KNOB BANK: ""
+    FADER BANK: ""
+    "<": ""
+    ">": ""
+
+screen:
+  style: keep               # the same 240 x 240 screen as drawn by the core
+
+pedal: ""                   # proposal: custom (held: every step at 100 % chance, a fill)
+
+open_questions:
+  - priorities on the SMK-37
+  - data family (proposal ROMINI) and USB name
+  - keys: middle, outer, velocity
+  - pads: pattern, colours, idle, playhead, velocity
+  - faders: pattern and banks
+  - wheels: pitch and mod
+  - the four extra buttons
+  - pedal
+  - where fm1-base's SMK-37 board layer comes from: a pull request to charlesvestal/fm1-base, or a fork
