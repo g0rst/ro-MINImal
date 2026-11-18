@@ -28,7 +28,7 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
 enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK,
-       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_NPAGES };
+       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -40,7 +40,8 @@ typedef struct {
     uint8_t flags;
     int8_t note;                        /* semitones from the track's base note, -32..31 */
     int8_t shift;                       /* microtiming, -7..7: sixteenths of a step early or late */
-    uint8_t lock[4];                    /* a sound parameter for this step alone: 0 none, else value + 1 */
+    uint8_t lock[8];                    /* a sound parameter for this step alone: 0 none, else value + 1
+                                         * (0..3 the SOUND page's, 4..7 the SOUND 2 page's) */
     uint8_t rsv;
 } romi_step_t;
 
@@ -48,7 +49,8 @@ typedef struct {
 typedef struct {
     uint8_t rate;                       /* 0..8: 1/16, 1/8, 1/4, 1/2, 1, 2, 4, 8, 16 bars a cycle */
     int8_t depth;                       /* -64..63: how far it moves the value (0..127), either way */
-    uint8_t target;                     /* 0..3 the sound's parameters, 4 level, 5 pan, 6 delay send, 7 reverb send */
+    uint8_t target;                     /* 0..3 the sound's parameters, 4 level, 5 pan, 6 delay send, 7 reverb send,
+                                         * 8..11 the SOUND 2 parameters */
     uint8_t shape;                      /* 0 sine, 1 triangle, 2 saw down, 3 square, 4 random (a new value a cycle) */
 } romi_lfo_t;
 #define ROMI_LFOS 2
@@ -58,6 +60,8 @@ typedef struct {
     uint8_t len;                        /* 1..16: each track loops on its own length (polymetre) */
     uint8_t mute;
     uint8_t p[4];                       /* the sound's four parameters, 0..127 */
+    uint8_t q[4];                       /* SOUND 2: pitch (0..48, 24 = none), then per track: kick click, sub FM
+                                         * time, perc bend time, else attack; drive (kick: pitch time); crush */
     uint8_t level, pan, dly, rev;       /* 0..127 */
     uint8_t eu_hits, eu_rot;            /* the EUCLID page: hits spread over the loop, rotated */
     uint8_t eu_prob;                    /* 0..3: 25, 50, 75, 100 % for all of them */
@@ -97,9 +101,9 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 9u
+#define ROMI_VERSION 10u
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D */
-#define ROMI_OBJ_MAX 464u               /* the largest packed object, in bytes */
+#define ROMI_OBJ_MAX 488u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */

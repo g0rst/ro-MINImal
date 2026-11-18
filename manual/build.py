@@ -112,7 +112,8 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
                               "vorige und nächste Spur; im Tastenmodus die Oktave",
                               "pista anterioară și următoare; în modul clape, octava")),
       ("[[HOME]]", T("page GROOVE", "Seite GROOVE", "pagina GROOVE")),
-      ("[[EDIT]]", T("page SOUND of the track", "Seite SOUND der Spur", "pagina SOUND a pistei")),
+      ("[[EDIT]]", T("page SOUND of the track; pressed again: SOUND 2", "Seite SOUND der Spur; nochmal: SOUND 2",
+                     "pagina SOUND a pistei; apăsat din nou: SOUND 2")),
       ("[[ENV]]", T("page MIX of the track", "Seite MIX der Spur", "pagina MIX a pistei")),
       ("[[FX]]", T("page FX; pressed again: SIDECHAIN", "Seite FX; nochmal gedrückt: SIDECHAIN",
                    "pagina FX; apăsat din nou: SIDECHAIN")),
@@ -192,6 +193,33 @@ table(T(["track", "sound", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["spur", "klang"
                   "un grăunte de zgomot printr-un filtru rezonant, undeva în câmpul stereo"),
        "DECAY", "FREQ", "RESO", "SCATTER"))
 
+p(T("[[EDIT]] twice opens SOUND 2, which shapes the voice. [[KNOB1]] PITCH moves the whole track up to 24 semitones "
+    "either way. [[KNOB2]] is the attack for hat, stab and click (from a click to a swell), and for the other three "
+    "a time that was fixed: the kick's CLICK, the sub's FM.TIME, the percussion's B.TIME (its bend). [[KNOB3]] is "
+    "DRIVE, a saturation from warm to broken (the kick has its own on SOUND; here it has P.TIME, how fast its pitch "
+    "falls). [[KNOB4]] CRUSH lowers the bit depth and the sample rate. Out of the box everything sounds as it did "
+    "before the page existed. All of it can be locked per step and moved by the LFOs.",
+    "[[EDIT]] zweimal öffnet SOUND 2, das die Stimme formt. [[KNOB1]] PITCH verschiebt die ganze Spur um bis zu 24 "
+    "Halbtöne. [[KNOB2]] ist der Einsatz (Attack) bei Hat, Stab und Click (vom Knacken bis zum Anschwellen), bei den "
+    "anderen drei eine bisher feste Zeit: CLICK der Kick, FM.TIME des Sub, B.TIME der Percussion (ihr Bend). "
+    "[[KNOB3]] ist DRIVE, eine Sättigung von warm bis kaputt (die Kick hat ihre auf SOUND; hier P.TIME, wie schnell "
+    "ihre Tonhöhe fällt). [[KNOB4]] CRUSH senkt Bittiefe und Samplerate. Ab Werk klingt alles wie vor dieser Seite. "
+    "Alles lässt sich pro Step locken und mit den LFOs bewegen.",
+    "[[EDIT]] de două ori deschide SOUND 2, care modelează vocea. [[KNOB1]] PITCH mută toată pista cu până la 24 de "
+    "semitonuri. [[KNOB2]] este atacul pentru hat, stab și click (de la un click la o umflare), iar pentru celelalte "
+    "trei un timp care era fix: CLICK al kick-ului, FM.TIME al sub-ului, B.TIME al percuției (bend-ul ei). "
+    "[[KNOB3]] este DRIVE, o saturație de la cald la distrus (kick-ul o are pe SOUND; aici are P.TIME, cât de repede "
+    "îi scade înălțimea). [[KNOB4]] CRUSH scade adâncimea de biți și rata de eșantionare. Din fabrică totul sună ca "
+    "înainte de această pagină. Totul se poate bloca pe pas și mișca prin LFO-uri."))
+table(T(["track", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["spur", "KNOB1", "KNOB2", "KNOB3", "KNOB4"],
+        ["pistă", "KNOB1", "KNOB2", "KNOB3", "KNOB4"]),
+      ("KICK", "PITCH", "CLICK", "P.TIME", "CRUSH"),
+      ("SUB", "PITCH", "FM.TIME", "DRIVE", "CRUSH"),
+      ("HAT", "PITCH", "ATTACK", "DRIVE", "CRUSH"),
+      ("PERC", "PITCH", "B.TIME", "DRIVE", "CRUSH"),
+      ("STAB", "PITCH", "ATTACK", "DRIVE", "CRUSH"),
+      ("CLICK", "PITCH", "ATTACK", "DRIVE", "CRUSH"))
+
 p(T("NEW (the fourth black key from the right) renews the selected track, and only it, in the groove the others "
     "make: the kick tuned to the key, the sub between the kicks starting on the root, the hats on the off-beat, the "
     "percussion turned off the kick, the stab a phrase in the scale. Its colour (for hat, percussion, stab and "
@@ -244,20 +272,20 @@ img("lock", T("Step 1 of the kick with its own TUNE.", "Step 1 der Kick mit eige
 h("b", 4, SAME("lfo"))
 p(T("Every track has two LFOs: slow waves in time with the groove. [[LFO]] opens the first, [[LFO]] again the "
     "second. RATE is one cycle, from a sixteenth to sixteen bars. DEPTH moves the value either way, up to half its "
-    "range; zero is off. TARGET is one of the track's four sound parameters, or LEVEL, PAN, DELAY, REVERB. SHAPE: "
+    "range; zero is off. TARGET is one of the track's sound parameters (SOUND or SOUND 2), or LEVEL, PAN, DELAY, REVERB. SHAPE: "
     "SINE, TRI, SAW, SQR, or RAND (a new value each cycle). Both LFOs may move the same value. The sound parameters "
     "take the LFO at each hit; level, pan and the sends follow it all the time. The LFOs start with the groove at "
     "PLAY and are kept with the pattern.",
     "Jede Spur hat zwei LFOs: langsame Wellen im Takt des Grooves. [[LFO]] öffnet den ersten, nochmal [[LFO]] den "
     "zweiten. RATE ist ein Durchlauf, von einer Sechzehntel bis sechzehn Takte. DEPTH bewegt den Wert in beide "
-    "Richtungen, bis zur Hälfte seines Bereichs; null ist aus. TARGET ist einer der vier Klangparameter der Spur oder "
-    "LEVEL, PAN, DELAY, REVERB. SHAPE: SINE, TRI, SAW, SQR oder RAND (ein neuer Wert pro Durchlauf). Beide LFOs "
+    "Richtungen, bis zur Hälfte seines Bereichs; null ist aus. TARGET ist ein Klangparameter der Spur (SOUND oder "
+    "SOUND 2) oder LEVEL, PAN, DELAY, REVERB. SHAPE: SINE, TRI, SAW, SQR oder RAND (ein neuer Wert pro Durchlauf). Beide LFOs "
     "dürfen denselben Wert bewegen. Klangparameter übernehmen den LFO bei jedem Schlag; Pegel, Pan und Sends folgen "
     "ihm ständig. Die LFOs starten mit dem Groove bei PLAY und werden mit dem Pattern gespeichert.",
     "Fiecare pistă are două LFO-uri: unde lente în ritmul groove-ului. [[LFO]] îl deschide pe primul, încă o dată "
     "[[LFO]] pe al doilea. RATE este un ciclu, de la o șaisprezecime la șaisprezece măsuri. DEPTH mută valoarea în "
-    "ambele direcții, până la jumătate din domeniu; zero înseamnă oprit. TARGET este unul dintre cei patru parametri "
-    "de sunet ai pistei sau LEVEL, PAN, DELAY, REVERB. SHAPE: SINE, TRI, SAW, SQR sau RAND (o valoare nouă la fiecare "
+    "ambele direcții, până la jumătate din domeniu; zero înseamnă oprit. TARGET este un parametru de sunet al pistei "
+    "(SOUND sau SOUND 2) sau LEVEL, PAN, DELAY, REVERB. SHAPE: SINE, TRI, SAW, SQR sau RAND (o valoare nouă la fiecare "
     "ciclu). Ambele LFO-uri pot mișca aceeași valoare. Parametrii de sunet preiau LFO-ul la fiecare lovitură; "
     "nivelul, pan-ul și send-urile îl urmează tot timpul. LFO-urile pornesc cu groove-ul la PLAY și se salvează cu "
     "pattern-ul."))
@@ -267,6 +295,7 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
         ["buton", "pagină", "KNOB1", "KNOB2", "KNOB3", "KNOB4"]),
       ("[[HOME]]", "GROOVE", "TEMPO<br>90 – 150", "SWING<br>50 – 75 %", "DRIFT", "DUCK"),
       ("[[EDIT]]", "SOUND", T("see “six tracks”", "siehe „sechs spuren“", "vezi „șase piste”"), "", "", ""),
+      ("[[EDIT]] ×2", "SOUND 2", "PITCH", T("see above", "siehe oben", "vezi mai sus"), "DRIVE", "CRUSH"),
       ("[[ENV]]", "MIX", "LEVEL", "PAN", "DELAY", "REVERB"),
       ("[[FX]]", "FX", "D.TIME<br>1/16, 1/8, 3/16", "D.FDBK", "R.SIZE", "R.DAMP"),
       ("[[FX]] ×2", "SIDECHAIN", "SOURCE", "DEPTH", "RELEASE", "AMOUNT"),

@@ -782,6 +782,74 @@ int main(int argc, char **argv)
         CHECK(romi_project()->pat[0].tr[ROMI_PERC].mute, "SEL tapped: not muted");
     }
 
+    /* SOUND 2: EDIT twice; PITCH moves the track's notes; DRIVE, CRUSH and ATTACK change the sound and stay
+     * bounded; a step held on SOUND 2 takes locks there (kept by the store); an LFO can aim at them */
+    {
+        static uint8_t obj[ROMI_OBJ_MAX];
+        romi_track_t *sub, *hat;
+        uint32_t h_plain, h, n;
+        int k, which;
+        tap_button(ROMI_B_PLAY);                    /* (stopped) */
+        romi_init(66);
+        tap_button(ROMI_B_EDIT);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SOUND, "EDIT: page %d", romi_state(ROMI_Q_PAGE));
+        tap_button(ROMI_B_EDIT);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SOUND2, "EDIT twice: page %d", romi_state(ROMI_Q_PAGE));
+        snprintf(path, sizeof path, "%s/screen-sound2.ppm", out);
+        write_screen(path);
+        tap_button(ROMI_B_EDIT);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SOUND, "EDIT three times: page %d", romi_state(ROMI_Q_PAGE));
+        /* PITCH: the sub's notes, five up */
+        sub = &romi_project()->pat[0].tr[ROMI_SUB];
+        sub->follow = 0;
+        for (k = 0; k < 16; k++) { sub->step[k].flags = (uint8_t)(k == 2 ? 0x80 : 0); sub->step[k].note = 3; }
+        tap_key(3);                                 /* SUB */
+        tap_button(ROMI_B_EDIT);                    /* (SOUND 2) */
+        turn(ROMI_E_K1, 5);
+        CHECK(sub->q[0] == 29, "PITCH +5: %d", sub->q[0]);
+        tap_button(ROMI_B_PLAY);
+        run(0.4, 0, 0, 0);
+        tap_button(ROMI_B_PLAY);
+        CHECK(romi_state(ROMI_Q_NOTE + ROMI_SUB) == 8, "PITCH +5 on a note 3: played %d",
+              romi_state(ROMI_Q_NOTE + ROMI_SUB));
+        /* DRIVE, CRUSH, ATTACK: each changes the hats, and the sound stays bounded */
+        for (which = 0; which < 4; which++) {
+            romi_init(67);
+            romi_project()->drift = 0;
+            for (k = 0; k < ROMI_TRACKS; k++) romi_project()->pat[0].tr[k].mute = (uint8_t)(k != ROMI_HAT);
+            hat = &romi_project()->pat[0].tr[ROMI_HAT];
+            if (which == 1) hat->q[2] = 110;        /* drive */
+            if (which == 2) hat->q[3] = 100;        /* crush */
+            if (which == 3) hat->q[1] = 90;         /* attack */
+            tap_button(ROMI_B_PLAY);
+            h = run(2.0, 0, &peak, &rms);
+            tap_button(ROMI_B_PLAY);
+            if (!which) h_plain = h;
+            else CHECK(h != h_plain, "SOUND 2 %d changed nothing", which);
+            CHECK(peak <= 1.0 && rms > 0.001, "SOUND 2 %d: peak %f rms %f", which, peak, rms);
+        }
+        /* a lock on SOUND 2 (the stab's DRIVE), kept by the store */
+        romi_init(68);
+        tap_key(10);                                /* STAB */
+        tap_button(ROMI_B_EDIT); tap_button(ROMI_B_EDIT);
+        held_k = 1u << 9; frame(0);                 /* step 6 */
+        turn(ROMI_E_K3, 10);
+        held_k = 0; frame(0); frame(0);
+        CHECK(romi_project()->pat[0].tr[ROMI_STAB].step[5].lock[6] == 41 &&
+              romi_project()->pat[0].tr[ROMI_STAB].q[2] == 0, "SOUND 2 lock: %d (track %d)",
+              romi_project()->pat[0].tr[ROMI_STAB].step[5].lock[6], romi_project()->pat[0].tr[ROMI_STAB].q[2]);
+        n = romi_store_get(1, obj, sizeof obj);
+        romi_init(69);
+        CHECK(romi_store_set(1, obj, n) == 0 && romi_project()->pat[0].tr[ROMI_STAB].step[5].lock[6] == 41,
+              "SOUND 2 lock after load: %d", romi_project()->pat[0].tr[ROMI_STAB].step[5].lock[6]);
+        /* an LFO aimed at SOUND 2 */
+        tap_key(10);
+        tap_button(ROMI_B_LFO);
+        turn(ROMI_E_K3, 20);
+        CHECK(romi_project()->pat[0].tr[ROMI_STAB].lfo[0].target == 11, "LFO target: %d",
+              romi_project()->pat[0].tr[ROMI_STAB].lfo[0].target);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);
