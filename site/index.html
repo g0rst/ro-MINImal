@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ro:MINImal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* The project's front door, in the manual's white-label look: paper, black, one orange. One column of links. */
+:root {
+  color-scheme: light;
+  --paper: #f4f4f1; --ink: #111110; --soft: #6b6b66; --hair: #cfcfc9; --signal: #e2551f;
+  --sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --paper: #0e0e0d; --ink: #e9e8e2; --soft: #8f8e87; --hair: #2c2c29; --signal: #ff6a33; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --paper: #0e0e0d; --ink: #e9e8e2; --soft: #8f8e87; --hair: #2c2c29; --signal: #ff6a33; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.55 var(--sans); }
+main { max-width: 600px; margin: 0 auto; padding: 56px 20px 80px; }
+h1 { margin: 0; font: 500 clamp(40px, 12vw, 68px)/1 var(--sans); letter-spacing: -.03em; }
+h1 span { color: var(--soft); font-weight: 400; }
+.what { margin: 14px 0 40px; font: 400 13px/1.5 var(--mono); letter-spacing: .04em; text-transform: lowercase; color: var(--soft); }
+a.row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 16px 2px;
+  border-top: 1px solid var(--hair); color: var(--ink); text-decoration: none; }
+a.row:last-of-type { border-bottom: 1px solid var(--hair); }
+a.row b { font-weight: 500; font-size: 18px; }
+a.row span { font: 400 12px/1.4 var(--mono); color: var(--soft); text-align: right; }
+a.row.main { border-top: 2px solid var(--ink); }
+a.row.main b::before { content: ""; display: inline-block; width: 0; height: 0; margin-right: 10px;
+  border-left: 11px solid var(--signal); border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+a.row:hover b { text-decoration: underline; text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+p.small { margin: 8px 0 22px; color: var(--soft); font-size: 14px; max-width: 58ch; }
+p.warn { margin-top: 36px; border-left: 3px solid var(--signal); padding-left: 14px; font-size: 14px; max-width: 58ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1><span>ro:</span>MINI<span>mal</span></h1>
+  <p class="what">firmware für den m-vave fm-1 · rominimal und microhouse</p>
+
+  <a class="row main" href="https://joakimeriksson.github.io/fm1-emu/?package=https%3A%2F%2Fg0rst.github.io%2Fro-MINImal%2Frominimal.fwsc&amp;name=ro%3AMINImal"><b>Im FM-1-Emulator testen</b><span>echte firmware · ohne gerät</span></a>
+  <p class="small">Hier läuft das echte Firmware-Paket in einem emulierten FM-1 (fm1-emu von Joakim Eriksson). Im Emulator auf Start klicken, dann PLAY STOP drücken. Am besten am Computer in Chrome oder Edge.</p>
+
+  <a class="row" href="manual.html#de"><b>Handbuch</b><span>deutsch</span></a>
+  <a class="row" href="manual.html#en"><b>Manual</b><span>english</span></a>
+  <a class="row" href="manual.html#ro"><b>Manual</b><span>română</span></a>
+  <a class="row" href="testseite.html"><b>Browser-Testseite</b><span>derselbe klangkern · auch am handy</span></a>
+  <a class="row" href="rominimal.fwsc"><b>rominimal.fwsc herunterladen</b><span>firmware-paket</span></a>
+  <a class="row" href="https://github.com/g0rst/ro-MINImal#readme"><b>Quellcode und Anleitung</b><span>github</span></a>
+
+  <p class="warn">Noch nicht auf echter Hardware getestet: Installieren auf eigene Gefahr. Vorher den Weg zurück zur Firmware von M-VAVE kennen (FM-1 Firmware Hub oder M-VAVEs Updater). MIT-Lizenz.</p>
+</main>
+</body>
+</html>

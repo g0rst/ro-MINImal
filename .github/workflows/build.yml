@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: MIT
 # Builds ro:MINImal on every push: the host tests and the browser test page first, then the firmware package for
 # the FM-1 with JieLi's toolchain and AC79 SDK (fetched by fm1-base's own scripts, at the commit base/ is pinned to).
-# The package is kept as a workflow artifact. Nothing is released: the firmware has not run on an FM-1 yet.
+# The package is kept as a workflow artifact, and a push to main publishes the site (GitHub Pages): the package, a
+# link that opens it in fm1-emu, the manual and the browser test page. Pages must be set once to deploy from
+# GitHub Actions (Settings > Pages > Source: GitHub Actions). Nothing is released: the firmware has not run on an
+# FM-1 yet.
 name: build
 
 on:
@@ -94,9 +97,48 @@ jobs:
           sha256sum app/build/rominimal.fwsc
       - uses: actions/upload-artifact@v4
         with:
-          name: rominimal-firmware-UNTESTED-${{ github.sha }}
+          name: firmware
           path: |
             app/build/rominimal.fwsc
             app/build/rominimal.bin
             app/build/firmware.json
           if-no-files-found: error
+
+  pages:
+    # the site: the package, a link that opens it in fm1-emu, the manual, the browser test page
+    needs: firmware
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          path: dist
+      - name: Build the site
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang lld
+          python3 -m pip install -q Pillow
+          sh tests/run_tests.sh >/dev/null    # (the screens the manual shows)
+          sh sim/build.sh
+          python3 manual/build.py
+          mkdir -p _site
+          cp site/index.html _site/
+          cp docs/manual.html _site/manual.html
+          cp docs/index.html _site/testseite.html
+          cp dist/rominimal.fwsc dist/firmware.json _site/
+          (cd _site && sha256sum rominimal.fwsc > SHA256SUMS)
+          ls -l _site
+      - uses: actions/upload-pages-artifact@v3
+      - id: deploy
+        uses: actions/deploy-pages@v4

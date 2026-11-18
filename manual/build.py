@@ -27,6 +27,8 @@ TITLE = T("manual", "handbuch", "manual")
 SUB = T("firmware for the m-vave fm-1 · rominimal and microhouse",
         "firmware für den m-vave fm-1 · rominimal und microhouse",
         "firmware pentru m-vave fm-1 · rominimal și microhouse")
+EMU = T("try it in the fm-1 emulator, no device needed", "im fm-1-emulator testen, ohne gerät",
+        "încearcă în emulatorul fm-1, fără aparat")
 SIDES = {
     "a": T("start", "anfang", "început"),
     "b": T("steps and sound", "steps und klang", "pași și sunet"),
@@ -489,6 +491,7 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.
 .langs a { color: var(--soft); text-decoration: none; padding: 6px 10px; border: 1px solid transparent; border-radius: 999px; }
 .langs a[aria-current="true"] { color: var(--ink); border-color: var(--ink); }
 .langs a:hover { color: var(--ink); }
+.top a.out { color: var(--ink); }
 a:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
 .cover { padding: 64px 0 56px; border-bottom: 1px solid var(--ink); }
@@ -496,6 +499,8 @@ a:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 .cover h1 span { color: var(--soft); font-weight: 400; }
 .cover .what { margin: 18px 0 0; font: 400 13px/1.5 var(--mono); letter-spacing: .04em; text-transform: lowercase; color: var(--soft); }
 .cover .what b { color: var(--ink); font-weight: 500; }
+.what.try { margin-top: 28px; }
+.what.try a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--signal); padding-bottom: 2px; }
 .disc { display: flex; gap: 6px; margin-top: 44px; }
 .disc i { width: 13px; height: 13px; background: var(--cell); }
 .disc i.k { background: var(--ink); }
@@ -554,7 +559,7 @@ article[hidden] { display: none; }
 <body>
 <div class="wrap">
   <div class="top">
-    <span>ro:MINImal · @@DATE@@</span>
+    <span>ro:MINImal · @@DATE@@ · <a class="out" href="https://g0rst.github.io/ro-MINImal/">emulator, test page, download</a></span>
     <nav class="langs" aria-label="language">
       <a href="#en" data-l="en">english</a><a href="#de" data-l="de">deutsch</a><a href="#ro" data-l="ro">română</a>
     </nav>
@@ -592,6 +597,7 @@ COVER = """<article id="m-{lang}" lang="{lang}"{hidden}>
     <h1><span>ro:</span>MINI<span>mal</span></h1>
     <p class="what"><b>{title}</b> · {sub}</p>
     <div class="disc" aria-hidden="true">{disc}</div>
+    <p class="what try"><a href="https://joakimeriksson.github.io/fm1-emu/?package=https%3A%2F%2Fg0rst.github.io%2Fro-MINImal%2Frominimal.fwsc&amp;name=ro%3AMINImal">▶ {emu}</a></p>
   </header>
 {body}
 </article>"""
@@ -599,7 +605,7 @@ COVER = """<article id="m-{lang}" lang="{lang}"{hidden}>
 
 def main():
     disc = "".join(f'<i class="{c}"></i>' for c in ["k", "", "", "", "k", "", "", "s", "k", "", "", "", "k", "", "", ""])
-    arts = "\n".join(COVER.format(lang=l, hidden="" if l == "en" else " hidden", title=TITLE[l], sub=SUB[l], disc=disc,
+    arts = "\n".join(COVER.format(lang=l, hidden="" if l == "en" else " hidden", title=TITLE[l], sub=SUB[l], disc=disc, emu=EMU[l],
                                   body=render(l)) for l in LANGS)
     import datetime
     page = PAGE.replace("@@ARTICLES@@", arts).replace("@@DATE@@", datetime.date.today().strftime("%Y-%m"))

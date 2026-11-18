@@ -6,10 +6,14 @@ Groove-Generator. Dazu Tempo-Delay, Reverb und Kick-Ducking.
 
 ![Display](docs/screen.png)
 
-**Handbuch:** `docs/manual.html`, in Englisch, Deutsch und Rumänisch (Quelle: `manual/build.py`).
+**Ohne Gerät ausprobieren:** https://g0rst.github.io/ro-MINImal/ (dort im FM-1-Emulator testen: das echte
+Firmware-Paket in fm1-emu)
+
+**Handbuch:** https://g0rst.github.io/ro-MINImal/manual.html, in Englisch, Deutsch und Rumänisch (Quelle:
+`manual/build.py`).
 
 **Im Browser testen:** `docs/index.html` öffnen. Die Seite enthält denselben C-Kern wie die Firmware
-(als WebAssembly) und bildet Display, Regler, Tasten und die 27 Keys des FM-1 in der Anordnung des Geräts nach.
+(als WebAssembly; online: https://g0rst.github.io/ro-MINImal/testseite.html) und bildet Display, Regler, Tasten und die 27 Keys des FM-1 in der Anordnung des Geräts nach.
 
 K1 bis K4 heißen am Gerät KNOB1 bis KNOB4, ALGO und PRESET heißen ALGORITHM und PRESETS.
 
@@ -20,7 +24,7 @@ K1 bis K4 heißen am Gerät KNOB1 bis KNOB4, ALGO und PRESET heißen ALGORITHM u
 | Kern (`app/core/romi.c`): Klang, Sequencer, Generator, Display | läuft, Host-Tests grün (`tests/run_tests.sh`) |
 | Browser-Testseite (`docs/index.html`) | läuft (WebAssembly aus demselben Kern) |
 | FM-1-Anbindung (`app/app.c`) im Host-Simulator von fm1-base | läuft, Testskript `app/tests/basic.txt` grün (inkl. Speichern und Neustart) |
-| Firmware-Paket `.fwsc` für das Gerät | wird bei jedem Push von GitHub Actions gebaut (Artefakt `rominimal-firmware-UNTESTED-…` im Lauf „build“); besteht die Prüfungen von fm1-base (Image 107 KB, RAM 42 von 96 KB) |
+| Firmware-Paket `.fwsc` für das Gerät | wird bei jedem Push von GitHub Actions gebaut (Artefakt `firmware` im Lauf „build“, und auf der Projektseite); besteht die Prüfungen von fm1-base (Image 107 KB, RAM 42 von 96 KB) |
 | Lauf auf einem echten FM-1 | **noch nicht getestet** |
 
 Das Paket ist gebaut, aber nie auf einem Gerät gestartet. Offen bis zum ersten Lauf auf der Hardware: CPU-Last des Renderers, ob der Audio-Pfad aus dem RAM laufen
@@ -126,7 +130,8 @@ Gerät, Simulator und Browser dasselbe Bild.
     ./build.sh --host         # Host-Simulator von fm1-base (python3, Pillow, cc)
     ./build.sh                # Firmware-Paket app/build/rominimal.fwsc (JieLi-Toolchain, AC79-SDK)
 
-Ohne eigene Toolchain: Das Paket liegt als Artefakt an jedem Lauf des Workflows `build` unter Actions
+Ohne eigene Toolchain: Das Paket liegt auf der Projektseite (https://g0rst.github.io/ro-MINImal/rominimal.fwsc)
+und als Artefakt `firmware` an jedem Lauf des Workflows `build` unter Actions
 (`.github/workflows/build.yml`). JieLis SDK kommt dort von Gitee, das GitHub-Repository des SDK gibt es nicht
 mehr (`SDK_URL=https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git` für `get_sdk.sh`).
 
