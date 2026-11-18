@@ -48,7 +48,7 @@ expect unsaved 1
 tap SAVE
 wait 50
 expect unsaved 0
-expect store_writes 1
+expect store_writes 5
 reboot
 wait 600
 expect bpm 123

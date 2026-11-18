@@ -346,7 +346,7 @@ ul(T("A project holds four patterns, A to D. [[PRESETS]] changes the pattern; wh
    T("Copy only the selected track: hold [[SAVE]], turn [[SELECT]] to the target pattern, let go.",
      "Nur die gewählte Spur kopieren: [[SAVE]] halten, [[SELECT]] zum Ziel-Pattern drehen, loslassen.",
      "Copiază doar pista selectată: ține [[SAVE]], rotește [[SELECT]] până la pattern-ul țintă, eliberează."),
-   T("A tap on [[SAVE]] writes the project to the device. The sound stops for a moment. Nothing is saved on its own.",
+   T("A tap on [[SAVE]] writes the changes to the device. The sound stops for a moment. Nothing is saved on its own.",
      "Ein kurzer Druck auf [[SAVE]] schreibt das Projekt ins Gerät. Der Ton setzt kurz aus. Nichts wird von selbst gespeichert.",
      "O apăsare scurtă pe [[SAVE]] scrie proiectul în aparat. Sunetul se oprește o clipă. Nimic nu se salvează singur."),
    T("UNDO, the last black key, takes back the last change to a pattern. Pressed again, it brings the change back. "
@@ -401,7 +401,17 @@ table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
          "Ține [[SAVE]], [[PRESETS]] la B, eliberează. În B apasă [[ARP]] pe câteva piste. [[GLO]], CHAIN A-B. DRIFT în jur de 60.")))
 
 h("d", 4, T("small print", "kleingedrucktes", "litere mici"))
-ul(T("One level of undo per change. A hold on [[LFO]] of about half a second is a solo.",
+ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A step moves at most 7/16 of a step, "
+     "the whole track 8/16 more, together half a sixteenth. Notes reach 32 semitones down and 31 up.",
+     "Bis zu 32 Locks pro Pattern; ein weiterer und das Display zeigt LOCKS FULL. Ein Step verschiebt sich höchstens um "
+     "7/16 Step, die ganze Spur um weitere 8/16, zusammen eine halbe Sechzehntel. Noten reichen 32 Halbtöne nach unten "
+     "und 31 nach oben.",
+     "Până la 32 de lock-uri pe pattern; încă unul și ecranul arată LOCKS FULL. Un pas se mută cel mult 7/16 de pas, "
+     "toată pista încă 8/16, împreună o jumătate de șaisprezecime. Notele ajung la 32 de semitonuri în jos și 31 în sus."),
+   T("[[SAVE]] writes only what changed: the settings and each pattern are kept apart. USB carries MIDI only.",
+     "[[SAVE]] schreibt nur, was sich geändert hat: Einstellungen und jedes Pattern liegen getrennt. Über USB läuft nur MIDI.",
+     "[[SAVE]] scrie doar ce s-a schimbat: setările și fiecare pattern sunt păstrate separat. Prin USB trece doar MIDI."),
+   T("One level of undo per change. A hold on [[LFO]] of about half a second is a solo.",
      "Eine Undo-Stufe pro Änderung. [[LFO]] etwa eine halbe Sekunde halten ist Solo.",
      "Un singur nivel de undo pe schimbare. [[LFO]] ținut cam o jumătate de secundă înseamnă solo."),
    T("At slow tempos a long delay time does not fit; the delay then takes the next shorter value.",

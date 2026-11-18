@@ -37,8 +37,8 @@ enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROM
 
 typedef struct {
     uint8_t flags;
-    int8_t note;                        /* semitones from the track's base note */
-    int8_t shift;                       /* microtiming, -8..8: sixteenths of a step early or late */
+    int8_t note;                        /* semitones from the track's base note, -32..31 */
+    int8_t shift;                       /* microtiming, -7..7: sixteenths of a step early or late */
     uint8_t lock[4];                    /* a sound parameter for this step alone: 0 none, else value + 1 */
     uint8_t rsv;
 } romi_step_t;
@@ -57,7 +57,6 @@ typedef struct {
     int8_t tshift;                      /* microtiming of the whole track, -8..8, added to each step's shift */
     uint8_t dep_mode;                   /* 0 WITH: only on its hits; 1 GAPS: only where it is silent; 2 AFTER: a step later */
     uint8_t follow;                     /* 0 none, else track + 1 whose notes transpose this track's (its harmony) */
-    uint8_t rsv2[3];
 } romi_track_t;
 
 typedef struct {
@@ -65,8 +64,6 @@ typedef struct {
 } romi_pattern_t;
 
 typedef struct {
-    uint32_t magic;                     /* ROMI_MAGIC */
-    uint16_t version, size;
     uint8_t bpm;                        /* 90..150 */
     uint8_t swing;                      /* 50..75 % */
     uint8_t drift;                      /* 0..127: slow random movement of timbre, level and timing */
@@ -80,13 +77,18 @@ typedef struct {
     uint8_t chain;                      /* 0: off; 1..3: patterns A-B, A-C, A-D in turn, four bars each */
     uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
     uint8_t sc_rel;                     /* 0..127: how fast the ducking lets go */
-    uint8_t rsv;
     romi_pattern_t pat[ROMI_PATTERNS];
-    uint32_t sum;                       /* over everything before it */
 } romi_project_t;
 
-#define ROMI_MAGIC 0x314D4F52u          /* "ROM1" */
-#define ROMI_VERSION 7u
+/* What is kept is not this struct but packed objects (romi.c, "store"): the settings, and each pattern on its own,
+ * steps in two bytes and the locks as a list. Hence these limits, which every edit keeps to: */
+#define ROMI_MAX_LOCKS 32               /* per pattern */
+#define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
+#define ROMI_NOTE_MIN (-32)
+#define ROMI_NOTE_MAX 31
+#define ROMI_VERSION 8u
+#define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D */
+#define ROMI_OBJ_MAX 420u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */
@@ -108,10 +110,13 @@ void romi_draw(uint16_t *px, int strip);   /* strip's 240 x 48 pixels, RGB565 */
 void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint32_t *dim_keys);
 void romi_message(const char *a, const char *b);
 
-/* ---- the project, for the platform's storage ---- */
-uint32_t romi_project_get(void *dst, uint32_t max);       /* bytes written (0: too small) */
-int romi_project_set(const void *src, uint32_t len);      /* 0 = loaded; else nothing changed */
-int romi_save_wanted(void);             /* 1 once after SAVE: the platform writes the project */
+/* ---- the project, for the platform's storage: ROMI_NOBJ objects, each saved and loaded on its own ---- */
+uint32_t romi_store_get(int obj, void *dst, uint32_t max);   /* the object packed: its bytes (0: too small) */
+int romi_store_set(int obj, const void *src, uint32_t len);  /* 0 = loaded; else this object is left as it was */
+/* once after SAVE: bit k, object k changed since it was last loaded or saved (0: nothing to write). The platform
+ * writes those, calling romi_store_saved(k) for each one written */
+uint32_t romi_save_wanted(void);
+void romi_store_saved(int obj);
 
 /* ---- for tests and the simulator ---- */
 int romi_state(int what);

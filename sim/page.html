@@ -379,12 +379,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
       seenK = li[1]; seenDK = li[3];
       for (j = 0; j < 27; j++) { keyEl[j].classList.toggle("on", (seenK >>> j & 1) === 1); keyEl[j].classList.toggle("dim", (seenDK >>> j & 1) === 1); }
     }
-    var n = w.sim_save();
-    if (n) {
+    var mask = w.sim_save();          /* each changed object under its own key, as the device keeps them */
+    for (j = 0; j < 5; j++) {
+      if (!(mask >>> j & 1)) continue;
       try {
-        var b = new Uint8Array(w.memory.buffer, w.sim_prj(), n), s = "";
-        for (j = 0; j < n; j++) s += String.fromCharCode(b[j]);
-        localStorage.setItem("ro-minimal-project", btoa(s));
+        var n = w.sim_store_get(j), b = new Uint8Array(w.memory.buffer, w.sim_prj(), n), s = "", q;
+        for (q = 0; q < n; q++) s += String.fromCharCode(b[q]);
+        localStorage.setItem("ro-minimal-obj-" + j, btoa(s));
+        w.sim_store_saved(j);
       } catch (e) {}
     }
     requestAnimationFrame(frame);
@@ -400,11 +402,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     w = r.instance.exports;
     w.sim_init((Date.now() & 0x7fffffff) | 1);
     try {
-      var s = localStorage.getItem("ro-minimal-project");
-      if (s) {
+      localStorage.removeItem("ro-minimal-project");   /* (the old, whole-project format) */
+      for (var k = 0; k < 5; k++) {
+        var s = localStorage.getItem("ro-minimal-obj-" + k);
+        if (!s) continue;
         var raw2 = atob(s), b = new Uint8Array(w.memory.buffer, w.sim_prj(), raw2.length);
         for (var j = 0; j < raw2.length; j++) b[j] = raw2.charCodeAt(j);
-        w.sim_load(raw2.length);
+        w.sim_store_set(k, raw2.length);
       }
     } catch (e) {}
     requestAnimationFrame(frame);

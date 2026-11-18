@@ -10,9 +10,10 @@
 #define APP_SPLASH_RGB RGB(255, 98, 44)
 #define APP_BLOCK 256u                   /* frames per audio block: 5.8 ms */
 
-/* the store: the project (settings and four patterns, about 1 KiB), and the platform's panel calibration */
-enum { OBJ_PROJECT, OBJ_PANEL, OBJ_NOBJ };
-#define APP_STORE_MAP {0xFC000u, 0xDC000u}
+/* the store: the settings, each pattern on its own (about 400 bytes packed: core/romi.c "store"), and the
+ * platform's panel calibration */
+enum { OBJ_SETTINGS, OBJ_PANEL, OBJ_PAT_A, OBJ_PAT_B, OBJ_PAT_C, OBJ_PAT_D, OBJ_NOBJ };
+#define APP_STORE_MAP {0xFC000u, 0xDC000u, 0xD4000u, 0xD6000u, 0xD8000u, 0xDA000u}   /* two 4 KiB sectors each */
 
 /* the contract: the platform calls these */
 void app_init(void);

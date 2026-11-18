@@ -14,10 +14,13 @@ _Static_assert((int)ROMI_B_FX == B_FX && (int)ROMI_B_SEL == B_SEL && (int)ROMI_B
 _Static_assert((int)ROMI_E_SELECT == EN_SELECT && (int)ROMI_E_ALGO == EN_ALGO && (int)ROMI_E_PRESET == EN_PRESET &&
                (int)ROMI_E_K1 == EN_K1 && (int)ROMI_E_K4 == EN_K4 && (int)ROMI_NE == NE, "encoders");
 _Static_assert(ROMI_NKEYS == NKEYS, "keys");
-_Static_assert(sizeof(romi_project_t) <= PLAT_STORE_MAX, "the project fits one store object");
+_Static_assert(ROMI_OBJ_MAX <= PLAT_STORE_MAX, "a packed object fits a store object");
+_Static_assert(ROMI_NOBJ == 5 && ROMI_PATTERNS == 4, "settings and four patterns: app.h's objects");
 _Static_assert(ROMI_W * ROMI_STRIP_H <= CV_MAX, "a strip fits the canvas");
 
-static uint8_t prj_buf[sizeof(romi_project_t)];
+static uint8_t prj_buf[ROMI_OBJ_MAX];
+/* the core's objects (0 the settings, 1..4 patterns A..D) as the platform's */
+static const uint8_t PLAT_OBJ[ROMI_NOBJ] = {OBJ_SETTINGS, OBJ_PAT_A, OBJ_PAT_B, OBJ_PAT_C, OBJ_PAT_D};
 
 /* ------------------------------------------------------------------ audio --- */
 void app_render(int32_t *lr, uint32_t n, uint32_t master_q12)
@@ -43,11 +46,13 @@ void app_panic(void) { romi_panic(); }
 /* ------------------------------------------------------------------- boot --- */
 void app_init(void)
 {
-    int n;
+    int n, k;
     romi_init(plat_ticks24() ^ 0x524F4D49u);
-    n = plat_store_load(OBJ_PROJECT, prj_buf, sizeof prj_buf);
-    if (n > 0)
-        (void)romi_project_set(prj_buf, (uint32_t)n);   /* refused (another version, damaged): the fresh groove stays */
+    for (k = 0; k < ROMI_NOBJ; k++) {               /* each on its own: a damaged pattern leaves the others */
+        n = plat_store_load(PLAT_OBJ[k], prj_buf, sizeof prj_buf);
+        if (n > 0)
+            (void)romi_store_set(k, prj_buf, (uint32_t)n);   /* refused (another version, damaged): fresh stays */
+    }
 }
 
 /* --------------------------------------------------------------------- UI --- */
@@ -73,13 +78,20 @@ void app_ui_init(void)
 
 void app_frame(void)
 {
-    uint32_t dirty, s;
+    uint32_t dirty, s, mask;
+    int k, failed = 0;
     input();
-    if (romi_save_wanted()) {                        /* (a flash write holds the sound for a moment) */
-        uint32_t n = romi_project_get(prj_buf, sizeof prj_buf);
-        if (!n || plat_store_save(OBJ_PROJECT, prj_buf, n) != 0)
-            romi_message("SAVE", "FAILED");
-    }
+    mask = romi_save_wanted();                       /* only the objects that changed: each write holds the sound */
+    for (k = 0; k < ROMI_NOBJ; k++)
+        if (mask >> k & 1u) {
+            uint32_t n = romi_store_get(k, prj_buf, sizeof prj_buf);
+            if (n && plat_store_save(PLAT_OBJ[k], prj_buf, n) == 0)
+                romi_store_saved(k);
+            else
+                failed = 1;
+        }
+    if (failed)
+        romi_message("SAVE", "FAILED");
     dirty = romi_dirty();
     for (s = 0; s < ROMI_STRIPS; s++)
         if (dirty >> s & 1u) {

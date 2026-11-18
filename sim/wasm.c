@@ -57,6 +57,9 @@ uint32_t EXPORT(sim_frame)(uint32_t buttons, uint32_t keys, int32_t e0, int32_t 
     return dirty;
 }
 
-uint32_t EXPORT(sim_save)(void) { return romi_save_wanted() ? romi_project_get(prj, sizeof prj) : 0; }
-int EXPORT(sim_load)(uint32_t len) { return romi_project_set(prj, len); }
+/* the store, object by object (0 the settings, 1..4 the patterns): after SAVE, the mask of those to keep */
+uint32_t EXPORT(sim_save)(void) { return romi_save_wanted(); }
+uint32_t EXPORT(sim_store_get)(int obj) { return romi_store_get(obj, prj, sizeof prj); }
+int EXPORT(sim_store_set)(int obj, uint32_t len) { return romi_store_set(obj, prj, len); }
+void EXPORT(sim_store_saved)(int obj) { romi_store_saved(obj); }
 int EXPORT(sim_state)(int what) { return romi_state(what); }

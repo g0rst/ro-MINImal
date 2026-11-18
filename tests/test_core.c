@@ -84,7 +84,6 @@ int main(int argc, char **argv)
     double peak, rms;
     uint32_t h1, h2, n;
     static int16_t pcm[2 * ROMI_SR * 20];
-    static uint8_t saved[4096], saved2[4096];
     int i, v;
 
     /* silence until PLAY; then sound, bounded, deterministic for a seed */
@@ -173,21 +172,90 @@ int main(int argc, char **argv)
     held_k = 0; frame(0);
     tap_key(0);                                     /* (put step 1 back as it was) */
 
-    /* the project: saved, damaged copies refused, loaded back the same */
+    /* the store: settings and each pattern packed on their own; a damaged or short object refused, the others
+     * load; all of it loads back the same; SAVE asks only for what changed */
     CHECK(romi_state(ROMI_Q_UNSAVED) == 1, "not marked unsaved");
     tap_button(ROMI_B_SAVE);
-    CHECK(romi_save_wanted() == 1 && romi_save_wanted() == 0, "save request");
-    n = romi_project_get(saved, sizeof saved);
-    CHECK(n == sizeof(romi_project_t) && n <= 3840, "project size %u", n);
-    printf("project: %u bytes\n", n);
-    romi_init(31337);
-    saved[40] ^= 1;
-    CHECK(romi_project_set(saved, n) != 0, "a damaged project loaded");
-    saved[40] ^= 1;
-    CHECK(romi_project_set(saved, n - 1) != 0, "a short project loaded");
-    CHECK(romi_project_set(saved, n) == 0, "the project did not load");
-    CHECK(romi_state(ROMI_Q_BPM) == 120, "bpm after load %d", romi_state(ROMI_Q_BPM));
-    CHECK(romi_project_get(saved2, sizeof saved2) == n && !memcmp(saved, saved2, n), "load and save differ");
+    {
+        static uint8_t obj[ROMI_NOBJ][ROMI_OBJ_MAX], again[ROMI_OBJ_MAX];
+        uint32_t len[ROMI_NOBJ], m;
+        int k;
+        m = romi_save_wanted();
+        CHECK(m == (1u << ROMI_NOBJ) - 1u && romi_save_wanted() == 0, "first save: mask %x", m);
+        for (k = 0; k < ROMI_NOBJ; k++) {
+            len[k] = romi_store_get(k, obj[k], sizeof obj[k]);
+            CHECK(len[k] > 0 && len[k] <= ROMI_OBJ_MAX && len[k] <= 3840, "object %d: %u bytes", k, len[k]);
+            romi_store_saved(k);
+        }
+        printf("store: settings %u bytes, patterns %u %u %u %u bytes\n", len[0], len[1], len[2], len[3], len[4]);
+        tap_button(ROMI_B_SAVE);
+        CHECK(romi_save_wanted() == 0, "nothing changed, yet something to save");
+        turn(ROMI_E_ALGO, -1);                      /* a change in pattern A only */
+        tap_button(ROMI_B_SAVE);
+        m = romi_save_wanted();
+        CHECK(m == 1u << 1, "one change in A: mask %x", m);
+        turn(ROMI_E_ALGO, 1);                       /* back as saved */
+        romi_init(31337);
+        obj[2][20] ^= 1;                            /* pattern B damaged */
+        CHECK(romi_store_set(2, obj[2], len[2]) != 0, "a damaged pattern loaded");
+        obj[2][20] ^= 1;
+        CHECK(romi_store_set(1, obj[1], len[1] - 1) != 0, "a short pattern loaded");
+        CHECK(romi_store_set(2, obj[1], len[1]) != 0, "pattern A loaded as B");
+        for (k = 0; k < ROMI_NOBJ; k++)
+            CHECK(romi_store_set(k, obj[k], len[k]) == 0, "object %d did not load", k);
+        CHECK(romi_state(ROMI_Q_BPM) == 120, "bpm after load %d", romi_state(ROMI_Q_BPM));
+        for (k = 0; k < ROMI_NOBJ; k++)
+            CHECK(romi_store_get(k, again, sizeof again) == len[k] && !memcmp(obj[k], again, len[k]),
+                  "object %d: load and save differ", k);
+        tap_button(ROMI_B_SAVE);
+        CHECK(romi_save_wanted() == 0, "just loaded, yet something to save");
+    }
+
+    /* the packed limits: shift and note at their ends, locks up to 32 a pattern and no more */
+    romi_init(41);
+    {
+        static uint8_t obj[ROMI_OBJ_MAX];
+        romi_track_t *tr = &romi_project()->pat[0].tr[ROMI_PERC];
+        uint32_t n;
+        int k, t2, got = 0;
+        tr->step[3].flags = 0x80 | 0x40 | 0x20 | 0x02; tr->step[3].shift = -7; tr->step[3].note = -32;
+        tr->step[4].flags = 0x80; tr->step[4].shift = 7; tr->step[4].note = 31;
+        n = romi_store_get(1, obj, sizeof obj);
+        romi_init(42);
+        CHECK(romi_store_set(1, obj, n) == 0, "limits: did not load");
+        tr = &romi_project()->pat[0].tr[ROMI_PERC];
+        CHECK(tr->step[3].flags == 0xE2 && tr->step[3].shift == -7 && tr->step[3].note == -32 &&
+              tr->step[4].shift == 7 && tr->step[4].note == 31, "limits: %02x %d %d / %d %d", tr->step[3].flags,
+              tr->step[3].shift, tr->step[3].note, tr->step[4].shift, tr->step[4].note);
+        tap_button(ROMI_B_EDIT);                    /* 32 locks by hand: the kick's 16 steps, two knobs each */
+        for (k = 0; k < 16; k++) {
+            int wk[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
+            held_k = 1u << wk[k]; frame(0);
+            turn(ROMI_E_K1, 1);
+            turn(ROMI_E_K2, 1);
+            held_k = 0; frame(0); frame(0);
+        }
+        for (t2 = 0; t2 < ROMI_TRACKS; t2++)
+            for (k = 0; k < ROMI_STEPS; k++)
+                for (i = 0; i < 4; i++)
+                    got += romi_project()->pat[0].tr[t2].step[k].lock[i] != 0;
+        CHECK(got == 32, "locks set: %d", got);
+        held_k = 1u << 0; frame(0);
+        turn(ROMI_E_K3, 1);                         /* the 33rd: refused */
+        held_k = 0; frame(0); frame(0);
+        CHECK(romi_project()->pat[0].tr[0].step[0].lock[2] == 0, "a 33rd lock was set");
+        held_k = 1u << 0; frame(0);
+        turn(ROMI_E_K1, 2);                         /* an existing lock still turns */
+        held_k = 0; frame(0); frame(0);
+        n = romi_store_get(1, obj, sizeof obj);
+        romi_init(43);
+        CHECK(romi_store_set(1, obj, n) == 0 && n <= ROMI_OBJ_MAX, "32 locks: did not load (%u bytes)", n);
+        for (got = 0, k = 0; k < ROMI_STEPS; k++)
+            for (i = 0; i < 4; i++)
+                got += romi_project()->pat[0].tr[0].step[k].lock[i] != 0;
+        CHECK(got == 32, "locks after load: %d", got);
+        printf("store: a pattern with 32 locks, %u bytes\n", n);
+    }
 
     /* every generated groove of many seeds plays without clipping hard or going silent */
     for (i = 0; i < 40; i++) {
@@ -269,7 +337,7 @@ int main(int argc, char **argv)
     CHECK(!memcmp(&romi_project()->pat[0].tr[1], &romi_project()->pat[3].tr[1], sizeof(romi_track_t)), "track not copied to D");
     CHECK(memcmp(&romi_project()->pat[0].tr[2], &romi_project()->pat[3].tr[2], sizeof(romi_track_t)), "more than the track was copied");
     tap_button(ROMI_B_SAVE);
-    CHECK(romi_save_wanted() == 1, "a tap on SAVE did not save");
+    CHECK(romi_save_wanted() != 0, "a tap on SAVE did not save");
 
     /* the sidechain: the muted kick still ducks the rest; a track with AMOUNT 0 is left alone */
     {
@@ -289,7 +357,7 @@ int main(int argc, char **argv)
     }
 
     /* microtiming: a step held, SELECT nudges it; it sounds that much early or late */
-    for (v = -8; v <= 8; v += 8) {
+    for (v = -7; v <= 7; v += 7) {
         static const int32_t none[ROMI_NE];
         int t, first = -1;
         romi_init(24);
@@ -394,7 +462,7 @@ int main(int argc, char **argv)
               romi_state(ROMI_Q_CURSOR), romi_state(ROMI_Q_STEPS_ON));
         turn(ROMI_E_K1, 20);
         turn(ROMI_E_K2, -2);
-        CHECK(tr->step[2].shift == -3 && tr->step[11].shift == 5 && tr->step[5].shift == 8 && tr->tshift == -2,
+        CHECK(tr->step[2].shift == -3 && tr->step[11].shift == 5 && tr->step[5].shift == 7 && tr->tshift == -2,
               "shifts %d %d %d track %d", tr->step[2].shift, tr->step[11].shift, tr->step[5].shift, tr->tshift);
         snprintf(path, sizeof path, "%s/screen-timing.ppm", out);
         write_screen(path);
