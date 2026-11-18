@@ -128,6 +128,7 @@ static struct {
     uint32_t lfo_t;                     /* LFO went down (0: not held, or its hold already acted) */
     uint8_t cursor;                     /* the TIMING page: the step its first knob moves */
     uint32_t saved_sum[ROMI_NOBJ];      /* each object's sum as last loaded or saved (0: never) */
+    uint8_t density;                    /* the generator's: 0 sparse, 1 medium, 2 busy (set by a whole NEW) */
     uint8_t eu_armed;                   /* the next turn on the EUCLID page keeps an undo first */
     uint8_t save_held, copy_kind, copy_dst;   /* SAVE held: PRESETS (1) or SELECT (2) chose a pattern to copy to */
     uint32_t btn, keys, now;
@@ -774,8 +775,9 @@ static void gen_stab(romi_track_t *tr)
     };
     uint32_t i, n = 0, pos[6];
     const uint8_t *rh;
+    static const uint8_t BY_DENSITY[3][4] = {{2, 3, 6, 2}, {0, 1, 6, 7}, {4, 5, 7, 0}};   /* 2-3, 3-4, 4-5 hits */
     tr->len = urand(4) ? 16 : 12;
-    rh = RHYTHM[urand(8)];
+    rh = RHYTHM[BY_DENSITY[R.density > 2 ? 2 : R.density][urand(4)]];
     for (i = 0; i < 6 && rh[i] != 255u; i++)
         if (rh[i] < tr->len)
             pos[n++] = rh[i];
@@ -830,10 +832,69 @@ static void euclid(romi_track_t *tr, uint32_t hits, uint32_t rot)
     }
 }
 
+/* ---- the generator: every track new, but in one groove ----
+ * A whole NEW first picks the groove's density (sparse, medium, busy; faster tempos lean sparse), then makes the
+ * tracks in an order where each can lean on the ones before: the kick is the grid and is tuned to the key; the
+ * stab's phrase is the harmony; the sub rolls between the kicks on chord tones; the hats sit on the off-beat; the
+ * percussion runs on its own length, rotated off the kick, on tones of the key; the clicks fill in, rarely. Each
+ * track's colour (a few sound parameters, never level, pan or sends, never the kick's or the sub's weight) moves
+ * within ranges that suit it. UNDO takes all of it back. */
+
+/* a value near v, at most spread away, within 0..127 */
+static uint8_t near(int v, int spread)
+{
+    v += (int)urand((uint32_t)(2 * spread + 1)) - spread;
+    return (uint8_t)(v < 0 ? 0 : v > 127 ? 127 : v);
+}
+
+/* the kick's note that puts its fundamental on the key's root (a pitch class), a fifth up or down at most */
+static int kick_in_key(const romi_track_t *tr)
+{
+    float f0 = pmap((float)tr->p[0], 36.0f, 1.0f), fr = note_hz((float)R.prj.root), best = 9.0f;
+    int n, pick = 0;
+    for (n = -6; n <= 5; n++) {
+        float r = f0 * fexp2((float)n * (1.0f / 12.0f)) / fr, d;
+        while (r >= 2.0f) r *= 0.5f;
+        while (r < 1.0f) r *= 2.0f;
+        d = r - 1.0f < 2.0f - r ? r - 1.0f : (2.0f - r) * 0.5f;   /* (distance in the octave: ratios, near enough) */
+        if (d < best) {
+            best = d;
+            pick = n;
+        }
+    }
+    return pick;
+}
+
+/* n of the steps from cand (weights w), none twice; at least one in every half when n > 1 */
+static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const uint8_t *w, uint32_t nc, uint32_t len)
+{
+    uint32_t got = 0, tries = 0, used = 0, i;
+    while (got < n && tries++ < 200u) {
+        uint32_t total = 0, r, c = 0;
+        for (i = 0; i < nc; i++)
+            if (cand[i] < len && !(used >> cand[i] & 1u))
+                total += w[i];
+        if (!total)
+            break;
+        r = urand(total);
+        for (i = 0; i < nc; i++)
+            if (cand[i] < len && !(used >> cand[i] & 1u)) {
+                if (r < w[i]) {
+                    c = cand[i];
+                    break;
+                }
+                r -= w[i];
+            }
+        used |= 1u << c;
+        out[got++] = c;
+    }
+    return got;
+}
+
 static void gen_track(int t)
 {
     romi_track_t *tr = &PAT->tr[t];
-    uint32_t i;
+    uint32_t i, d = R.density > 2 ? 2 : R.density;
     for (i = 0; i < ROMI_STEPS; i++) {
         tr->step[i].flags = 0;
         tr->step[i].note = 0;
@@ -841,58 +902,109 @@ static void gen_track(int t)
     }
     tr->len = 16;
     switch (t) {
-    case ROMI_KICK:
+    case ROMI_KICK: {
+        static const uint8_t GHOST[3] = {15, 30, 45};   /* % of grooves with a ghost kick */
+        int key = kick_in_key(tr);
         for (i = 0; i < 16; i += 4)
-            set_step(tr, i, 1, 0, 0);
-        if (urand(3) == 0)
-            set_step(tr, urand(2) ? 15 : 10, 0, 2, 0);   /* a ghost, half the time */
-        break;
-    case ROMI_SUB: {
-        static const uint8_t ROLL[4][6] = {{2, 3, 6, 10, 11, 14}, {2, 6, 7, 10, 14, 15}, {3, 6, 10, 11, 14, 255},
-                                          {2, 3, 7, 10, 13, 14}};
-        static const int8_t DEG[8] = {0, 0, 0, 0, -1, 2, 4, -3};   /* mostly the root */
-        static const int8_t CHORD_TONE[8] = {0, 0, 0, 0, 7, 12, 3, -5};   /* following: the chord's own tones */
-        const uint8_t *r = ROLL[urand(4)];
-        tr->len = urand(4) ? 16 : 12;
-        for (i = 0; i < 6; i++)
-            if (r[i] != 255u && r[i] < tr->len)
-                set_step(tr, r[i], urand(4) == 0, urand(5) == 0 ? 1 : 0,
-                         tr->follow ? CHORD_TONE[urand(8)] : scale_note(DEG[urand(8)]));
+            set_step(tr, i, 1, 0, key);
+        if (urand(100) < GHOST[d])
+            set_step(tr, urand(3) == 0 ? 7 : urand(2) ? 15 : 10, 0, 2, key);
         break;
     }
-    case ROMI_HAT:
+    case ROMI_SUB: {
+        /* between the kicks: never on a quarter (a 12- or 16-step loop keeps it so), the "and" first */
+        static const uint8_t CAND[12] = {2, 6, 10, 14, 3, 7, 11, 15, 1, 5, 9, 13};
+        static const uint8_t W[12] = {6, 6, 6, 6, 3, 3, 3, 3, 1, 1, 1, 1};
+        static const uint8_t COUNT[3][2] = {{3, 4}, {4, 6}, {6, 8}};
+        static const int8_t DEG[8] = {0, 0, 0, 0, -1, 2, 4, -3};          /* free: mostly the root */
+        static const int8_t CHORD_TONE[8] = {0, 0, 0, 0, 7, 12, 3, -5};   /* following: the chord's own tones */
+        uint32_t pos[16], n, k;
+        tr->len = urand(4) ? 16 : 12;
+        n = pick_steps(pos, COUNT[d][0] + urand(COUNT[d][1] - COUNT[d][0] + 1u), CAND, W, 12, tr->len);
+        for (k = 1; k < n; k++) {                       /* in time order: the first hit is the root */
+            uint32_t j = k, v = pos[k];
+            while (j && pos[j - 1] > v) {
+                pos[j] = pos[j - 1];
+                j--;
+            }
+            pos[j] = v;
+        }
+        for (k = 0; k < n; k++) {
+            int note = k == 0 ? 0 : tr->follow ? CHORD_TONE[urand(8)] : scale_note(DEG[urand(8)]);
+            set_step(tr, pos[k], (pos[k] & 3u) == 2u && urand(3) == 0, urand(6) == 0 ? 1 : 0, note);
+        }
+        break;
+    }
+    case ROMI_HAT: {
+        static const uint8_t FILL[3] = {22, 38, 55};    /* % of the other steps with a quiet hat */
         for (i = 2; i < 16; i += 4)
             set_step(tr, i, urand(3) != 0, 0, 0);       /* the off-beat, mostly open */
         for (i = 0; i < 16; i++)
-            if (!(tr->step[i].flags & ROMI_ST_ON) && urand(100) < 45u) {
+            if (!(tr->step[i].flags & ROMI_ST_ON) && urand(100) < FILL[d]) {
                 set_step(tr, i, 0, 1 + (int)urand(3), 0);
                 if (urand(8) == 0)
-                    tr->step[i].flags |= 1u;        /* now and then a double */
+                    tr->step[i].flags |= 1u;            /* now and then a double */
             }
+        tr->p[0] = near(42, 14);                        /* decay */
+        tr->p[1] = near(70, 18);                        /* tone */
+        tr->p[2] = near(80, 25);                        /* metal */
         break;
+    }
     case ROMI_PERC: {
-        static const uint8_t LEN[5] = {16, 12, 10, 7, 14};
-        tr->len = LEN[urand(5)];
-        euclid(tr, 2 + urand(3), urand(tr->len));
+        static const uint8_t LEN[6] = {16, 12, 10, 7, 14, 6};
+        static const uint8_t HITS[3] = {2, 3, 4};
+        static const int8_t TONE[6] = {0, 0, 2, 4, 6, 7};   /* degrees: root, third, fifth, seventh, octave */
+        uint32_t rot, best = 0, fewest = 99, h;
+        tr->len = LEN[urand(6)];
+        h = HITS[d] + urand(2);
+        for (rot = 0; rot < tr->len; rot++) {           /* the rotation that meets the kick least, over 4 bars */
+            uint32_t acc = 0, hit = 0, g;
+            for (i = 0; i < tr->len; i++) {
+                acc += h;
+                if (acc >= tr->len) {
+                    acc -= tr->len;
+                    for (g = (i + rot) % tr->len; g < 64u; g += tr->len)
+                        hit += (g & 3u) == 0u;
+                }
+            }
+            hit = hit * 8u + urand(8);                  /* (ties broken at random) */
+            if (hit < fewest) {
+                fewest = hit;
+                best = rot;
+            }
+        }
+        euclid(tr, h, best);
         for (i = 0; i < tr->len; i++)
-            if (tr->step[i].flags & ROMI_ST_ON)
-                set_step(tr, i, urand(4) == 0, (int)urand(3), scale_note((int)urand(5)));
+            if (tr->step[i].flags & ROMI_ST_ON) {
+                static const int8_t CHORD_TONE[5] = {0, 0, 3, 7, 10};   /* following: the chord's own tones */
+                int note = tr->follow ? CHORD_TONE[urand(5)] : scale_note(TONE[urand(6)]);
+                set_step(tr, i, urand(4) == 0, (int)urand(3), note);
+            }
+        tr->p[0] = near(48, 18);                        /* decay */
+        tr->p[1] = near(52, 24);                        /* fm */
+        tr->p[2] = (uint8_t)(urand(8) * 16u + 4u);      /* ratio: rim, wood, tom, blip */
+        tr->p[3] = near(30, 28);                        /* bend */
         break;
     }
-    case ROMI_STAB: {
+    case ROMI_STAB:
         gen_stab(tr);
+        tr->p[0] = near(66, 16);                        /* decay */
+        tr->p[1] = near(60, 18);                        /* bright */
+        tr->p[2] = (uint8_t)(urand(5) * 26u + 4u);      /* chord: min, min7, min9, sus, fifth */
         break;
-    }
     default: {
         static const uint8_t LEN[5] = {16, 9, 11, 13, 5};
+        static const uint8_t EXTRA[3] = {0, 1, 3};
         tr->len = LEN[urand(5)];
-        euclid(tr, 2 + urand(tr->len > 8 ? 5u : 2u), urand(tr->len));
+        euclid(tr, 2 + urand(tr->len > 8 ? 2u + EXTRA[d] : 2u), urand(tr->len));
         for (i = 0; i < tr->len; i++)
             if (tr->step[i].flags & ROMI_ST_ON) {
                 set_step(tr, i, 0, 1 + (int)urand(3), (int)urand(13) - 6);
                 if (urand(5) == 0)
                     tr->step[i].flags |= (uint8_t)(1u + urand(2));   /* a stutter of two or three */
             }
+        tr->p[1] = near(78, 22);                        /* freq */
+        tr->p[2] = near(84, 22);                        /* reso */
         break;
     }
     }
@@ -900,6 +1012,20 @@ static void gen_track(int t)
     tr->eu_hits = 0;
     for (i = 0; i < ROMI_STEPS; i++)
         tr->eu_hits += (tr->step[i].flags & ROMI_ST_ON) != 0;
+}
+
+/* a whole new groove: its density first (faster tempos lean sparse), then the tracks in the order they lean on */
+static void gen_all(void)
+{
+    static const uint8_t ORDER[ROMI_TRACKS] = {ROMI_KICK, ROMI_STAB, ROMI_SUB, ROMI_HAT, ROMI_PERC, ROMI_CLICK};
+    uint32_t r = urand(10), k;
+    R.density = (uint8_t)(r < 3 ? 0 : r < 8 ? 1 : 2);
+    if (R.prj.bpm >= 130 && R.density)
+        R.density--;
+    else if (R.prj.bpm <= 116 && R.density < 2 && urand(2))
+        R.density++;
+    for (k = 0; k < ROMI_TRACKS; k++)
+        gen_track(ORDER[k]);
 }
 
 /* the EUCLID page: hits spread as evenly as the loop allows, rotated; the notes stay */
@@ -1242,7 +1368,7 @@ void romi_init(uint32_t seed)
 {
     uint32_t i;
     uint8_t *z = (uint8_t *)&R;
-    int a, t;
+    int a;
     for (i = 0; i < sizeof R; i++)
         z[i] = 0;
     sin_init();
@@ -1267,8 +1393,7 @@ void romi_init(uint32_t seed)
     for (a = ROMI_PATTERNS - 1; a >= 0; a--) {   /* four grooves; A is the one playing */
         R.prj.cur_pat = (uint8_t)a;
         pattern_defaults(PAT);
-        for (t = 0; t < ROMI_TRACKS; t++)
-            gen_track(t);
+        gen_all();
     }
     R.dirty = ~0u;
 }
@@ -2054,10 +2179,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 rotate_track(R.track, i == 8 ? 1 : -1);
                 changed();
             } else if (i == 9) {
-                int k;
                 keep_undo();
-                for (k = 0; k < ROMI_TRACKS; k++)
-                    gen_track(k);
+                gen_all();
                 romi_message("NEW", "GROOVE");
                 changed();
             } else if (R.undo_ok && R.undo_pat == R.prj.cur_pat) {
@@ -2145,6 +2268,7 @@ int romi_state(int what)
     case ROMI_Q_POS: return R.pos[R.track];
     case ROMI_Q_SOLO: return R.solo;
     case ROMI_Q_CURSOR: return R.cursor;
+    case ROMI_Q_DENSITY: return R.density;
     case ROMI_Q_HITS + 0: case ROMI_Q_HITS + 1: case ROMI_Q_HITS + 2: case ROMI_Q_HITS + 3: case ROMI_Q_HITS + 4:
     case ROMI_Q_HITS + 5: return (int)R.hits[what - ROMI_Q_HITS];
     case ROMI_Q_NOTE + 0: case ROMI_Q_NOTE + 1: case ROMI_Q_NOTE + 2: case ROMI_Q_NOTE + 3: case ROMI_Q_NOTE + 4:

@@ -575,6 +575,90 @@ int main(int argc, char **argv)
         }
     }
 
+    /* NEW (the whole groove): one groove, not six dice. Over many throws, roots and scales: the kick four on the
+     * floor and tuned to the key; the sub never on a quarter (so never on the kick, in a 12- or 16-step loop) and
+     * starting on the root; hats on every off-beat; the percussion's notes in the scale and its hits mostly off the
+     * kick; every note of every melodic track in the scale; each throw different; and the groove plays clean */
+    {
+        static const uint8_t SC[4][7] = {{0, 2, 3, 5, 7, 8, 10}, {0, 2, 3, 5, 7, 9, 10}, {0, 1, 3, 5, 7, 8, 10},
+                                         {0, 3, 5, 7, 10, 12, 15}};
+        uint32_t seen[200];
+        int nseen = 0, throw_, perc_on_kick = 0, perc_hits = 0, dens[3] = {0, 0, 0};
+        for (throw_ = 0; throw_ < 200; throw_++) {
+            const romi_pattern_t *pt;
+            int t2, k, sc = throw_ % 4, root = 24 + (throw_ * 7) % 24, ok;
+            uint32_t h = 2166136261u;
+            romi_init(9000u + (uint32_t)throw_ * 101u);
+            romi_project()->scale = (uint8_t)sc;
+            romi_project()->root = (uint8_t)root;
+            tap_key(22);                            /* black key 9: NEW, the whole groove */
+            pt = &romi_project()->pat[0];
+            /* the kick: four on the floor, all on one note, which puts its pitch on the root */
+            for (k = 0; k < 16; k += 4)
+                CHECK(pt->tr[ROMI_KICK].step[k].flags & ROMI_ST_ON, "throw %d: kick missing on %d", throw_, k);
+            {
+                double f0 = 36.0 * pow(2.0, pt->tr[ROMI_KICK].p[0] / 127.0) *
+                            pow(2.0, pt->tr[ROMI_KICK].step[0].note / 12.0);
+                double cents = fmod(1200.0 * log2(f0 / (440.0 * pow(2.0, (root - 69) / 12.0))) + 12000.0, 1200.0);
+                if (cents > 600.0) cents = 1200.0 - cents;
+                CHECK(cents < 60.0, "throw %d: the kick is %0.f cents off the key", throw_, cents);
+            }
+            /* the sub */
+            {
+                const romi_track_t *sub = &pt->tr[ROMI_SUB];
+                int first = 1;
+                for (k = 0; k < sub->len; k++) {
+                    if (!(sub->step[k].flags & ROMI_ST_ON)) continue;
+                    CHECK((k & 3) != 0, "throw %d: the sub on a quarter (%d)", throw_, k);
+                    if (first) CHECK(sub->step[k].note == 0, "throw %d: the sub starts on %d", throw_, sub->step[k].note);
+                    first = 0;
+                }
+                CHECK(!first, "throw %d: no sub", throw_);
+            }
+            /* the hats on the off-beat */
+            for (k = 2; k < 16; k += 4)
+                CHECK(pt->tr[ROMI_HAT].step[k].flags & ROMI_ST_ON, "throw %d: no hat on %d", throw_, k);
+            /* notes in the scale: stab and percussion (the sub follows the stab: chord tones) */
+            for (t2 = ROMI_PERC; t2 <= ROMI_STAB; t2++)
+                for (k = 0; k < pt->tr[t2].len; k++) {
+                    int m, j;
+                    if (!(pt->tr[t2].step[k].flags & ROMI_ST_ON)) continue;
+                    m = ((pt->tr[t2].step[k].note % 12) + 12) % 12;
+                    for (ok = 0, j = 0; j < 7; j++) ok |= SC[sc][j] % 12 == m;
+                    CHECK(ok, "throw %d: track %d note %d not in scale %d", throw_, t2, pt->tr[t2].step[k].note, sc);
+                }
+            /* the percussion against the kick, over four bars */
+            {
+                const romi_track_t *pc = &pt->tr[ROMI_PERC];
+                int g;
+                for (g = 0; g < 64; g++)
+                    if (pc->step[g % pc->len].flags & ROMI_ST_ON) {
+                        perc_hits++;
+                        perc_on_kick += (g & 3) == 0;
+                    }
+            }
+            /* every throw its own */
+            for (t2 = 0; t2 < ROMI_TRACKS; t2++)
+                for (k = 0; k < ROMI_STEPS; k++)
+                    h = (h ^ (uint32_t)(pt->tr[t2].step[k].flags * 131 + pt->tr[t2].step[k].note + 64 + t2 * 977 + k)) *
+                        16777619u;
+            for (ok = 1, k = 0; k < nseen; k++) ok &= seen[k] != h;
+            if (ok) seen[nseen++] = h;
+            dens[romi_state(ROMI_Q_DENSITY)]++;
+            /* and it plays clean */
+            if (throw_ % 10 == 0) {
+                tap_button(ROMI_B_PLAY);
+                run(3.0, 0, &peak, &rms);
+                CHECK(peak > 0.2 && peak <= 1.0 && rms > 0.02, "throw %d: peak %f rms %f", throw_, peak, rms);
+            }
+        }
+        printf("new: %d different grooves in 200; percussion on the kick %d of %d hits; density %d %d %d\n", nseen,
+               perc_on_kick, perc_hits, dens[0], dens[1], dens[2]);
+        CHECK(nseen >= 195, "only %d different grooves in 200", nseen);
+        CHECK(perc_on_kick * 6 <= perc_hits, "the percussion on the kick: %d of %d", perc_on_kick, perc_hits);
+        CHECK(dens[0] && dens[1] && dens[2], "a density never chosen");
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);
