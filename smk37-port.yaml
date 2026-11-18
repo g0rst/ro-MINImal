@@ -49,16 +49,16 @@ storage:
     - 0xC2000-0xEAFFF       # USRFLASH: the stock synth's user presets. The playbook allows it for big objects of a
                             # firmware without samples; ro:MINImal does not need it and leaves the presets alone.
   objects:                  # each a pair of 4 KiB sectors; the same addresses on the FM-1 (fm1-base's data area)
-    settings: 0xB1000       # 30 bytes (with the dice for B..D)
+    settings: 0xB1000       # 31 bytes (with the dice for B..D and the mode LAZY/HARD)
     pattern_a: 0xB3000      # 388 bytes, 484 with 32 locks
-    pattern_b: 0xB5000      # B..D are made from A and never written: kept free for growth
+    pattern_b: 0xB5000      # LAZY: B..D are made from A and not written; HARD: written like A (488 bytes at most)
     pattern_c: 0xB7000
     pattern_d: 0xB9000      # ends at 0xBAFFF: the playbook's window for a firmware's extra objects is full
     panel: ""               # the platform's panel calibration (FM-1: 0xDC000). On the SMK the board layer's
                             # layout places it; app.h stops any SMK build until then (#error)
   growth: >-
-    The window is full, but only two pairs are written (the settings and A); the three for B..D are reserved and
-    free for growth (32 steps, more patterns), without leaving the window.
+    The window is full. In LAZY mode only two pairs are written (the settings and A); in HARD mode all five,
+    each inside its own pair. Nothing outside 0xB1000-0xBAFFF is ever written.
 
 # ---- the panel: open, the owner decides (hard rule 8). Proposals from the ro:MAXImal concept ----
 keys:

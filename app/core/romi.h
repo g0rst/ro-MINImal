@@ -28,7 +28,7 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
 enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK,
-       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_NPAGES };
+       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_PG_GLOBAL2, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -92,6 +92,7 @@ typedef struct {
     uint8_t chain;                      /* 0: off; 1..3: patterns A-B, A-C, A-D in turn, four bars each;
                                          * 4: EVOLVE, A-D and new variations of B-D after each round */
     uint16_t var_seed[3];               /* the variations B, C, D of A: each one's dice */
+    uint8_t mode;                       /* 0 LAZY: B..D are made from A; 1 HARD: four patterns of their own */
     uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
     uint8_t sc_rel;                     /* 0..127: how fast the ducking lets go */
     romi_pattern_t pat[ROMI_PATTERNS];
@@ -103,10 +104,10 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 11u
-#define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. Only 0 and 1 are kept:
-                                         * B..D are made from A (romi.c, "variations"); their objects load as
-                                         * nothing and are never asked to be saved */
+#define ROMI_VERSION 12u
+#define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
+                                         * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects
+                                         * 2..4 load aside: the HARD patterns, back when HARD is chosen again */
 #define ROMI_OBJ_MAX 488u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */

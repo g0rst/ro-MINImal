@@ -42,9 +42,14 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 
 - **Ein Groove, vier Spielarten.** Pattern A ist der Groove; B, C und D werden immer aus A gemacht und ziehen
   nach, sobald sich A ändert: B spielt ihn variiert (gleiche Harmonie, anderer Beat), C mit Drum-Rolls zum Takt,
-  D in einer verwandten Tonart. Gespeichert werden nur A und die Einstellungen. Mit CHAIN EVOLVE entstehen nach
-  jeder Runde A–D neue B, C und D: ein Set, das sich ständig weiterentwickelt.
-- **Die Kick ist das Raster.** Vier auf dem Boden, nichts sonst ist sicher.
+  D in einer verwandten Tonart. B lässt dabei ab und zu einen Kick-Schlag weg, C pausiert die Kick oft in den
+  letzten vier Steps vor dem Takt. Mit CHAIN EVOLVE entstehen nach jeder Runde A–D neue B, C und D: ein Set,
+  das sich ständig weiterentwickelt.
+- **Zwei Modi (GLO zweimal: GLOBAL 2).** **LAZY** ist das oben: B bis D entstehen von selbst, gespeichert werden
+  nur A und die Einstellungen. **HARD**: B bis D sind beim ersten Umschalten Kopien von A und danach eigenständig;
+  bearbeitet wird das Pattern, das gerade läuft, NEW erneuert dort Spur oder (halten) Pattern, alle vier werden
+  gespeichert. Zurück in LAZY bleiben die HARD-Patterns beiseite und sind beim nächsten Wechsel wieder da.
+- **Die Kick ist das Raster.** Vier auf dem Boden in A und D, nichts sonst ist sicher.
 - **Jede Spur hat ihre eigene Looplänge** (1 bis 16 Steps). Percussion und Clicks laufen auf 7, 9, 11 oder 13
   Steps gegen die 16 der Kick. Der Takt wiederholt sich dadurch erst nach vielen Takten.
 - **Jeder Step hat eine Chance** (100, 75, 50, 25 %), einen Akzent, eine Note und einen Ratchet (bis zu vier
@@ -109,6 +114,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
+| GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns) |
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
 | SEL halten + schwarze Tasten 1 bis 6 | jede Spur direkt stumm oder an, auch mehrere zugleich; die gewählte Spur bleibt |
 | ARP | Spur leicht verändern |

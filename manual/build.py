@@ -118,7 +118,8 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[ENV]]", T("page MIX of the track", "Seite MIX der Spur", "pagina MIX a pistei")),
       ("[[FX]]", T("page FX; pressed again: SIDECHAIN", "Seite FX; nochmal gedrückt: SIDECHAIN",
                    "pagina FX; apăsat din nou: SIDECHAIN")),
-      ("[[GLO]]", T("page GLOBAL", "Seite GLOBAL", "pagina GLOBAL")),
+      ("[[GLO]]", T("page GLOBAL; pressed again: GLOBAL 2 (MODE LAZY/HARD)", "Seite GLOBAL; nochmal gedrückt: GLOBAL 2 (MODE LAZY/HARD)",
+                    "pagina GLOBAL; apăsat din nou: GLOBAL 2 (MODE LAZY/HARD)")),
       ("[[SEQ]]", T("back to the steps; pages EUCLID, LINK, TIMING in turn",
                     "zurück zu den Steps; Seiten EUCLID, LINK, TIMING der Reihe nach",
                     "înapoi la pași; paginile EUCLID, LINK, TIMING pe rând")),
@@ -301,6 +302,7 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[FX]]", "FX", "D.TIME<br>1/16, 1/8, 3/16", "D.FDBK", "R.SIZE", "R.DAMP"),
       ("[[FX]] ×2", "SIDECHAIN", "SOURCE", "DEPTH", "RELEASE", "AMOUNT"),
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN", "CLOCK", "CHAIN"),
+      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "", "", ""),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
       ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", ""),
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", "", ""),
@@ -444,6 +446,24 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "danach neue B, C und D für die nächste Runde: ein Set, das sich ständig weiterentwickelt.",
      "CHAIN de pe pagina GLOBAL cântă A-B, A-C sau A-D pe rând, câte patru măsuri. EVOLVE cântă A-D și apoi face "
      "B, C și D noi pentru runda următoare: un set care se tot mișcă."),
+   T("The kick may rest: B now and then leaves out one beat, C often pauses for the last four steps before the bar. "
+     "A and D keep it on every quarter.",
+     "Die Kick darf ruhen: B lässt ab und zu einen Schlag weg, C pausiert oft in den letzten vier Steps vor dem Takt. "
+     "A und D behalten sie auf jeder Viertel.",
+     "Kick-ul se poate odihni: B lasă din când în când o lovitură afară, C face des pauză în ultimii patru pași "
+     "dinaintea măsurii. A și D îl țin pe fiecare pătrime."),
+   T("Two modes, on GLOBAL 2 ([[GLO]] twice), MODE. LAZY is all of the above: the set grows by itself. HARD: "
+     "B, C and D start as copies of A and then are yours; you edit the pattern that plays, NEW renews its track "
+     "(hold: the whole pattern), all four are saved, EVOLVE stays still. Back in LAZY the HARD patterns wait aside "
+     "and come back with HARD.",
+     "Zwei Modi, auf GLOBAL 2 ([[GLO]] zweimal), MODE. LAZY ist alles oben: das Set wächst von selbst. HARD: "
+     "B, C und D beginnen als Kopien von A und gehören dann dir; bearbeitet wird das Pattern, das läuft, NEW "
+     "erneuert dort die Spur (halten: das ganze Pattern), alle vier werden gespeichert, EVOLVE ruht. Zurück in LAZY "
+     "warten die HARD-Patterns beiseite und kommen mit HARD wieder.",
+     "Două moduri, pe GLOBAL 2 ([[GLO]] de două ori), MODE. LAZY e tot ce e mai sus: setul crește singur. HARD: "
+     "B, C și D încep ca și copii ale lui A și apoi sunt ale tale; editezi pattern-ul care cântă, NEW reînnoiește "
+     "pista lui (ținut: tot pattern-ul), toate patru se salvează, EVOLVE stă. Înapoi în LAZY, pattern-urile HARD "
+     "așteaptă deoparte și revin cu HARD."),
    T("A tap on [[SAVE]] writes the changes to the device. The sound stops for a moment. Nothing is saved on its own.",
      "Ein kurzer Druck auf [[SAVE]] schreibt das Projekt ins Gerät. Der Ton setzt kurz aus. Nichts wird von selbst gespeichert.",
      "O apăsare scurtă pe [[SAVE]] scrie proiectul în aparat. Sunetul se oprește o clipă. Nimic nu se salvează singur."),

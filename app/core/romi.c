@@ -136,6 +136,8 @@ static struct {
     uint32_t saved_sum[ROMI_NOBJ];      /* each object's sum as last loaded or saved (0: never) */
     volatile uint8_t evolve;            /* the chain came round in EVOLVE: new variations wanted */
     uint8_t base_changed;               /* A changed: B..D to be made again */
+    romi_pattern_t aside[3];            /* HARD's B..D, kept while LAZY plays its own (and loaded there in LAZY) */
+    uint8_t aside_ok;                   /* bit k: aside[k] holds a HARD pattern */
     uint8_t density;                    /* the generator's: 0 sparse, 1 medium, 2 busy (set by a whole NEW) */
     uint8_t eu_armed;                   /* the next turn on the EUCLID page keeps an undo first */
     uint32_t btn, keys, now;
@@ -170,7 +172,8 @@ static const int8_t CHORDS[5][3] = {{0, 3, 7}, {0, 3, 10}, {3, 10, 14}, {0, 5, 1
 static const float PERC_RATIO[8] = {1.0f, 1.41f, 1.73f, 2.0f, 2.76f, 3.5f, 4.07f, 5.33f};
 
 #define PAT (&R.prj.pat[R.prj.cur_pat])   /* the pattern playing */
-#define BASE (&R.prj.pat[0])                /* pattern A: the one edited; B..D are made from it */
+#define BASE (&R.prj.pat[0])                /* pattern A: in LAZY the one edited, B..D are made from it */
+#define EDT (R.prj.mode ? PAT : BASE)       /* the pattern the panel edits: A (LAZY), the one playing (HARD) */
 
 /* ---------------------------------------------------------------- voices --- */
 /* a parameter with its drift: d in -1..1, scaled by the project's drift amount, up to +-24 of 127 */
@@ -472,7 +475,7 @@ static void seq_step(void)
     int t, pass;
     if (R.prj.chain && R.gstep && (R.gstep & 63u) == 0u && R.pending_pat == 0xFFu) {
         uint32_t np = R.prj.chain >= 3u ? 4u : R.prj.chain + 1u, next = (R.prj.cur_pat + 1u) % np;
-        if (next == 0u && R.prj.chain == 4u)
+        if (next == 0u && R.prj.chain == 4u && !R.prj.mode)
             R.evolve = 1;               /* (the main loop makes B..D anew, four bars before B plays) */
         R.prj.cur_pat = (uint8_t)next;
     }
@@ -1002,7 +1005,7 @@ static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const
 
 static void gen_track(int t)
 {
-    romi_track_t *tr = &BASE->tr[t];
+    romi_track_t *tr = &EDT->tr[t];
     uint32_t i, d = R.density > 2 ? 2 : R.density;
     for (i = 0; i < ROMI_STEPS; i++) {
         tr->step[i].flags = 0;
@@ -1141,10 +1144,11 @@ static void gen_all(void)
  * A is the groove; B, C and D are ways of playing it, never other songs. Each is A with one decided change, from
  * dice of its own (var_seed: the same A and seed, the same variation), and is made again whenever A changes:
  *   B  the beat varied: a few hats turned over and one doubled, percussion and clicks turned on their own loops,
- *      a sub hit moved beside itself (never onto the kick), the stab's chords in another order, a ghost kick
- *      that comes or goes, a nudge to the colour of hats, percussion and clicks. The same harmony.
+ *      a sub hit moved beside itself (never onto the kick), the stab's chords in another order, now and then a
+ *      kick beat left out, a ghost kick that comes or goes, a nudge to the colour of hats, percussion and clicks.
+ *      The same harmony.
  *   C  rolls into the next bar: hats rolling up to a fourfold ratchet in the last four steps, percussion and
- *      clicks rolling with them, a kick and a sub pickup on the last step.
+ *      clicks rolling with them, the kick pausing for those four steps (or a kick pickup), a sub pickup.
  *   D  A in a related key: the subdominant, the dominant, the seventh or the third (by its dice); stab, percussion
  *      and a free sub move with it, a following sub follows the stab, the kick is tuned to the new root. */
 static uint32_t vr_state;
@@ -1221,6 +1225,8 @@ static void vary(romi_pattern_t *d)
             st->step[on[i]].note = st->step[on[i + 1]].note;
         st->step[on[non - 1]].note = first;
     }
+    if (kk->len == 16 && vrand(3) == 0)             /* now and then the kick sits out a beat */
+        kk->step[vrand(2) ? 8 : 12].flags = 0;
     if (kk->step[15].flags & ROMI_ST_ON) {          /* a ghost kick comes or goes */
         kk->step[15].flags = 0;
     } else if (kk->len == 16) {
@@ -1262,7 +1268,10 @@ static void rolls(romi_pattern_t *d)
             if (cl->step[i].flags & ROMI_ST_ON)
                 cl->step[i].flags = (uint8_t)(cl->step[i].flags & ~0x30u);   /* every one sure */
     }
-    if (kk->len == 16 && !(kk->step[15].flags & ROMI_ST_ON)) {   /* a kick pickup */
+    if (kk->len == 16 && vrand(2)) {                /* the kick pauses for the bar's last four steps */
+        for (i = 12; i < 16; i++)
+            kk->step[i].flags = 0;
+    } else if (kk->len == 16 && !(kk->step[15].flags & ROMI_ST_ON)) {   /* or plays a pickup */
         kk->step[15].flags = ROMI_ST_ON;
         kk->step[15].note = kk->step[0].note;
     }
@@ -1320,7 +1329,7 @@ static void new_seeds(void)
 /* the EUCLID page: hits spread as evenly as the loop allows, rotated; the notes stay */
 static void apply_euclid(int t)
 {
-    romi_track_t *tr = &BASE->tr[t];
+    romi_track_t *tr = &EDT->tr[t];
     uint32_t i, n = 0, len = tr->len ? tr->len : 1u;
     if (tr->eu_hits > len)
         tr->eu_hits = (uint8_t)len;
@@ -1338,7 +1347,7 @@ static void apply_euclid(int t)
 
 static void mutate_track(int t)
 {
-    romi_track_t *tr = &BASE->tr[t];
+    romi_track_t *tr = &EDT->tr[t];
     uint32_t i = urand(tr->len ? tr->len : 1u), kind = urand(4);
     romi_step_t *st = &tr->step[i];
     if (t == ROMI_KICK && (i & 3u) == 0u)
@@ -1364,7 +1373,7 @@ static void mutate_track(int t)
 
 static void rotate_track(int t, int dir)
 {
-    romi_track_t *tr = &BASE->tr[t];
+    romi_track_t *tr = &EDT->tr[t];
     uint32_t i, n = tr->len;
     romi_step_t s;
     if (n < 2u)
@@ -1448,6 +1457,7 @@ static void prj_sanitize(romi_project_t *p)
     LIM(p->clock_out, 0, 1);
     LIM(p->cur_pat, 0, ROMI_PATTERNS - 1);
     LIM(p->chain, 0, 4);
+    LIM(p->mode, 0, 1);
     LIM(p->sc_src, 0, ROMI_TRACKS - 1);
     LIM(p->sc_rel, 0, 127);
     for (a = 0; a < ROMI_PATTERNS; a++)
@@ -1546,6 +1556,7 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
             d[n++] = (uint8_t)p->var_seed[k];
             d[n++] = (uint8_t)(p->var_seed[k] >> 8);
         }
+        d[n++] = p->mode;
     } else {
         const romi_pattern_t *pt = &R.prj.pat[obj - 1];
         uint32_t nl = 0, at;
@@ -1607,7 +1618,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
 {
     static romi_pattern_t in;
     const uint8_t *b = (const uint8_t *)src;
-    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + 2u * ROMI_STEPS) + 1u : 5u + 21u, n = 5, nl, j;
+    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + 2u * ROMI_STEPS) + 1u : 5u + 22u, n = 5, nl, j;
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
@@ -1626,8 +1637,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
         p->clock_out = b[n++]; p->cur_pat = b[n++]; p->chain = b[n++]; p->sc_src = b[n++]; p->sc_rel = b[n++];
         for (k = 0; k < 3; k++, n += 2)
             p->var_seed[k] = (uint16_t)(b[n] | b[n + 1] << 8);
-    } else if (obj > 1) {
-        return 0;                       /* B..D: made from A, nothing of theirs is kept */
+        p->mode = b[n++];
     } else {
         for (t = 0; t < ROMI_TRACKS; t++) {
             romi_track_t *tr = &in.tr[t];
@@ -1660,12 +1670,18 @@ int romi_store_set(int obj, const void *src, uint32_t len)
             if (tt < ROMI_TRACKS && kk < 8u && b[n + 2] < 128u)
                 in.tr[tt].step[ss].lock[kk] = (uint8_t)(b[n + 2] + 1u);
         }
-        R.prj.pat[obj - 1] = in;
+        if (obj > 1 && !R.prj.mode) {   /* LAZY: a HARD pattern, kept aside */
+            R.aside[obj - 2] = in;
+            R.aside_ok |= (uint8_t)(1u << (obj - 2));
+        } else {
+            R.prj.pat[obj - 1] = in;
+        }
         if (R.undo_pat == obj - 1)
             R.undo_ok = 0;
     }
     prj_sanitize(&R.prj);
-    derive_all();
+    if (!R.prj.mode)
+        derive_all();
     R.saved_sum[obj] = adler(b, want);
     R.playing = 0;
     R.pending_pat = 0xFFu;
@@ -1682,7 +1698,7 @@ uint32_t romi_save_wanted(void)
         return 0;
     R.save_wanted = 0;
     R.unsaved = 0;
-    for (k = 0; k < 2; k++) {           /* the settings and A: B..D are made from them */
+    for (k = 0; k < (R.prj.mode ? ROMI_NOBJ : 2); k++) {   /* LAZY: the settings and A (B..D come from them) */
         uint32_t n = pack(k, pk);
         if (adler(pk, n - 4u) != R.saved_sum[k])
             mask |= 1u << k;
@@ -1838,11 +1854,12 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAME[ROMI_TRACKS] = {"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"};
-static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2"};
+static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
+                                                    "GLOBAL 2"};
 static const char *const SOUND_NAME[ROMI_TRACKS][4] = {
     {"TUNE", "DECAY", "PUNCH", "DRIVE"}, {"DECAY", "FM", "RATIO", "GLIDE"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
@@ -1855,7 +1872,7 @@ static const char *const NOTE_NAME[12] = {"C", "C#", "D", "D#", "E", "F", "F#", 
 
 static int page_params(param_t p[4])
 {
-    romi_track_t *tr = &BASE->tr[R.track];
+    romi_track_t *tr = &EDT->tr[R.track];
     int i;
     for (i = 0; i < 4; i++) {
         p[i].name = 0;
@@ -1935,6 +1952,9 @@ static int page_params(param_t p[4])
         P(2, "RELEASE", &R.prj.sc_rel, 0, 127, F_NUM, 1);
         P(3, "AMOUNT", &tr->sc, 0, 127, F_NUM, 1);
         break;
+    case ROMI_PG_GLOBAL2:
+        P(0, "MODE", &R.prj.mode, 0, 1, F_MODE, 0);
+        break;
     default:
         P(0, "ROOT", &R.prj.root, 24, 47, F_ROOT, 0);
         P(1, "SCALE", &R.prj.scale, 0, 3, F_SCALE, 0);
@@ -1991,6 +2011,7 @@ static void param_text(const param_t *p, char *t)
         cat(t, SHAPE[v > 4 ? 4 : v]);
         break;
     }
+    case F_MODE: cat(t, v ? "HARD" : "LAZY"); break;
     case F_PITCH:                       /* semitones, 24 = none */
         if (v > 24)
             cat(t, "+");
@@ -2121,8 +2142,8 @@ void romi_draw(uint16_t *px, int strip)
     }
     text(4, PARAM_Y, t, C_ACC, 1);
     if (hs >= 0 && (R.page == ROMI_PG_SOUND || R.page == ROMI_PG_SOUND2)) {   /* a step held: its own values */
-        const romi_step_t *st = &BASE->tr[R.track].step[hs];
-        const romi_track_t *ct = &BASE->tr[R.track];
+        const romi_step_t *st = &EDT->tr[R.track].step[hs];
+        const romi_track_t *ct = &EDT->tr[R.track];
         int base = R.page == ROMI_PG_SOUND2 ? 4 : 0;
         t[0] = 0;
         cat(t, "STEP ");
@@ -2142,7 +2163,7 @@ void romi_draw(uint16_t *px, int strip)
             rect(x, PARAM_Y + 46, v * 52 / (pitch ? 48 : 127), 3, lk ? C_ACC : C_DIM);
         }
     } else if (hs >= 0) {               /* a step is held: the knobs edit it */
-        const romi_step_t *st = &BASE->tr[R.track].step[hs];
+        const romi_step_t *st = &EDT->tr[R.track].step[hs];
         static const char *const PROB[4] = {"100%", "75%", "50%", "25%"};
         t[0] = 0;
         cat(t, "STEP ");
@@ -2204,7 +2225,9 @@ void romi_draw(uint16_t *px, int strip)
         if (R.unsaved)
             text(150, FOOT_Y, "UNSAVED", C_DIM, 1);
         t[0] = 0;
-        if (R.prj.cur_pat == 1)
+        if (R.prj.mode && R.prj.cur_pat)
+            cat(t, "HARD: EDITS GO TO THIS PATTERN");
+        else if (R.prj.cur_pat == 1)
             cat(t, "B: A VARIED  NEW: ANOTHER");
         else if (R.prj.cur_pat == 2)
             cat(t, "C: A WITH ROLLS  NEW: ANOTHER");
@@ -2247,11 +2270,33 @@ static void changed(void)
 }
 static void keep_undo(void)
 {
-    R.undo = *BASE;
-    R.undo_pat = 0;
+    R.undo = *EDT;
+    R.undo_pat = R.prj.mode ? R.prj.cur_pat : 0;
     R.undo_ok = 1;
 }
 static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+/* LAZY <-> HARD. Into HARD: B..D are the HARD patterns kept aside (if there are), else copies of A ("all the same,
+ * vary them yourself"). Into LAZY: B..D go aside (nothing is lost) and are made from A again. */
+static void set_mode(uint8_t pro)
+{
+    int k;
+    R.prj.mode = pro ? 1u : 0u;
+    for (k = 1; k < ROMI_PATTERNS; k++) {
+        if (pro) {
+            R.prj.pat[k] = R.aside_ok >> (k - 1) & 1u ? R.aside[k - 1] : *BASE;
+        } else {
+            R.aside[k - 1] = R.prj.pat[k];
+            R.aside_ok |= (uint8_t)(1u << (k - 1));
+        }
+    }
+    if (!pro)
+        derive_all();
+    R.undo_ok = 0;
+    romi_message("MODE", pro ? "HARD" : "LAZY");
+    R.unsaved = 1;
+    R.dirty |= STRIP_ALL;
+}
 
 void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uint32_t now_ms)
 {
@@ -2285,7 +2330,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     {
         static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
-                                                  ROMI_B_LFO, ROMI_B_EDIT};
+                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO};
         uint8_t was = R.page;
         for (i = 0; i < ROMI_PG_EUCLID; i++)
             if (pressed & 1u << PAGE_BTN[i]) {
@@ -2296,6 +2341,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             R.page = ROMI_PG_SC;        /* FX again: the sidechain */
         if ((pressed & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND)
             R.page = ROMI_PG_SOUND2;    /* EDIT again: SOUND 2 */
+        if ((pressed & 1u << ROMI_B_GLO) && was == ROMI_PG_GLOBAL)
+            R.page = ROMI_PG_GLOBAL2;   /* GLO again: GLOBAL 2 */
         if (pressed & 1u << ROMI_B_LFO) {   /* LFO: the first LFO's page; again: the second's */
             R.page = was == ROMI_PG_LFO1 ? ROMI_PG_LFO2 : ROMI_PG_LFO1;
             R.dirty |= STRIP_ALL;
@@ -2320,7 +2367,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     }
 
     if (hs >= 0 && e_sel) {             /* a step held: SELECT nudges it early or late */
-        romi_step_t *st = &BASE->tr[R.track].step[hs];
+        romi_step_t *st = &EDT->tr[R.track].step[hs];
         st->shift = (int8_t)clampi(st->shift + e_sel, -ROMI_SHIFT_MAX, ROMI_SHIFT_MAX);
         st->flags |= ROMI_ST_ON;
         R.step_edited = 1;
@@ -2329,7 +2376,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     }
 
     if (R.page == ROMI_PG_TIMING && !R.keys_mode && e_sel) {   /* SELECT walks the cursor from hit to hit */
-        const romi_track_t *ct = &BASE->tr[R.track];
+        const romi_track_t *ct = &EDT->tr[R.track];
         int n = e_sel < 0 ? -e_sel : e_sel, dir = e_sel < 0 ? -1 : 1, len = ct->len ? ct->len : 1, k;
         while (n--)
             for (k = 1; k <= len; k++) {
@@ -2356,7 +2403,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.eu_armed = 1;
         R.dirty |= STRIP_ALL;
     }
-    tr = &BASE->tr[R.track];
+    tr = &EDT->tr[R.track];
     if (R.cursor >= tr->len)
         R.cursor = (uint8_t)(tr->len ? tr->len - 1u : 0u);
 
@@ -2430,7 +2477,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             int v = st->lock[li] ? st->lock[li] - 1 : base ? tr->q[i] : tr->p[i];
             if (!d)
                 continue;
-            if (!st->lock[li] && lock_count(BASE) >= ROMI_MAX_LOCKS) {   /* a new lock: is there room? */
+            if (!st->lock[li] && lock_count(EDT) >= ROMI_MAX_LOCKS) {   /* a new lock: is there room? */
                 romi_message("LOCKS", "FULL");
                 continue;
             }
@@ -2467,6 +2514,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         }
     } else {
         param_t pp[4];
+        uint8_t mode_was = R.prj.mode;
         page_params(pp);
         for (i = 0; i < 4; i++) {
             int d = (int)enc[ROMI_E_K1 + i];
@@ -2487,6 +2535,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 apply_euclid(R.track);
             changed();
         }
+        if (R.prj.mode != mode_was)
+            set_mode(R.prj.mode);
     }
 
     /* the keys */
@@ -2523,14 +2573,14 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 continue;
             if (i < ROMI_TRACKS && (buttons & 1u << ROMI_B_SEL) && R.sel_t) {
                 /* SEL held: the track key mutes its track or lets it play, the selection stays */
-                BASE->tr[i].mute ^= 1u;
+                EDT->tr[i].mute ^= 1u;
                 R.sel_used = 1;
-                romi_message(BASE->tr[i].mute ? "MUTE" : "PLAY", TRACK_NAME[i]);
+                romi_message(EDT->tr[i].mute ? "MUTE" : "PLAY", TRACK_NAME[i]);
                 changed();
             } else if (i < ROMI_TRACKS) {   /* the first six black keys: the tracks, heard as chosen */
                 R.track = (uint8_t)i;
                 R.eu_armed = 1;
-                tr = &BASE->tr[R.track];
+                tr = &EDT->tr[R.track];
                 if (!R.playing)
                     tq_push(i, 0, 110);
                 R.dirty |= STRIP_ALL;
@@ -2547,7 +2597,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 keep_undo();
                 rotate_track(R.track, i == 8 ? 1 : -1);
                 changed();
-            } else if (i == 9 && R.prj.cur_pat) {   /* NEW on B..D: that variation thrown again */
+            } else if (i == 9 && R.prj.cur_pat && !R.prj.mode) {   /* LAZY, NEW on B..D: that variation again */
                 static const char *const VAR[3] = {"VARIATION", "ROLLS", "KEY"};
                 R.prj.var_seed[R.prj.cur_pat - 1] = (uint16_t)(xs32(&R.ui_rng) >> 8);
                 derive(R.prj.cur_pat);
@@ -2561,10 +2611,10 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 romi_message("NEW", TRACK_NAME[R.track]);
                 R.new_t = now_ms ? now_ms : 1u;
                 changed();
-            } else if (R.undo_ok) {
+            } else if (R.undo_ok && R.undo_pat == (R.prj.mode ? R.prj.cur_pat : 0)) {
                 static romi_pattern_t now;      /* (static: not on a small stack) */
-                now = *BASE;
-                *BASE = R.undo;
+                now = *EDT;
+                *EDT = R.undo;
                 R.undo = now;           /* undo again: redo */
                 romi_message("UNDO", "");
                 changed();
@@ -2573,12 +2623,16 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     }
     if (R.evolve) {                     /* EVOLVE came round: new variations of A */
         R.evolve = 0;
-        new_seeds();
-        R.base_changed = 1;
-        R.unsaved = 1;
+        if (!R.prj.mode) {
+            new_seeds();
+            R.base_changed = 1;
+            R.unsaved = 1;
+        }
     }
     if (R.base_changed) {
-        derive_all();
+        if (!R.prj.mode)
+            derive_all();
+        R.base_changed = 0;
         R.dirty |= STRIP_ALL;
     }
 }
@@ -2596,7 +2650,7 @@ void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint3
     static const uint8_t BK[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
     static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
-                                                  ROMI_B_LFO, ROMI_B_EDIT};
+                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO};
     const romi_track_t *tr = &PAT->tr[R.track];
     uint32_t b = 1u << PAGE_BTN[R.page], k = 0, dk = 0;
     int i;

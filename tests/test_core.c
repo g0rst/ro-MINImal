@@ -838,7 +838,7 @@ int main(int argc, char **argv)
     }
 
     /* the variations: B, C, D made from A. Over many grooves and every scale: each differs from A; all keep the
-     * kick four on the floor; B keeps A's harmony (its stab notes are A's, in another order), C rolls in its last
+     * kick on 0 and 4 (B may leave out 8 or 12, C may pause for the last four steps); B keeps A's harmony (its stab notes are A's, in another order), C rolls in its last
      * four hat steps, D is A's stab moved by its key step; an edit made while B plays goes to A and B follows;
      * NEW on B throws only B again; EVOLVE gives new B..D after a round; the store keeps only the settings and
      * A and makes B..D again from them */
@@ -848,7 +848,7 @@ int main(int argc, char **argv)
         static romi_pattern_t keep_b, keep_c, keep_d;
         static uint8_t obj[ROMI_NOBJ][ROMI_OBJ_MAX];
         uint32_t len[ROMI_NOBJ];
-        int g, k, t2;
+        int g, k, t2, drops[3] = {0, 0, 0};
         for (g = 0; g < 80; g++) {
             const romi_pattern_t *pa, *pb, *pc2, *pd;
             int sa[16], sb2[16], na = 0, nb = 0, iv, sc = g % 4, m, j, ok;
@@ -859,10 +859,15 @@ int main(int argc, char **argv)
             pc2 = &romi_project()->pat[2]; pd = &romi_project()->pat[3];
             CHECK(memcmp(pa, pb, sizeof *pa) && memcmp(pa, pc2, sizeof *pa) && memcmp(pa, pd, sizeof *pa),
                   "groove %d: a variation the same as A", g);
-            for (t2 = 1; t2 < 4; t2++)
-                for (k = 0; k < 16; k += 4)
-                    CHECK(romi_project()->pat[t2].tr[ROMI_KICK].step[k].flags & ROMI_ST_ON,
-                          "groove %d: pattern %c without the kick on %d", g, 'A' + t2, k);
+            for (t2 = 1; t2 < 4; t2++)              /* the kick: D four on the floor; B and C may sit out 8 or 12 */
+                for (k = 0; k < 16; k += 4) {
+                    int on = romi_project()->pat[t2].tr[ROMI_KICK].step[k].flags & ROMI_ST_ON;
+                    if (!on && t2 < 3 && k >= 8) { drops[t2]++; continue; }
+                    CHECK(on, "groove %d: pattern %c without the kick on %d", g, 'A' + t2, k);
+                }
+            if (!(pc2->tr[ROMI_KICK].step[12].flags & ROMI_ST_ON))   /* C's pause: the whole last four steps */
+                for (k = 13; k < 16; k++)
+                    CHECK(!(pc2->tr[ROMI_KICK].step[k].flags & ROMI_ST_ON), "groove %d: C's kick pause on %d", g, k);
             for (k = 0; k < 16; k++) {              /* B: the same chords, maybe in another order */
                 if (pa->tr[ROMI_STAB].step[k].flags & ROMI_ST_ON) sa[na++] = pa->tr[ROMI_STAB].step[k].note;
                 if (pb->tr[ROMI_STAB].step[k].flags & ROMI_ST_ON) sb2[nb++] = pb->tr[ROMI_STAB].step[k].note;
@@ -895,6 +900,8 @@ int main(int argc, char **argv)
                         CHECK(hit, "groove %d: pattern %c track %d note %d not in the scale", g, 'A' + j, t2, st->note);
                     }
         }
+        CHECK(drops[1] > 5 && drops[1] < 60, "B left out a kick beat %d times in 80 grooves", drops[1]);
+        CHECK(drops[2] > 20 && drops[2] < 70, "C paused the kick %d times in 80 grooves", drops[2]);
         /* an edit while B plays goes to A, and B follows */
         romi_init(13);
         turn(ROMI_E_PRESET, 1);
@@ -938,6 +945,55 @@ int main(int argc, char **argv)
         }
         tap_button(ROMI_B_PLAY);
         CHECK(memcmp(&keep_b, &romi_project()->pat[1], sizeof keep_b), "EVOLVE: B the same after a round");
+    }
+
+    /* LAZY and HARD (GLOBAL 2): HARD makes B..D copies of A, edits and NEW go to the pattern playing, all five
+     * objects are saved; back in LAZY B..D are made from A again and the HARD ones wait aside */
+    {
+        static romi_pattern_t keep_a, keep_b, hard_b;
+        static uint8_t obj[ROMI_NOBJ][ROMI_OBJ_MAX];
+        uint32_t len[ROMI_NOBJ];
+        int k;
+        romi_init(21);
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_GLOBAL2, "GLO twice: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_K1, 1);
+        CHECK(romi_project()->mode == 1, "MODE: %d", romi_project()->mode);
+        for (k = 1; k < 4; k++)
+            CHECK(!memcmp(&romi_project()->pat[0], &romi_project()->pat[k], sizeof keep_a), "HARD: %c not A", 'A' + k);
+        keep_a = romi_project()->pat[0];
+        turn(ROMI_E_PRESET, 1);                     /* on B */
+        tap_button(ROMI_B_ENV);
+        turn(ROMI_E_K1, -5);
+        CHECK(romi_project()->pat[1].tr[ROMI_KICK].level == 100 && romi_project()->pat[0].tr[ROMI_KICK].level == 120,
+              "HARD edit on B: A %d B %d", romi_project()->pat[0].tr[ROMI_KICK].level, romi_project()->pat[1].tr[ROMI_KICK].level);
+        keep_b = romi_project()->pat[1];
+        tap_key(22);                                /* NEW: B's current track, only B */
+        CHECK(!memcmp(&keep_a, &romi_project()->pat[0], sizeof keep_a), "HARD NEW on B changed A");
+        CHECK(memcmp(&keep_b, &romi_project()->pat[1], sizeof keep_b), "HARD NEW on B: B the same");
+        hard_b = romi_project()->pat[1];
+        tap_button(ROMI_B_SAVE);
+        CHECK(romi_save_wanted() == 0x1fu, "HARD save: %x", romi_save_wanted());
+        for (k = 0; k < ROMI_NOBJ; k++) len[k] = romi_store_get(k, obj[k], sizeof obj[k]);
+        romi_init(22);
+        for (k = 0; k < ROMI_NOBJ; k++) CHECK(romi_store_set(k, obj[k], len[k]) == 0, "HARD load %d", k);
+        CHECK(romi_project()->mode == 1 && !memcmp(&hard_b, &romi_project()->pat[1], sizeof hard_b), "HARD: B not loaded");
+        /* back to LAZY: B made from A; then HARD again: the HARD B is back */
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        turn(ROMI_E_K1, -1);
+        CHECK(romi_project()->mode == 0 && memcmp(&hard_b, &romi_project()->pat[1], sizeof hard_b), "LAZY: B not made from A");
+        tap_button(ROMI_B_SAVE);
+        { uint32_t w = romi_save_wanted(); CHECK(w == 1u, "LAZY save: %x (the settings only: A as loaded, B..D not kept)", w); }
+        turn(ROMI_E_K1, 1);
+        CHECK(!memcmp(&hard_b, &romi_project()->pat[1], sizeof hard_b), "HARD again: B lost");
+        /* loaded in LAZY, the HARD patterns wait aside */
+        romi_init(23);
+        romi_project()->mode = 0;
+        CHECK(romi_store_set(2, obj[2], len[2]) == 0, "LAZY load of B");
+        CHECK(memcmp(&hard_b, &romi_project()->pat[1], sizeof hard_b), "LAZY: the loaded B plays");
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        turn(ROMI_E_K1, 1);
+        CHECK(!memcmp(&hard_b, &romi_project()->pat[1], sizeof hard_b), "HARD: the B kept aside not back");
     }
 
     /* MIDI: channel 1 plays the kick */
