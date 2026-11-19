@@ -314,9 +314,13 @@ int main(int argc, char **argv)
         CHECK(gaps && hi - lo <= 1 && (tr->step[0].flags & ROMI_ST_ON), "5 in 16 uneven: gaps %d..%d", lo, hi);
         turn(ROMI_E_K2, 2);
         CHECK(!(tr->step[0].flags & ROMI_ST_ON) && (tr->step[2].flags & ROMI_ST_ON), "rotate by 2");
-        turn(ROMI_E_K3, -2);
+        turn(ROMI_E_K3, -2);                        /* chance: stepless, 1 % a click */
+        CHECK(tr->eu_prob == 98 && ROMI_CHANCE(&tr->step[2]) == 98, "EUCLID chance: %d, the step's %d", tr->eu_prob,
+              ROMI_CHANCE(&tr->step[2]));
+        { int k; for (k = 0; k < 15; k++) turn(ROMI_E_K3, -3); }   /* down to 53 */
+        CHECK(tr->eu_prob == 53 && ROMI_CHANCE(&tr->step[2]) == 53, "EUCLID chance down: %d", tr->eu_prob);
         turn(ROMI_E_K4, 2);
-        CHECK(ROMI_CHANCE(&tr->step[2]) == 50 && (tr->step[2].flags & ROMI_ST_ACC), "chance and accent: %d %02x", ROMI_CHANCE(&tr->step[2]), tr->step[2].flags);
+        CHECK(ROMI_CHANCE(&tr->step[2]) == 53 && (tr->step[2].flags & ROMI_ST_ACC), "chance and accent: %d %02x", ROMI_CHANCE(&tr->step[2]), tr->step[2].flags);
     }
     tap_key(25);                                    /* UNDO */
     CHECK(romi_state(ROMI_Q_STEPS_ON) == v, "undo after euclid: %d, was %d", romi_state(ROMI_Q_STEPS_ON), v);

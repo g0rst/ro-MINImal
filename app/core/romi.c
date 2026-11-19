@@ -1549,7 +1549,7 @@ static void apply_euclid(int t)
         if (i * tr->eu_hits % len < tr->eu_hits) {
             uint32_t acc = tr->eu_acc && n % tr->eu_acc == 0u ? ROMI_ST_ACC : 0u;
             tr->step[(i + tr->eu_rot) % len].flags = (uint8_t)(ROMI_ST_ON | acc);
-            tr->step[(i + tr->eu_rot) % len].chance = PCT[3u - (tr->eu_prob & 3u)];
+            tr->step[(i + tr->eu_rot) % len].chance = tr->eu_prob >= 100u ? 0u : tr->eu_prob;   /* stepless, 1..100 % */
             n++;
         }
 }
@@ -1644,7 +1644,7 @@ static void pattern_defaults(romi_pattern_t *p)
             tr->lfo[i].target = (uint8_t)(i ? 5 : 1); /* the second parameter (mostly a decay or brightness), pan */
             tr->lfo[i].shape = 0;
         }
-        tr->eu_prob = 3;
+        tr->eu_prob = 100;
         tr->sc = t == ROMI_KICK ? 0 : t == ROMI_SUB ? 72 : 127;   /* the sub ducks less: it plays between the kicks */
         tr->len = 16;
         for (i = 0; i < ROMI_STEPS; i++) {
@@ -1714,7 +1714,7 @@ static void prj_sanitize(romi_project_t *p)
             }
             LIM(tr->eu_hits, 0, tr->len);
             LIM(tr->eu_rot, 0, tr->len - 1);
-            LIM(tr->eu_prob, 0, 3);
+            LIM(tr->eu_prob, 1, 100);
             LIM(tr->eu_acc, 0, 4);
             for (i = 0; i < 4; i++)
                 LIM(tr->p[i], 0, 127);
@@ -1870,7 +1870,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
-    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15) ||
+    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u) ||
         b[4] != (obj ? obj - 1 : 0))
         return -2;
     if (obj)
@@ -1896,6 +1896,8 @@ int romi_store_set(int obj, const void *src, uint32_t len)
                 tr->p[k] = b[n++];
             tr->level = b[n++]; tr->pan = b[n++]; tr->dly = b[n++]; tr->rev = b[n++];
             tr->eu_hits = b[n++]; tr->eu_rot = b[n++]; tr->eu_prob = b[n++]; tr->eu_acc = b[n++];
+            if (ver < 17u)                  /* before 17: the EUCLID chance in four steps, 0..3 for 25..100 % */
+                tr->eu_prob = (uint8_t)(25u * ((tr->eu_prob & 3u) + 1u));
             tr->sc = b[n++]; tr->dep_src = b[n++]; tr->tshift = (int8_t)b[n++]; tr->dep_mode = b[n++];
             tr->follow = b[n++];
             for (k = 0; k < ROMI_LFOS; k++) {
@@ -2243,7 +2245,7 @@ static int page_params(param_t p[4])
     case ROMI_PG_EUCLID:
         P(0, "HITS", &tr->eu_hits, 0, tr->len, F_NUM, 0);
         P(1, "ROTATE", &tr->eu_rot, 0, (uint8_t)(tr->len - 1u), F_NUM, 0);
-        P(2, "CHANCE", &tr->eu_prob, 0, 3, F_EPROB, 0);
+        P(2, "CHANCE", &tr->eu_prob, 1, 100, F_EPROB, 0);   /* stepless, 1 % a click */
         P(3, "ACCENT", &tr->eu_acc, 0, 4, F_EACC, 0);
         break;
     case ROMI_PG_TIMING: {              /* (signed values: F_SHIFT is handled apart, -8..8) */
@@ -2315,7 +2317,6 @@ static void param_text(const param_t *p, char *t)
     static const char *const DTIME[3] = {"1/16", "1/8", "3/16"};
     static const char *const CHORD[5] = {"MIN", "MIN7", "MIN9", "SUS", "5TH"};
     static const char *const CHAIN[5] = {"OFF", "A-B", "A-C", "A-D", "EVOLVE"};
-    static const char *const EPROB[4] = {"25%", "50%", "75%", "100%"};
     static const char *const EACC[5] = {"OFF", "ALL", "2ND", "3RD", "4TH"};
     static const char *const DEPMODE[3] = {"WITH", "GAPS", "AFTER"};
     int v = *p->v;
@@ -2334,7 +2335,7 @@ static void param_text(const param_t *p, char *t)
     case F_PRATIO: cat(t, "R"); cat_int(t, 1 + (v >> 4)); break;
     case F_CHORD: cat(t, CHORD[v * 5 / 128]); break;
     case F_CHAIN: cat(t, CHAIN[v > 4 ? 4 : v]); break;
-    case F_EPROB: cat(t, EPROB[v & 3]); break;
+    case F_EPROB: cat_int(t, v); cat(t, "%"); break;
     case F_EACC: cat(t, EACC[v > 4 ? 4 : v]); break;
     case F_TRACK: cat(t, TRACK_NAME[v % ROMI_TRACKS]); break;
     case F_DEPSRC: cat(t, v && v <= ROMI_TRACKS ? TRACK_NAME[v - 1] : "OFF"); break;

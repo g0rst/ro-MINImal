@@ -68,7 +68,7 @@ typedef struct {
                                          * time, perc bend time, else attack; drive (kick: pitch time); crush */
     uint8_t level, pan, dly, rev;       /* 0..127 */
     uint8_t eu_hits, eu_rot;            /* the EUCLID page: hits spread over the loop, rotated */
-    uint8_t eu_prob;                    /* 0..3: 25, 50, 75, 100 % for all of them */
+    uint8_t eu_prob;                    /* 1..100 %: the chance of all of them, stepless */
     uint8_t eu_acc;                     /* 0: none; n: every n-th hit accented */
     uint8_t sc;                         /* 0..127: how much the sidechain ducks this track */
     uint8_t dep_src;                    /* the LINK page: 0 none, else track + 1 whose hits gate this track's steps */
@@ -117,7 +117,7 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 16u
+#define ROMI_VERSION 17u
 /* the style SUOMI (suom1saundi's voices and generator) is built in when ROMI_SUOMI is 1: the first thing to leave
  * (ROMI_SUOMI 0) or to become a firmware of its own, should the FM-1 run short of time. ROMI_START_STYLE: the style
  * a fresh start comes up in: 0 the firmware ro:MINImal (suom1saundi its bonus), 1 the firmware suom1saundi */

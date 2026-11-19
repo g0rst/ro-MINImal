@@ -397,7 +397,8 @@ p(T("Press [[SEQ]]. The page spreads hits as evenly as the loop allows. Notes st
 table(T(["knob", "value"], ["knopf", "wert"], ["buton", "valoare"]),
       ("[[KNOB1]] HITS", T("number of hits in the loop", "Anzahl der Schläge im Loop", "numărul de lovituri din buclă")),
       ("[[KNOB2]] ROTATE", T("turns the pattern around the loop", "dreht das Muster im Loop", "rotește tiparul în buclă")),
-      ("[[KNOB3]] CHANCE", T("chance for all hits", "Chance für alle Schläge", "șansa pentru toate loviturile")),
+      ("[[KNOB3]] CHANCE", T("chance for all hits, stepless: 1 to 100 %", "Chance für alle Schläge, stufenlos: 1 bis 100 %",
+                             "șansa pentru toate loviturile, continuu: 1–100 %")),
       ("[[KNOB4]] ACCENT", T("accent on every hit, or every 2nd, 3rd, 4th",
                              "Akzent auf jedem Schlag oder jedem 2., 3., 4.",
                              "accent pe fiecare lovitură sau la fiecare a 2-a, a 3-a, a 4-a")))

@@ -184,7 +184,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | LFO | Seite LFO 1 der Spur; nochmal: LFO 2. Je RATE (1/16 bis 16 Takte), DEPTH (±), TARGET (Klangparameter beider SOUND-Seiten, Pegel, Pan, Delay, Reverb), SHAPE (Sinus, Dreieck, Säge, Rechteck, Zufall) |
 | LFO ein drittes Mal | Seite MOD: K1 RESTART (FREE oder eine Spur, deren Schläge die LFOs der Spur neu starten), K2 ENV SRC (die Lautstärke einer Spur als Modulation), K3 ENV DEPTH (±), K4 ENV TGT (dieselben Ziele wie ein LFO; Pegel, Pan, Sends fließend) |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
-| SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |
+| SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance (stufenlos, 1 bis 100 %), Akzent auf jedem n-ten Schlag |
 | SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach). K3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk: SUB folgt STAB; OFF schaltet es ab). K4 ACCENT: akzentuierte Schläge einer anderen Spur akzentuieren diese Spur auf demselben Step |
 | SAVE | Projekt im Flash sichern (Einstellungen und Pattern A; B bis D entstehen daraus) |
 | PRESETS | Pattern A bis D, im Lauf zum nächsten Takt. Bearbeitet wird immer A, auch wenn B, C oder D läuft |
