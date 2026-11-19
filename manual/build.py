@@ -199,11 +199,11 @@ table(T(["track", "sound", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["spur", "klang"
       ("KICK", T("sine with a falling pitch, a click, soft clipping",
                  "Sinus mit fallender Tonhöhe, Click, weiche Sättigung",
                  "sinus cu înălțime care coboară, un click, saturație moale"), "TUNE", "DECAY", "PUNCH", "DRIVE"),
-      ("SUB", T("sine with a short FM attack, a little drive; notes glide. An octave over the root (F2), so small "
+      ("SUB", T("sine with a short FM attack; notes glide. No bass boost of its own: the low end is GROOVE 2 BASS. An octave over the root (F2), so small "
                 "speakers carry it; SOUND 2 PITCH -12 for the deep sub",
-                "Sinus mit kurzem FM-Anschlag, etwas Drive; Noten gleiten. Eine Oktave über dem Grundton (F2), damit "
+                "Sinus mit kurzem FM-Anschlag; Noten gleiten. Kein eigener Bass-Boost: das Fundament regelt GROOVE 2 BASS. Eine Oktave über dem Grundton (F2), damit "
                 "ihn auch kleine Boxen tragen; SOUND 2 PITCH -12 für den tiefen Sub",
-                "sinus cu un atac FM scurt, puțin drive; notele alunecă. O octavă peste fundamentală (F2), ca să-l "
+                "sinus cu un atac FM scurt; notele alunecă. Fără bass boost propriu: fundamentul îl reglează GROOVE 2 BASS. O octavă peste fundamentală (F2), ca să-l "
                 "ducă și boxele mici; SOUND 2 PITCH -12 pentru sub-ul adânc"), "DECAY", "FM", "RATIO", "GLIDE"),
       ("HAT", T("metallic FM against noise; an accent opens it", "metallisches FM gegen Rauschen; ein Akzent öffnet",
                 "FM metalic contra zgomot; accentul îl deschide"), "DECAY", "TONE", "METAL", "OPEN"),

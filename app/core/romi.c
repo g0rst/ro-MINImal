@@ -2114,7 +2114,8 @@ static void pattern_defaults(romi_pattern_t *p)
     static const uint8_t DEF[ROMI_TRACKS][8] = {
         /* p0   p1   p2   p3  level pan  dly  rev */
         {  44,  62,  70,  30,  92,  64,   0,   0},   /* kick: tune decay punch drive (level 92: 72 %) */
-        {  70,  52,   0,  45, 112,  64,   0,   0},   /* sub: decay fm ratio glide */
+        {  70,  40,   0,  45, 104,  64,   0,   0},   /* sub: decay fm ratio glide (no boost of its own: the low end
+                                                       * is the master's BASS, GROOVE 2) */
         {  42,  70,  80,  64,  90,  74,  18,  20},   /* hat: decay tone metal open */
         {   0,  12,  40,  16,  78,  46,  50,  40},   /* perc: decay fm ratio bend (in the back: the shortest, little
                                                        * FM, less bend, level 78: 61 %) */
@@ -2150,7 +2151,7 @@ static void pattern_defaults(romi_pattern_t *p)
         tr->engine = 0;
         {   /* SOUND 2: as the sound was before it had the page (kick click 0.25, pitch 22 ms; sub FM 60 ms; perc
              * bend 12 ms; stab attack 2.3 ms); no pitch, drive or crush */
-            static const uint8_t Q[ROMI_TRACKS][4] = {{24, 53, 79, 0}, {24, 82, 30, 0}, {24, 0, 0, 0},
+            static const uint8_t Q[ROMI_TRACKS][4] = {{24, 53, 79, 0}, {24, 82, 0, 0}, {24, 0, 0, 0},
                                                       {24, 64, 0, 0}, {24, 38, 0, 0}, {24, 0, 0, 0}};
             for (i = 0; i < 4; i++)
                 tr->q[i] = Q[t][i];
@@ -2162,7 +2163,7 @@ static void pattern_defaults(romi_pattern_t *p)
             tr->lfo[i].shape = 0;
         }
         tr->eu_prob = 100;
-        tr->sc = t == ROMI_KICK ? 0 : t == ROMI_SUB ? 72 : 127;   /* the sub ducks less: it plays between the kicks */
+        tr->sc = t == ROMI_KICK ? 0 : 127;  /* (the sub ducks as all: its low end is the BASS knob's) */
         tr->len = 16;
         for (i = 0; i < ROMI_STEPS; i++) {
             tr->step[i].flags = 0;

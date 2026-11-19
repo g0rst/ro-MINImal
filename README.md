@@ -156,7 +156,7 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 | Spur | Synthese | K1 bis K4 auf der Seite EDIT |
 | --- | --- | --- |
 | KICK | Sinus mit Pitch-Hüllkurve, Click, Soft-Clipper | TUNE, DECAY, PUNCH, DRIVE |
-| SUB | Sinus mit kurzem FM-Anschlag und etwas Drive, Legato-Glide; eine Oktave über dem Grundton (F2, gut hörbar auch auf kleinen Boxen), SOUND 2 PITCH -12 für den tiefen Sub; duckt nur halb. Ohne Knackser: Legato-Noten setzen bei der laufenden Lautstärke an, der FM-Anschlag wird weich eingeblendet, ein sanfter Tiefpass (1,2 kHz) nimmt die Kanten, und der Sidechain greift in 2 ms statt sprunghaft | DECAY, FM, RATIO, GLIDE |
+| SUB | Sinus mit kurzem FM-Anschlag, Legato-Glide; eine Oktave über dem Grundton (F2, gut hörbar auch auf kleinen Boxen), SOUND 2 PITCH -12 für den tiefen Sub; ohne eigenen Bass-Boost (kein Drive, duckt voll): das Fundament regelt GROOVE 2 K4 BASS. Ohne Knackser: Legato-Noten setzen bei der laufenden Lautstärke an, der FM-Anschlag wird weich eingeblendet, ein sanfter Tiefpass (1,2 kHz) nimmt die Kanten, und der Sidechain greift in 2 ms statt sprunghaft | DECAY, FM, RATIO, GLIDE |
 | HAT | zwei unharmonische FM-Paare gegen Rauschen, Hochpass; Akzent öffnet | DECAY, TONE, METAL, OPEN |
 | PERC | ein FM-Paar mit Pitch-Bend: Rim, Holz, Tom, Blip | DECAY, FM, RATIO, BEND |
 | STAB | Dreiklang aus FM-Paaren, Tiefpass folgt der Hüllkurve | DECAY, BRIGHT, CHORD, DETUNE |
