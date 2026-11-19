@@ -781,7 +781,7 @@ static inline float sl_read(int k, uint32_t pos)   /* the buffer at a place in 1
 {
     uint32_t i = pos >> 16 & (SL_LEN - 1u), j = (i + 1u) & (SL_LEN - 1u);
     int32_t a = sl_buf[k][i], d = (int32_t)sl_buf[k][j] - a;
-    return ((float)a + (float)d * (float)(pos & 0xFFFFu) * (1.0f / 65536.0f)) * (1.0f / 16384.0f);
+    return ((float)a + (float)d * (float)(pos & 65535u) * (1.0f / 65536.0f)) * (1.0f / 16384.0f);
 }
 static void slice_block(float slen)    /* a block's lengths: no divisions sample by sample */
 {
@@ -852,10 +852,10 @@ static float slice_run(int t, float x)
                 age -= L;
             float tt;
             if (age == 0u) {            /* a new grain: where, how fast, which way */
-                int32_t inc = 0x10000;
+                int32_t inc = 1 << 16;          /* (fixed point: shifts, not hex, for the address check) */
                 uint32_t off;
                 if (frand(&R.rng) < r * 0.5f)
-                    inc = frand(&R.rng) < 0.5f ? 0x20000 : 0x8000;
+                    inc = frand(&R.rng) < 0.5f ? 2 << 16 : 1 << 15;
                 if (frand(&R.rng) < r * 0.3f)
                     inc = -inc;
                 off = 2u * L + 4u + (uint32_t)(frand(&R.rng) * r * (float)(SL_LEN - 4u * L - 8u));
