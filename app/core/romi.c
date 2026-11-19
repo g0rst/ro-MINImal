@@ -117,7 +117,7 @@ static struct {
     volatile uint8_t flash[ROMI_TRACKS];   /* a trigger happened: the screen shows it */
     bus_t bus[ROMI_TRACKS];
     struct { float ph, amp, ac, penv, pc, f0, pd, drive, norm, vel, clickamt; int32_t click; } kick;
-    struct { float ph, mph, f, ft, gc, amp, ac, ienv, ic, idx, ratio, att, vel; } sub;
+    struct { float ph, mph, f, ft, gc, amp, ac, ienv, ic, idx, ratio, att, vel, ism, lp; } sub;
     struct { float ph, mph, ph2, mph2, f, amp, ac, metal, lp, vel; } hat;
     struct { float ph, mph, f, benv, bc, bend, amp, ac, ienv, ic, idx, ratio, vel; } perc;
     stab_v stab[2];                     /* tracks 5 and 6, each its engine's own */
@@ -129,7 +129,7 @@ static struct {
     uint32_t br_len, br_pos;            /* its length, its place (first recorded, then looped) */
     float br_x;                         /* the crossfade into and out of the repeat */
     shape_t shape[ROMI_TRACKS];
-    float duck_env;
+    float duck_env, duck_s;             /* the sidechain: its envelope, and that eased in over 2 ms (no step, no pop) */
     uint32_t dly_w;
     float dly_lp;
     uint32_t comb_i[4], ap_i[4];
@@ -467,10 +467,16 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
         R.sub.idx = drifted(t, 1, p[1]) * (0.45f / 127.0f) * (acc ? 1.4f : 1.0f);
         R.sub.ic = decay_coef(pmap((float)q[1], 0.01f, 4.0f));   /* SOUND 2: FM.TIME */
         R.sub.ratio = (float)(1 + p[2] * 3 / 128);
-        if (slide) {                    /* the tone goes on: no FM burst, the level lifted back */
+        if (slide) {                    /* the tone goes on: no FM burst, the level lifted back (smoothly) */
+            R.sub.att *= R.sub.amp > 0.85f ? 1.0f : R.sub.amp * (1.0f / 0.85f);
             R.sub.amp = R.sub.amp > 0.85f ? R.sub.amp : 0.85f;
             R.sub.vel = R.sub.vel > vel ? R.sub.vel : vel;
         } else {
+            if (legato) {               /* a note into a sounding one: from where its level is, not a jump (a pop) */
+                R.sub.att *= R.sub.amp * R.sub.vel / (vel > 0.01f ? vel : 0.01f);
+                if (R.sub.att > 1.0f)
+                    R.sub.att = 1.0f;
+            }
             R.sub.ienv = 1.0f;
             R.sub.amp = 1.0f;
             R.sub.vel = vel;
@@ -1258,12 +1264,14 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
                 R.sub.ph -= 1.0f;
             if (R.sub.mph >= 1.0f)
                 R.sub.mph -= 1.0f;
-            x = fsin(R.sub.ph + fsin(R.sub.mph) * R.sub.idx * R.sub.ienv) * R.sub.amp * R.sub.att * R.sub.vel;
+            R.sub.ism += (R.sub.idx * R.sub.ienv - R.sub.ism) * 0.02f;   /* the FM burst eased in: no edge */
+            x = fsin(R.sub.ph + fsin(R.sub.mph) * R.sub.ism) * R.sub.amp * R.sub.att * R.sub.vel;
             R.sub.att += (1.0f - R.sub.att) * 0.006f;
             R.sub.ienv *= R.sub.ic;
             R.sub.amp *= R.sub.ac;
         }
-        v[ROMI_SUB] = x;
+        R.sub.lp += (x - R.sub.lp) * 0.157f;   /* a gentle low-pass, 1.2 kHz, 6 dB: the clicks off, the body kept */
+        v[ROMI_SUB] = R.sub.lp;
 
         /* hat: two inharmonic FM pairs against noise, high-passed */
         x = 0.0f;
@@ -1336,7 +1344,8 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
 
         /* the mix: the sidechain's source ducks each track by that track's amount, and the effects */
-        x = duck_amt * R.duck_env;
+        R.duck_s += (R.duck_env - R.duck_s) * 0.011f;
+        x = duck_amt * R.duck_s;
         duck = 1.0f - x;
         R.duck_env *= duck_c;
         l = r = sd = sr = 0.0f;
