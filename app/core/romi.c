@@ -172,6 +172,8 @@ static struct {
      * an UFO lands in the forest, the screen zooms, it explodes into the name; to ro:MINImal the name flies in */
     uint32_t glo_t, ufo_t, ufo_ms;      /* GLO pressed: when; the animation's start; its last frame */
     uint8_t glo_held, ufo;
+    uint8_t fade;                       /* after the show: its last picture fades into the pages (which show) */
+    uint32_t fade_t, fade_ms;
     volatile uint8_t jg_want;           /* the jingle: asked for by the UI (1 UFO, 2 the beep alone, 3 stop) */
     uint8_t jg_mode;
     uint32_t jg_n, jg_rng;
@@ -2571,7 +2573,15 @@ void romi_init(uint32_t seed)
 
 static uint16_t *cv;
 static int cv_y0;
+static uint32_t cv_alpha = 256u;        /* below 256: rect mixes its colour over what is there (the fade) */
 
+static uint16_t mix565(uint32_t a, uint32_t b, uint32_t al)   /* b over a, al of 256 */
+{
+    uint32_t r = ((a >> 11) * (256u - al) + (b >> 11) * al) >> 8;
+    uint32_t g = ((a >> 5 & 63u) * (256u - al) + (b >> 5 & 63u) * al) >> 8;
+    uint32_t bl = ((a & 31u) * (256u - al) + (b & 31u) * al) >> 8;
+    return (uint16_t)(r << 11 | g << 5 | bl);
+}
 static void rect(int x, int y, int w, int h, uint16_t c)
 {
     int xx, yy, x1 = x + w, y1 = y + h;
@@ -2581,6 +2591,12 @@ static void rect(int x, int y, int w, int h, uint16_t c)
     if (y < 0) y = 0;
     if (x1 > ROMI_W) x1 = ROMI_W;
     if (y1 > ROMI_STRIP_H) y1 = ROMI_STRIP_H;
+    if (cv_alpha < 256u) {
+        for (yy = y; yy < y1; yy++)
+            for (xx = x; xx < x1; xx++)
+                cv[yy * ROMI_W + xx] = mix565(cv[yy * ROMI_W + xx], c, cv_alpha);
+        return;
+    }
     for (yy = y; yy < y1; yy++)
         for (xx = x; xx < x1; xx++)
             cv[yy * ROMI_W + xx] = c;
@@ -3172,6 +3188,12 @@ static void uf_pine(float x, float base, int h, uint16_t c, uint16_t trunk)
     }
     wpx(x - 1.0f, base - 4.0f, 2.0f, 4.0f, trunk);
 }
+static void draw_suomi_name(void)
+{
+    int i = text(21, 109, "SUOM", C_FG, 3);
+    i = text(i, 109, "1", RGB(170, 255, 60), 3);
+    text(i, 109, "SAUNDI", C_FG, 3);
+}
 static void draw_ufo(int f)
 {
     static const char *const SHIP[7] = {"    .ooo.    ", "   .ooooo.   ", "  GGGGGGGGG  ", " GGGGGGGGGGGG",
@@ -3196,11 +3218,8 @@ static void draw_ufo(int f)
             float a = (float)i * (1.0f / 32.0f), r = 14.0f * (float)e;
             rect((int)(120.0f + fsin(a + 0.25f) * r) - 2, (int)(120.0f + fsin(a) * r) - 2, 4, 4, GREY(200));
         }
-        if (e >= 9) {                   /* the name, as suom1saundi writes it */
-            i = text(21, 109, "SUOM", C_FG, 3);
-            i = text(i, 109, "1", RGB(170, 255, 60), 3);
-            text(i, 109, "SAUNDI", C_FG, 3);
-        }
+        if (e >= 9)                     /* the name, as suom1saundi writes it */
+            draw_suomi_name();
         return;
     }
     zz = f < 48 ? 0.0f : (float)(f - 48) * (1.0f / 17.0f);
@@ -3341,9 +3360,27 @@ static void draw_flyin(int f)
     }
 }
 
+#define FADE_FRAMES 9
 void romi_draw(uint16_t *px, int strip)
 {
     int f;
+    if (R.fade && !R.saver) {           /* the show's last picture (black, the name) fades into the pages */
+        uint32_t al = (uint32_t)((R.now - R.fade_t) / 33u + 1u) * 256u / (FADE_FRAMES + 1u), i;
+        draw_main(px, strip);
+        cv = px;
+        cv_y0 = strip * ROMI_STRIP_H;
+        if (al > 256u)
+            al = 256u;
+        for (i = 0; i < (uint32_t)(ROMI_W * ROMI_STRIP_H); i++)   /* the pages come up out of black */
+            px[i] = mix565(0u, px[i], al);
+        cv_alpha = 256u - al;           /* and the name goes */
+        if (R.fade == 1u)
+            draw_suomi_name();
+        else
+            draw_flyin(FLY_FRAMES);
+        cv_alpha = 256u;
+        return;
+    }
     if (!R.ufo || R.saver) {
         draw_main(px, strip);
         return;
@@ -3842,6 +3879,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         if (any || now_ms - R.ufo_t >= CHANGE_MS(R.ufo)) {   /* at its end the style changes: a new groove in it */
             if (any)
                 R.jg_want = 3;
+            R.fade = R.ufo;             /* a few frames of fade into the pages, not a hard cut */
+            R.fade_t = R.fade_ms = now_ms;
             R.ufo = 0;
             R.prj.style = (uint8_t)!R.prj.style;
             set_style();
@@ -4285,6 +4324,15 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.sv_y = (int16_t)((60 + urand(120)) << 4);
         R.sv_dx = (int16_t)(urand(2) ? 3 : -3);
         R.sv_dy = (int16_t)(urand(2) ? 7 : -7);
+    }
+    if (R.fade) {                       /* the fade after the show: 30 frames a second, then the pages alone */
+        if (now_ms - R.fade_t >= (uint32_t)FADE_FRAMES * 33u) {
+            R.fade = 0;
+            R.dirty |= STRIP_ALL;
+        } else if (now_ms - R.fade_ms >= 33u) {
+            R.fade_ms = now_ms;
+            R.dirty |= STRIP_ALL;
+        }
     }
     if (R.saver) {                      /* 30 frames a second, the whole screen; nothing else is drawn */
         R.dirty = 0;

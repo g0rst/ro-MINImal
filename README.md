@@ -42,8 +42,8 @@ Derselbe Kern kann zwei Stile: **ro:MINImal** (Rominimal, Microhouse) und **suom
 Freestyle-Psytrance, aus [suom1saundi](https://github.com/g0rst/suom1saundi) übernommen). Umgeschaltet wird mit
 **GLO 2 s halten**: Das Bild zieht sich zusammen wie bei einem alten Röhrenbildschirm und piept kurz. Zu suom1saundi
 landet ein grünes 8-Bit-UFO in einem Wald in Graustufen, der Bildschirm zoomt darauf, es explodiert in den Schriftzug
-(mit Jingle, 4 s); zurück zu ro:MINImal fliegt der Name groß auf einen cleanen schwarzen Bildschirm herein (2 s). Ein
-Druck überspringt. Das Projekt bekommt die Grundwerte des Stils (Tempo, Tonart, Skala, Klänge) und einen
+(mit Jingle, 4 s); zurück zu ro:MINImal fliegt der Name groß auf einen cleanen schwarzen Bildschirm herein (2 s). Am Ende
+blendet das Bild in ein paar Frames in die Seiten über. Ein Druck überspringt. Das Projekt bekommt die Grundwerte des Stils (Tempo, Tonart, Skala, Klänge) und einen
 neuen Groove in ihm. Gebaut werden zwei Pakete aus demselben Code, jedes mit dem anderen als Bonus:
 
 | Paket | startet als | Bonus |
@@ -194,7 +194,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | GLO gehalten (2 s) | wechselt den Stil ROMI ↔ SUOM1 (neuer Groove im Stil), mit Show: Röhrenbild zieht sich zusammen (Piep); zu suom1saundi UFO-Landung im 8-Bit-Wald, Zoom, Explosion in den Schriftzug, Jingle; zu ro:MINImal fliegt der Name herein. Ein Druck überspringt. GLO tippen wirkt beim Loslassen, kürzer gehalten: nichts |
 | GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns); PLAY LOOP, A-D oder RANDOM; WORK LIVE (Engine-Wechsel in allen Patterns, schnell live) oder PROD (in HARD nur im bearbeiteten Pattern, zum Vorproduzieren) |
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
-| 59 s nichts berührt | Bildschirmschoner: nur der Name, grau; er pumpt sich bei jeder Kick kugelförmig aus der Mitte auf, pro Step leuchtet der nächste Buchstabe orange (immer nur einer); dahinter, gedimmt, leuchten die 16 × 6 Step-Punkte mit, was spielt; der Name wandert. Jede Berührung weckt ihn und wirkt zugleich |
+| 2 min nichts berührt | Bildschirmschoner: nur der Name, grau; er pumpt sich bei jeder Kick kugelförmig aus der Mitte auf, pro Step leuchtet der nächste Buchstabe orange (immer nur einer); dahinter, gedimmt, leuchten die 16 × 6 Step-Punkte mit, was spielt; der Name wandert. Jede Berührung weckt ihn und wirkt zugleich |
 | SEL halten + schwarze Tasten 1 bis 6 | jede Spur direkt stumm oder an, auch mehrere zugleich; die gewählte Spur bleibt |
 | ARP | kurz: Spur leicht verändern; halten: FILL (Steps mit FILL spielen, mit !FILL schweigen) |
 | SEQ ein drittes Mal | Seite TIMING: SELECT springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). K1 schiebt den gewählten Schlag, K2 die ganze Spur, zusammen bis zu eine halbe Sechzehntel früher oder später; K3 GLIDE (SUB, STAB) |
@@ -245,7 +245,7 @@ seine vier Mixwerte pro Sample (höchstens etwa 25 Instruktionen).
 Anteile der Stimmen im schlimmsten Fall: Stab 207, Hat 173, Sub 93, Perc 87, Kick 58, Click 40 Instr./Sample. Die
 Oberfläche (Zeichnen, Byte-Tausch der Streifen) kostet geschätzt 2 bis 4 %. Reserven, falls es eng wird: der zweite
 Kern (fm1-base `cpu2`, z. B. Reverb oder die Hälfte der Stimmen), `cpu_clock = 396`, mehr Render-Code im RAM.
-Der Bildschirmschoner (nach 59 s ohne Berührung) zeichnet 30 Bilder pro Sekunde: geschätzt 3 bis 5 % der CPU samt
+Der Bildschirmschoner (nach 2 min ohne Berührung) zeichnet 30 Bilder pro Sekunde: geschätzt 3 bis 5 % der CPU samt
 Byte-Tausch, im Hauptprogramm, nicht im Audio-Pfad.
 Der echte Wert kommt am Gerät aus `plat_cpu_pct`.
 

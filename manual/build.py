@@ -666,7 +666,7 @@ p(T("The same machine can play suomisaundi, Finnish freestyle psytrance: the voi
     "To switch, hold [[GLO]] for 2 seconds. The picture collapses like an old tube's, with a short beep. To "
     "suom1saundi a green 8-bit UFO then lands in a forest in greys, the screen zooms onto it and it explodes into "
     "the name, with a jingle (4 s); back to ro:MINImal the name flies in, huge, onto a clean black screen (2 s). Any "
-    "touch skips the show. Then the project takes the style's tempo, key, scale and sounds, and a new groove "
+    "touch skips the show; at its end the picture fades into the pages. Then the project takes the style's tempo, key, scale and sounds, and a new groove "
     "in it. There are two packages of the same firmware: rominimal.fwsc starts as "
     "ro:MINImal, suom1saundi.fwsc as suom1saundi; each has the other as a bonus. Everything else stays: pages, "
     "LAZY and HARD, B to D, conditions, slides, links, the screensaver. The colour turns acid green.",
@@ -674,7 +674,7 @@ p(T("The same machine can play suomisaundi, Finnish freestyle psytrance: the voi
     "Umschalten: [[GLO]] 2 Sekunden halten. Das Bild zieht sich zusammen wie bei einem alten Röhrenbildschirm, mit "
     "kurzem Piepen. Zu suom1saundi landet dann ein grünes 8-Bit-UFO in einem Wald in Graustufen, der Bildschirm zoomt "
     "darauf, es explodiert in den Schriftzug, mit Jingle (4 s); zurück zu ro:MINImal fliegt der Name riesig auf einen "
-    "cleanen schwarzen Bildschirm herein (2 s). Jeder Druck überspringt die Show. Dann übernimmt das Projekt Tempo, "
+    "cleanen schwarzen Bildschirm herein (2 s). Jeder Druck überspringt die Show; am Ende blendet das Bild in die Seiten über. Dann übernimmt das Projekt Tempo, "
     "Tonart, Skala und Klänge des Stils und einen "
     "neuen Groove darin. Es gibt zwei Pakete derselben Firmware: rominimal.fwsc startet "
     "als ro:MINImal, suom1saundi.fwsc als suom1saundi; jedes hat das andere als Bonus. Alles andere bleibt: Seiten, "
@@ -683,7 +683,7 @@ p(T("The same machine can play suomisaundi, Finnish freestyle psytrance: the voi
     "Comutare: ține [[GLO]] 2 secunde. Imaginea se strânge ca la un televizor vechi cu tub, cu un bip scurt. Spre "
     "suom1saundi un OZN verde pe 8 biți aterizează într-o pădure în tonuri de gri, ecranul face zoom pe el și "
     "explodează în nume, cu un jingle (4 s); înapoi la ro:MINImal numele intră în zbor, uriaș, pe un ecran negru curat "
-    "(2 s). Orice apăsare sare spectacolul. Apoi proiectul ia tempo-ul, tonalitatea, gama și sunetele stilului și un "
+    "(2 s). Orice apăsare sare spectacolul; la sfârșit imaginea trece lin în pagini. Apoi proiectul ia tempo-ul, tonalitatea, gama și sunetele stilului și un "
     "groove nou în el. Există două pachete ale aceluiași firmware: rominimal.fwsc "
     "pornește ca ro:MINImal, suom1saundi.fwsc ca suom1saundi; fiecare îl are pe celălalt ca bonus. Restul rămâne: "
     "paginile, LAZY și HARD, B–D, condițiile, slide-urile, legăturile, screensaver-ul. Culoarea devine verde acid."))
