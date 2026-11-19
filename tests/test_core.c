@@ -57,14 +57,14 @@ static void write_screen(const char *path)
     fclose(f);
 }
 
-/* GLO held: the UFO lands, explodes, the secret menu opens (STYLE on knob 1) */
+/* GLO held 2 s: the other style, after its show */
 static void secret(void)
 {
     int k;
     held_b |= 1u << ROMI_B_GLO;
-    for (k = 0; k < 40; k++) frame(0);
+    for (k = 0; k < 120; k++) frame(0);
     held_b &= ~(1u << ROMI_B_GLO);
-    for (k = 0; k < 200 && romi_state(ROMI_Q_UFO); k++) frame(0);
+    for (k = 0; k < 400 && romi_state(ROMI_Q_UFO); k++) frame(0);
 }
 
 /* render seconds of the playing groove: peak, RMS, a hash, NaN-free */
@@ -1366,47 +1366,56 @@ int main(int argc, char **argv)
         }
     }
 
-    /* the secret menu: GLO held 0.6 s lands the UFO (2.8 s, a jingle), then the page SECRET with STYLE; a tap
-     * on GLO still turns its pages; a touch skips the animation */
+    /* GLO held 2 s: the other style. The picture collapses (a beep); to suom1saundi the UFO (3.9 s, a jingle), to
+     * ro:MINImal the name flies in (2 s); then the style changes. A tap on GLO still turns its pages, a short hold
+     * nothing; a touch skips the show */
     {
-        int k, f;
+        int k, f, m;
         double e = 0.0;
         romi_init(90);
         tap_button(ROMI_B_GLO);
         CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_GLOBAL && !romi_state(ROMI_Q_UFO), "GLO tap: page %d", romi_state(ROMI_Q_PAGE));
         held_b |= 1u << ROMI_B_GLO;
-        for (k = 0; k < 40; k++) frame(0);
+        for (k = 0; k < 60; k++) frame(0);      /* 1 s: not yet */
         held_b &= ~(1u << ROMI_B_GLO);
-        CHECK(romi_state(ROMI_Q_UFO), "GLO held: no UFO");
-        for (f = 0; f < 200 && romi_state(ROMI_Q_UFO); f++) {
-            romi_input(held_b, held_k, (const int32_t[ROMI_NE]){0}, now_ms);
-            for (k = 0; k < 6; k++) {
-                int i;
-                romi_render(blk, 128, 4096);
-                for (i = 0; i < 256; i++) e += (double)blk[i] * blk[i];
+        frame(0);
+        CHECK(!romi_state(ROMI_Q_UFO) && romi_project()->style == ROMI_START_STYLE && romi_state(ROMI_Q_PAGE) == ROMI_PG_GLOBAL,
+              "GLO held 1 s: ufo %d page %d", romi_state(ROMI_Q_UFO), romi_state(ROMI_Q_PAGE));
+        for (m = 1; m <= 2; m++) {
+            held_b |= 1u << ROMI_B_GLO;
+            for (k = 0; k < 120; k++) frame(0);
+            held_b &= ~(1u << ROMI_B_GLO);
+            CHECK(romi_state(ROMI_Q_UFO) == m, "GLO held 2 s: show %d, not %d", romi_state(ROMI_Q_UFO), m);
+            for (f = 0, e = 0.0; f < 400 && romi_state(ROMI_Q_UFO); f++) {
+                romi_input(held_b, held_k, (const int32_t[ROMI_NE]){0}, now_ms);
+                for (k = 0; k < 6; k++) {
+                    int i;
+                    romi_render(blk, 128, 4096);
+                    for (i = 0; i < 256; i++) e += (double)blk[i] * blk[i];
+                }
+                if ((m == 1 && (f == 4 || f == 12 || f == 22 || f == 60 || f == 135 || f == 160 || f == 175 || f == 220)) ||
+                    (m == 2 && (f == 8 || f == 30 || f == 40 || f == 50 || f == 60 || f == 100))) {
+                    snprintf(path, sizeof path, "%s/screen-change%d-%03d.ppm", out, m, f);
+                    write_screen(path);
+                }
+                now_ms += 17;
             }
-            if (f == 20 || f == 50 || f == 75 || f == 100 || f == 115 || f == 132 || f == 138 || f == 156) {
-                snprintf(path, sizeof path, "%s/screen-ufo-%02d.ppm", out, f);
-                write_screen(path);
-            }
-            now_ms += 17;
+            printf("style change %d: %d frames of 17 ms, sound %.3g\n", m, f, e);
+            CHECK(m == 1 ? f > 220 && f < 240 : f > 108 && f < 125, "show %d: %d frames", m, f);
+            CHECK(e > (m == 1 ? 1e15 : 1e13), "show %d: no sound (%g)", m, e);
+            CHECK(romi_project()->style == (m == 1) && romi_state(ROMI_Q_PAGE) == ROMI_PG_GLOBAL,
+                  "after show %d: style %d page %d", m, romi_project()->style, romi_state(ROMI_Q_PAGE));
         }
-        printf("ufo: %d frames of 17 ms, jingle energy %.3g\n", f, e);
-        CHECK(f > 150 && f < 175, "UFO: %d frames", f);
-        CHECK(e > 1e15, "UFO: no jingle (%g)", e);
-        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SECRET, "after the UFO: page %d", romi_state(ROMI_Q_PAGE));
-        tap_button(ROMI_B_GLO);
-        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_GLOBAL, "SECRET, GLO: page %d", romi_state(ROMI_Q_PAGE));
         held_b |= 1u << ROMI_B_GLO;
-        for (k = 0; k < 40; k++) frame(0);
+        for (k = 0; k < 120; k++) frame(0);
         held_b &= ~(1u << ROMI_B_GLO);
         frame(0); frame(0);
-        tap_key(3);                     /* a touch: straight to the menu, and the key does nothing else */
-        CHECK(!romi_state(ROMI_Q_UFO) && romi_state(ROMI_Q_PAGE) == ROMI_PG_SECRET,
-              "UFO skipped: %d page %d", romi_state(ROMI_Q_UFO), romi_state(ROMI_Q_PAGE));
+        tap_key(3);                     /* a touch: straight to the end */
+        CHECK(!romi_state(ROMI_Q_UFO) && romi_project()->style == 1, "show skipped: %d style %d",
+              romi_state(ROMI_Q_UFO), romi_project()->style);
     }
 
-    /* the style SUOMI (secret menu, knob 1): suom1saundi's voices and rules; the bass pumps, three sixteenths after the
+    /* the style SUOMI (GLO held 2 s): suom1saundi's voices and rules; the bass pumps, three sixteenths after the
      * kick or two, never on it; it plays clean; B..D from A; stored; back to ro:MINImal */
     {
         static uint8_t obj[ROMI_NOBJ][ROMI_OBJ_MAX];
@@ -1416,7 +1425,6 @@ int main(int argc, char **argv)
         romi_init(91);
         CHECK(romi_project()->style == ROMI_START_STYLE, "start style %d", romi_project()->style);
         secret();
-        turn(ROMI_E_K1, 1);
         CHECK(romi_project()->style == 1 && romi_project()->bpm == 145 && romi_project()->scale == 4,
               "SUOMI: style %d bpm %d scale %d", romi_project()->style, romi_project()->bpm, romi_project()->scale);
         CHECK(romi_project()->pat[0].tr[ROMI_SUB].sc == 127 && romi_project()->pat[0].tr[ROMI_SUB].glide == 50,
@@ -1457,7 +1465,6 @@ int main(int argc, char **argv)
         CHECK(romi_store_set(0, obj[0], len[0]) == 0 && romi_store_set(1, obj[1], len[1]) == 0 &&
               romi_project()->style == 1, "SUOMI not stored: style %d", romi_project()->style);
         secret();
-        turn(ROMI_E_K1, -1);
         CHECK(romi_project()->style == 0 && romi_project()->bpm == 126, "back to ro:MINImal: style %d bpm %d",
               romi_project()->style, romi_project()->bpm);
     }
@@ -1578,7 +1585,6 @@ int main(int argc, char **argv)
         /* suom1saundi: PIIP and KLIKKI; stored; version 18 loads with the style's engines */
         romi_init(113);
         secret();
-        turn(ROMI_E_K1, 1);
         t5 = &romi_project()->pat[0].tr[ROMI_STAB];
         CHECK(t5->engine == ROMI_ENG_PIIP && romi_project()->pat[0].tr[ROMI_CLICK].engine == ROMI_ENG_CLICK,
               "suom1saundi's engines %d %d", t5->engine, romi_project()->pat[0].tr[ROMI_CLICK].engine);

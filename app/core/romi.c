@@ -168,10 +168,12 @@ static struct {
     /* the screensaver: after ROMI_SAVER_MS without a touch, until the next one */
     uint32_t touch_ms, saver_ms;        /* the last touch; the last frame of the animation */
     uint8_t saver;
-    /* the secret menu (GLO held): an UFO lands in the forest, the screen zooms, it explodes, the menu opens */
+    /* GLO held: the other style, with a show. The picture collapses like an old tube's and beeps; to suom1saundi
+     * an UFO lands in the forest, the screen zooms, it explodes into the name; to ro:MINImal the name flies in */
     uint32_t glo_t, ufo_t, ufo_ms;      /* GLO pressed: when; the animation's start; its last frame */
     uint8_t glo_held, ufo;
-    volatile uint8_t jg_want;           /* the jingle: asked for by the UI, played by the audio */
+    volatile uint8_t jg_want;           /* the jingle: asked for by the UI (1 UFO, 2 the beep alone, 3 stop) */
+    uint8_t jg_mode;
     uint32_t jg_n, jg_rng;
     float jg_ph;
     uint32_t sv_hits[ROMI_TRACKS];      /* hits seen: they light the dots, the kick's swell the name */
@@ -1061,45 +1063,57 @@ static inline void master_run(float *l, float *r, float mf, float mq, int mode)
     *r = in[1];
 }
 
-/* the secret menu's jingle, in step with the UFO (2.8 s): a falling, trilling square as it comes down, four
- * notes as it lands, a rising sweep as the screen zooms, then the bang: noise and a low square, dying away.
- * A square at a quarter duty, as a sound chip; a handful of operations a sample, and only then */
+/* GLO held: the sound of the change. The tube's beep as the picture collapses (both ways); to suom1saundi then, in
+ * step with the UFO: a falling, trilling square as it comes down, four notes as it lands, a rising sweep as the
+ * screen zooms, the bang: noise and a low square, dying away. A square at a quarter duty, as a sound chip */
 #define JG_S(t) ((uint32_t)((t) * (float)ROMI_SR))
+#define JG_UFO 0.462f                   /* the UFO starts after the collapse: 14 frames */
 static float jingle(void)
 {
     static const float ARP[4] = {659.3f, 784.0f, 1046.5f, 1318.5f};
     float t, f, a, o;
     uint32_t n;
     if (R.jg_want) {
+        R.jg_n = R.jg_want == 3u ? 0u : 1u;
+        R.jg_mode = R.jg_want;
         R.jg_want = 0;
-        R.jg_n = 1;
         R.jg_ph = 0.0f;
     }
     if (!R.jg_n)
         return 0.0f;
     n = R.jg_n++;
-    t = (float)n * (1.0f / (float)ROMI_SR);
-    if (n < JG_S(1.2f)) {               /* coming down: 1 kHz to 500 Hz, a 21 Hz trill */
-        f = (1000.0f - 420.0f * t) * ((n >> 11 & 1u) ? 1.06f : 1.0f);
-        a = 0.10f;
-    } else if (n < JG_S(1.64f)) {       /* landed: E G C E */
-        uint32_t k = (n - JG_S(1.2f)) / JG_S(0.11f);
-        f = ARP[k > 3u ? 3u : k];
-        a = 0.16f;
-    } else if (n < JG_S(2.2f)) {        /* the zoom: up and up */
-        float u = (t - 1.64f) * (1.0f / 0.56f);
-        f = 200.0f + 2200.0f * u * u;
-        a = 0.08f;
-    } else if (n < JG_S(2.8f)) {        /* the bang */
-        float u = 1.0f - (t - 2.2f) * (1.0f / 0.6f);
-        R.jg_ph += 55.0f * (1.0f / (float)ROMI_SR);
-        if (R.jg_ph >= 1.0f)
-            R.jg_ph -= 1.0f;
-        o = (float)(int32_t)xs32(&R.jg_rng) * (1.0f / 2147483648.0f);
-        return (o * 0.5f + (R.jg_ph < 0.5f ? 0.3f : -0.3f)) * u * u;
-    } else {
-        R.jg_n = 0;
+    if (n < JG_S(0.09f)) {              /* the beep */
+        f = 1500.0f;
+        a = 0.12f * (1.0f - (float)n * (1.0f / (0.09f * (float)ROMI_SR)));
+    } else if (R.jg_mode != 1u || n < JG_S(JG_UFO)) {
+        if (R.jg_mode != 1u)
+            R.jg_n = 0;
         return 0.0f;
+    } else {
+        n -= JG_S(JG_UFO);
+        t = (float)n * (1.0f / (float)ROMI_SR);
+        if (n < JG_S(1.2f)) {           /* coming down: 1 kHz to 500 Hz, a 21 Hz trill */
+            f = (1000.0f - 420.0f * t) * ((n >> 11 & 1u) ? 1.06f : 1.0f);
+            a = 0.10f;
+        } else if (n < JG_S(1.64f)) {   /* landed: E G C E */
+            uint32_t k = (n - JG_S(1.2f)) / JG_S(0.11f);
+            f = ARP[k > 3u ? 3u : k];
+            a = 0.16f;
+        } else if (n < JG_S(2.2f)) {    /* the zoom: up and up */
+            float u = (t - 1.64f) * (1.0f / 0.56f);
+            f = 200.0f + 2200.0f * u * u;
+            a = 0.08f;
+        } else if (n < JG_S(2.8f)) {    /* the bang */
+            float u = 1.0f - (t - 2.2f) * (1.0f / 0.6f);
+            R.jg_ph += 55.0f * (1.0f / (float)ROMI_SR);
+            if (R.jg_ph >= 1.0f)
+                R.jg_ph -= 1.0f;
+            o = (float)(int32_t)xs32(&R.jg_rng) * (1.0f / 2147483648.0f);
+            return (o * 0.5f + (R.jg_ph < 0.5f ? 0.3f : -0.3f)) * u * u;
+        } else {
+            R.jg_n = 0;
+            return 0.0f;
+        }
     }
     R.jg_ph += f * (1.0f / (float)ROMI_SR);
     if (R.jg_ph >= 1.0f)
@@ -1361,7 +1375,7 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         r += dly_r + rr * duck;
         if (mmode || R.prj.bass || R.br_on >= 0 || R.br_x > 0.0f)
             master_run(&l, &r, mf, mq, mmode);
-        if (R.jg_n | R.jg_want) {       /* the secret menu's jingle, over all of it */
+        if (R.jg_n | R.jg_want) {       /* the change's sound, over all of it */
             float j = jingle();
             l += j;
             r += j;
@@ -2676,7 +2690,7 @@ static const char *track_name(int t)    /* tracks 5 and 6 by their engine */
     return TRACK_NAMES[STYLE ? 1 : 0][t];
 }
 static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
-                                                    "GLOBAL 2", "MOD", "SLICE", "GROOVE 2", "SLICE LFO", "SECRET"};
+                                                    "GLOBAL 2", "MOD", "SLICE", "GROOVE 2", "SLICE LFO"};
 static const char *const SOUND_NAMES[2][ROMI_TRACKS][4] = {{
     {"TUNE", "DECAY", "PUNCH", "DRIVE"}, {"DECAY", "FM", "RATIO", "GLIDE"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
@@ -2849,9 +2863,6 @@ static int page_params(param_t p[4])
         P(0, "MODE", &R.prj.mode, 0, 1, F_MODE, 0);
         P(1, "PLAY", &R.prj.order, 0, 2, F_ORDER, 0);
         P(3, "WORK", &R.prj.work, 0, 1, F_WORK, 0);       /* LIVE or PROD */
-        break;
-    case ROMI_PG_SECRET:                /* GLO held, after the UFO: the other firmware's style, a new groove in it */
-        P(0, "STYLE", &R.prj.style, 0, ROMI_SUOMI ? 1 : 0, F_STYLE, 0);
         break;
     default:
         P(0, "ROOT", &R.prj.root, 24, 47, F_ROOT, 0);
@@ -3125,10 +3136,15 @@ static void saver_frame(void)
         R.sv_dy = (int16_t)-R.sv_dy, R.sv_y += R.sv_dy;
 }
 
-/* the secret menu's animation, 2.8 s at 30 frames: a green 8-bit UFO comes down over a forest in greys and lands
- * in its clearing (frames 0..47), the screen zooms onto it as it shakes (48..65), it explodes and the menu opens
- * (66..83). A world of 120 x 120 big pixels, drawn twice the size and zoomed around a focus */
-#define UFO_FRAMES 84
+/* GLO held, the change of style, at 30 frames a second. First the picture collapses like an old tube's: to a
+ * bright band, a line, a dot (CRT_FRAMES). To suom1saundi then: a green 8-bit UFO comes down over a forest in greys
+ * and lands in its clearing (frames 0..47), the screen zooms onto it as it shakes (48..65), it explodes and out of
+ * it the name, in suom1saundi's letters (66..104). A world of 120 x 120 big pixels, drawn twice the size and zoomed
+ * around a focus. To ro:MINImal: black, clean, the name flies in, huge, and settles (FLY_FRAMES) */
+#define CRT_FRAMES 14
+#define UFO_FRAMES 105
+#define FLY_FRAMES 46
+#define CHANGE_MS(m) ((uint32_t)(CRT_FRAMES + ((m) == 1u ? UFO_FRAMES : FLY_FRAMES)) * 33u)
 #define GREY(v) RGB(v, v, v)
 static float uf_fx, uf_fy, uf_z;        /* the focus, in world pixels; a world pixel, in screen pixels */
 static void wpx(float x, float y, float w, float h, uint16_t c)
@@ -3156,11 +3172,11 @@ static void uf_pine(float x, float base, int h, uint16_t c, uint16_t trunk)
     }
     wpx(x - 1.0f, base - 4.0f, 2.0f, 4.0f, trunk);
 }
-static void draw_ufo(void)
+static void draw_ufo(int f)
 {
     static const char *const SHIP[7] = {"    .ooo.    ", "   .ooooo.   ", "  GGGGGGGGG  ", " GGGGGGGGGGGG",
                                         "GLGGLGGLGGLGG", "  ddddddddd  ", "   d     d   "};
-    int f = (int)((R.now - R.ufo_t) / 33u), i, j;
+    int i, j;
     float ux, uy, zz;
     if (f >= 66) {                      /* the bang: a flash, then the pieces fly from the middle */
         int e = f - 66;
@@ -3180,8 +3196,11 @@ static void draw_ufo(void)
             float a = (float)i * (1.0f / 32.0f), r = 14.0f * (float)e;
             rect((int)(120.0f + fsin(a + 0.25f) * r) - 2, (int)(120.0f + fsin(a) * r) - 2, 4, 4, GREY(200));
         }
-        if (e >= 9)
-            text(120 - text_w("SECRET", 3) / 2, 108, "SECRET", RGB(60, 220, 80), 3);
+        if (e >= 9) {                   /* the name, as suom1saundi writes it */
+            i = text(21, 109, "SUOM", C_FG, 3);
+            i = text(i, 109, "1", RGB(170, 255, 60), 3);
+            text(i, 109, "SAUNDI", C_FG, 3);
+        }
         return;
     }
     zz = f < 48 ? 0.0f : (float)(f - 48) * (1.0f / 17.0f);
@@ -3259,7 +3278,91 @@ static void draw_ufo(void)
     }
 }
 
+/* the tube collapses: the picture shrinks to a bright band around the middle (frames 0..5), then a line that
+ * narrows to a dot and goes out */
+static void draw_main(uint16_t *px, int strip);
+static void draw_crt(uint16_t *px, int strip, int f)
+{
+    int y, x;
+    if (f < 6) {
+        float u = (float)(f + 1) * (1.0f / 6.0f), hh = 120.0f * (1.0f - u) * (1.0f - u) + 1.0f;
+        int w = (int)(u * 26.0f);       /* toward white, of 32 */
+        draw_main(px, strip);
+        cv = px;
+        cv_y0 = strip * ROMI_STRIP_H;
+        for (y = 0; y < ROMI_STRIP_H; y++) {
+            float d = (float)(cv_y0 + y) + 0.5f - 120.0f;
+            uint16_t *row = px + y * ROMI_W;
+            if (d > hh || d < -hh) {
+                for (x = 0; x < ROMI_W; x++)
+                    row[x] = C_BG;
+                continue;
+            }
+            for (x = 0; x < ROMI_W; x++) {
+                uint32_t c = row[x], r = c >> 11, g = c >> 5 & 63u, b = c & 31u;
+                r += (31u - r) * (uint32_t)w / 32u;
+                g += (63u - g) * (uint32_t)w / 32u;
+                b += (31u - b) * (uint32_t)w / 32u;
+                row[x] = (uint16_t)(r << 11 | g << 5 | b);
+            }
+        }
+        return;
+    }
+    cv = px;
+    cv_y0 = strip * ROMI_STRIP_H;
+    rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, C_BG);
+    {
+        float u = (float)(f - 6) * (1.0f / (float)(CRT_FRAMES - 6));
+        int w = (int)(240.0f * (1.0f - u) * (1.0f - u) * (1.0f - u)) + 4, v = f < CRT_FRAMES - 2 ? 255 : 150;
+        rect(120 - w / 2, 119, w, 2, RGB(v, v, v));
+        rect(120 - w / 2 - 2, 118, w + 4, 1, GREY(90));
+        rect(120 - w / 2 - 2, 121, w + 4, 1, GREY(90));
+        rect(118, 117, 4, 6, RGB(v, v, v));
+    }
+}
+
+/* to ro:MINImal: the name, clean on black, flies in from huge and settles; it fades up as it comes */
+static void draw_flyin(int f)
+{
+    static const char NAME[] = "ro:MINImal";
+    float u = f >= 24 ? 1.0f : (float)f * (1.0f / 24.0f), d = 1.0f - u;
+    float px = 3.4f + 40.0f * d * d * d, hw = (float)(6 * 10 - 1) * 0.5f, lv = u * 2.5f > 1.0f ? 1.0f : u * 2.5f;
+    int k, col, row;
+    for (k = 0; NAME[k]; k++) {
+        int g = glyph((uint8_t)NAME[k]), v = (int)((k < 3 || k > 6 ? 150.0f : 228.0f) * lv);
+        uint16_t c = RGB(v, v, v * 15 / 16);
+        float x0 = 120.0f + ((float)(k * 6) - hw) * px, sz = px + 0.99f;
+        if (x0 > (float)ROMI_W || x0 + 5.0f * px < 0.0f)
+            continue;
+        for (col = 0; col < 5; col++)
+            for (row = 0; row < 7; row++)
+                if (FONT[g][col] >> row & 1)
+                    rect((int)(x0 + (float)col * px), (int)(120.0f + ((float)row - 3.5f) * px), (int)sz, (int)sz, c);
+    }
+}
+
 void romi_draw(uint16_t *px, int strip)
+{
+    int f;
+    if (!R.ufo || R.saver) {
+        draw_main(px, strip);
+        return;
+    }
+    f = (int)((R.now - R.ufo_t) / 33u);
+    if (f < CRT_FRAMES) {
+        draw_crt(px, strip, f);
+        return;
+    }
+    cv = px;
+    cv_y0 = strip * ROMI_STRIP_H;
+    rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, C_BG);
+    if (R.ufo == 1u)
+        draw_ufo(f - CRT_FRAMES);
+    else
+        draw_flyin(f - CRT_FRAMES);
+}
+
+static void draw_main(uint16_t *px, int strip)
 {
     char t[32];
     int i, lane, hs = held_step();
@@ -3269,10 +3372,6 @@ void romi_draw(uint16_t *px, int strip)
     rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, C_BG);
     if (R.saver) {
         draw_saver();
-        return;
-    }
-    if (R.ufo) {
-        draw_ufo();
         return;
     }
 
@@ -3541,7 +3640,6 @@ static void set_style(void)
     }
     R.aside_ok = 0;
     R.undo_ok = 0;
-    romi_message("STYLE", STYLE ? "SUOM1SAUNDI" : "RO:MINIMAL");
     R.unsaved = 1;
     R.dirty |= STRIP_ALL;
 }
@@ -3715,23 +3813,25 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.fx_t = 0;
         R.fx_held = 0;
     }
-    if (pressed & 1u << ROMI_B_GLO)     /* GLO the same: a tap turns its pages, a hold lands the UFO: the secret menu */
+    if (pressed & 1u << ROMI_B_GLO)     /* GLO the same: a tap turns its pages, a hold changes the style */
         R.glo_t = now_ms ? now_ms : 1u;
-    if (R.glo_t && (buttons & 1u << ROMI_B_GLO) && now_ms - R.glo_t >= 600u) {
+    if (R.glo_t && (buttons & 1u << ROMI_B_GLO) && now_ms - R.glo_t >= 2000u) {   /* (2 s: not by chance) */
         R.glo_t = 0;
         R.glo_held = 1;
-        R.ufo = 1;
-        R.ufo_t = R.ufo_ms = now_ms;
-        R.jg_want = 1;
-        R.dirty |= STRIP_ALL;
+        if (ROMI_SUOMI) {               /* the other style, with its show */
+            R.ufo = STYLE ? 2u : 1u;
+            R.ufo_t = R.ufo_ms = now_ms;
+            R.jg_want = R.ufo;
+            R.dirty |= STRIP_ALL;
+        }
     }
     if (!(buttons & 1u << ROMI_B_GLO) && (R.btn & 1u << ROMI_B_GLO)) {
-        glo_tap = !R.glo_held;
+        glo_tap = !R.glo_held && R.glo_t && now_ms - R.glo_t < 600u;   /* a tap; a longer press let go early: nothing */
         R.glo_t = 0;
         R.glo_held = 0;
     }
     R.now = now_ms;
-    if (R.ufo) {                        /* the animation runs; a touch skips to the menu (and does nothing else) */
+    if (R.ufo) {                        /* the show runs; a touch skips to its end (and does nothing else) */
         int any = (pressed & ~(1u << ROMI_B_GLO)) || kdown;
         for (i = 0; i < ROMI_NE && !any; i++)
             any = enc[i] != 0;
@@ -3739,9 +3839,12 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.keys = keys;
         R.touch_ms = now_ms ? now_ms : 1u;
         R.dirty = 0;
-        if (any || now_ms - R.ufo_t >= (uint32_t)UFO_FRAMES * 33u) {
+        if (any || now_ms - R.ufo_t >= CHANGE_MS(R.ufo)) {   /* at its end the style changes: a new groove in it */
+            if (any)
+                R.jg_want = 3;
             R.ufo = 0;
-            R.page = ROMI_PG_SECRET;
+            R.prj.style = (uint8_t)!R.prj.style;
+            set_style();
             R.dirty = STRIP_ALL;
         } else if (now_ms - R.ufo_ms >= 33u) {
             R.ufo_ms = now_ms;
@@ -3786,7 +3889,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
                                                   ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
-                                                  ROMI_B_HOME, ROMI_B_FX, ROMI_B_GLO};
+                                                  ROMI_B_HOME, ROMI_B_FX};
         uint8_t was = R.page;
         uint32_t pgp = (pressed & ~(1u << ROMI_B_FX | 1u << ROMI_B_GLO)) | (fx_tap ? 1u << ROMI_B_FX : 0u) |
                        (glo_tap ? 1u << ROMI_B_GLO : 0u);   /* (FX and GLO: at their release) */
@@ -4207,7 +4310,7 @@ void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint3
     static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
                                                   ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
-                                                  ROMI_B_HOME, ROMI_B_FX, ROMI_B_GLO};
+                                                  ROMI_B_HOME, ROMI_B_FX};
     const romi_track_t *tr = &PAT->tr[R.track];
     uint32_t b = 1u << PAGE_BTN[R.page], k = 0, dk = 0;
     int i;

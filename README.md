@@ -39,9 +39,11 @@ zurückkommt (Installer von fm1-base, `base/README.md`).
 ## Zwei Stile, zwei Firmwares: ro:MINImal und suom1saundi
 
 Derselbe Kern kann zwei Stile: **ro:MINImal** (Rominimal, Microhouse) und **suom1saundi** (Suomisaundi, finnischer
-Freestyle-Psytrance, aus [suom1saundi](https://github.com/g0rst/suom1saundi) übernommen). Umgeschaltet wird im
-**geheimen Menü**: GLO 0,6 s halten – ein grünes 8-Bit-UFO landet in einem Wald in Graustufen, der Bildschirm zoomt
-darauf, es explodiert (mit Jingle, 2,8 s, ein Druck überspringt) und die Seite SECRET öffnet sich, KNOB1 **STYLE**: Das Projekt bekommt die Grundwerte des Stils (Tempo, Tonart, Skala, Klänge) und einen
+Freestyle-Psytrance, aus [suom1saundi](https://github.com/g0rst/suom1saundi) übernommen). Umgeschaltet wird mit
+**GLO 2 s halten**: Das Bild zieht sich zusammen wie bei einem alten Röhrenbildschirm und piept kurz. Zu suom1saundi
+landet ein grünes 8-Bit-UFO in einem Wald in Graustufen, der Bildschirm zoomt darauf, es explodiert in den Schriftzug
+(mit Jingle, 4 s); zurück zu ro:MINImal fliegt der Name groß auf einen cleanen schwarzen Bildschirm herein (2 s). Ein
+Druck überspringt. Das Projekt bekommt die Grundwerte des Stils (Tempo, Tonart, Skala, Klänge) und einen
 neuen Groove in ihm. Gebaut werden zwei Pakete aus demselben Code, jedes mit dem anderen als Bonus:
 
 | Paket | startet als | Bonus |
@@ -189,7 +191,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | FX ein viertes Mal | Seite SLICE LFO: der eigene LFO des Slicers, K1 RATE, K2 DEPTH, K3 TARGET (RATE, RANDOM, MIX), K4 SHAPE |
 | FX ein drittes Mal | Seite SLICE (Hat, Perc, Stab, Click; nicht Kick und Sub): K1 MODE OFF, GATE (Raster 1/32 bis 1/128, an und aus), STUTTER (das erste Stück des Schlags immer wieder), GRAIN (Granular light: zwei Körner aus den letzten 186 ms der Spur); K2 RATE (Rastergröße, Stück- oder Korngröße), K3 RANDOM (Zufall: welche Stücke, rückwärts, Oktave, wo), K4 MIX. GRAIN auf höchstens zwei Spuren |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik, Phrygisch-dominant, Harmonisch Moll), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
-| GLO gehalten (0,6 s) | das geheime Menü: UFO-Landung im 8-Bit-Wald, Zoom, Explosion, Jingle (ein Druck überspringt), dann Seite SECRET: K1 STYLE ROMI oder SUOM1 (neuer Groove im Stil). GLO tippen wirkt beim Loslassen |
+| GLO gehalten (2 s) | wechselt den Stil ROMI ↔ SUOM1 (neuer Groove im Stil), mit Show: Röhrenbild zieht sich zusammen (Piep); zu suom1saundi UFO-Landung im 8-Bit-Wald, Zoom, Explosion in den Schriftzug, Jingle; zu ro:MINImal fliegt der Name herein. Ein Druck überspringt. GLO tippen wirkt beim Loslassen, kürzer gehalten: nichts |
 | GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns); PLAY LOOP, A-D oder RANDOM; WORK LIVE (Engine-Wechsel in allen Patterns, schnell live) oder PROD (in HARD nur im bearbeiteten Pattern, zum Vorproduzieren) |
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
 | 59 s nichts berührt | Bildschirmschoner: nur der Name, grau; er pumpt sich bei jeder Kick kugelförmig aus der Mitte auf, pro Step leuchtet der nächste Buchstabe orange (immer nur einer); dahinter, gedimmt, leuchten die 16 × 6 Step-Punkte mit, was spielt; der Name wandert. Jede Berührung weckt ihn und wirkt zugleich |
