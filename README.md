@@ -9,9 +9,11 @@ Groove-Generator. Dazu Tempo-Delay, Reverb und Kick-Ducking.
 **Ohne Gerät ausprobieren:** https://g0rst.github.io/ro-MINImal/ (dort im FM-1-Emulator testen: das echte
 Firmware-Paket in fm1-emu)
 
-**Handbuch:** https://g0rst.github.io/ro-MINImal/manual.html, in Englisch, Deutsch und Rumänisch, dazu auf Finnisch und
-Klingonisch im Gewand von suom1saundi (Quelle: `manual/build.py`, Finnisch und Klingonisch in `manual/lang_fi.py` und
-`manual/lang_tlh.py`; geänderter englischer Text erscheint dort englisch, bis er neu übersetzt ist, der Build zählt das).
+**Handbuch:** https://g0rst.github.io/ro-MINImal/manual.html, in Englisch, Deutsch und Rumänisch (Quelle:
+`manual/build.py`), mit Installation, Panel, Inhaltsverzeichnis und Werkseinstellungen direkt aus dem Code
+(`manual/codefacts.py`). **suom1saundi** hat ein eigenes, absichtlich trashiges Handbuch auf Finnisch und Klingonisch
+(UFOs, 8-Bit, Klamauk): https://g0rst.github.io/ro-MINImal/suomi.html (Quelle: `manual/suomi.py`); es nennt sich ehrlich
+einen Versuch, kein Angebot, und verrät den Weg zwischen den Stilen nicht.
 
 **Im Browser testen:** `docs/index.html` öffnen. Die Seite enthält denselben C-Kern wie die Firmware
 (als WebAssembly; online: https://g0rst.github.io/ro-MINImal/testseite.html) und bildet Display, Regler, Tasten und die 27 Keys des FM-1 in der Anordnung des Geräts nach.
@@ -302,7 +304,7 @@ einem SMK-37: vollständige Flash-Sicherung, wie im Playbook beschrieben.
     base/                     fm1-base als Submodul (darin felucca-bsp): Plattform, Build, Installer
     sim/                      Browser-Testseite: wasm.c, page.html, build.sh  ->  docs/index.html
     tests/                    Host-Tests des Kerns
-    manual/                   Handbuch in fünf Sprachen: build.py (+ lang_fi.py, lang_tlh.py)  ->  docs/manual.html
+    manual/                   Handbücher: build.py -> docs/manual.html (en/de/ro), suomi.py -> docs/suomi.html (fi/tlh), codefacts.py (Werte aus dem Code)
 
 Der Kern zeichnet das Display selbst in Streifen von 240 x 48 Pixeln (eigene 5x7-Schrift). Deshalb zeigen
 Gerät, Simulator und Browser dasselbe Bild.

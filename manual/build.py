@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Builds the ro:MINImal manual: one self-contained page in English, German and Romanian, and in Finnish and Klingon
-dressed as suom1saundi (its acid green on black, its name on the cover, its package in the emulator).
+"""Builds the ro:MINImal manual: one self-contained page in English, German and Romanian. (suom1saundi has a manual
+of its own, in its own dress: manual/suomi.py.) The tables of factory values come from the firmware's code
+(manual/codefacts.py), so they cannot drift from it.
 
     python3 manual/build.py        ->  docs/manual.html
 
@@ -10,35 +11,19 @@ The text lives here, once per language, block by block, so the three versions ca
 them; manual/screen-*.png are copies).
 """
 import base64
-import hashlib
 import html
-import json
 import pathlib
 import re
-import sys
+
+from codefacts import facts, pct, pan
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "manual"))
-from lang_fi import FI  # noqa: E402
-from lang_tlh import TLH  # noqa: E402
-
-LANGS = ("en", "de", "ro", "fi", "tlh")
-SUOMI = ("fi", "tlh")                   # dressed as suom1saundi
-MISSING = {"fi": 0, "tlh": 0}
-
-
-def _more(en, table, lang):
-    """Finnish and Klingon are kept apart (lang_*.py), keyed by a hash of the English: changed English shows as
-    English there until translated again (the build counts it)."""
-    v = table.get(hashlib.sha1(json.dumps(en, ensure_ascii=False).encode()).hexdigest()[:8])
-    if v is None:
-        MISSING[lang] += 1
-        return en
-    return v
+LANGS = ("en", "de", "ro")
+F = facts()
 
 
 def T(en, de, ro):
-    return {"en": en, "de": de, "ro": ro, "fi": _more(en, FI, "fi"), "tlh": _more(en, TLH, "tlh")}
+    return {"en": en, "de": de, "ro": ro}
 
 
 SAME = lambda s: {l: s for l in LANGS}  # noqa: E731
@@ -67,6 +52,7 @@ table = lambda head, *rows: B.append(("table", head, rows))  # noqa: E731
 grid = lambda rows, cap: B.append(("grid", rows, cap))  # noqa: E731
 img = lambda name, cap: B.append(("img", name, cap))  # noqa: E731
 note = lambda t: B.append(("note", t))  # noqa: E731
+pre = lambda t: B.append(("pre", t))  # noqa: E731
 
 # ------------------------------------------------------------------ side a ---
 h("a", 1, T("what it is", "was es ist", "ce este"))
@@ -94,7 +80,39 @@ note(T("This firmware has run in the simulator only. It has not yet been built f
        "de recuperare, iar aparatele mai noi nu acceptă orice firmware custom. Află cum te întorci la firmware-ul "
        "M-VAVE înainte să instalezi ceva."))
 
-h("a", 3, T("the first minute", "die erste minute", "primul minut"))
+h("a", 3, T("install", "installieren", "instalare"))
+p(T("Without a device: the page of the project (g0rst.github.io/ro-MINImal) opens the firmware in the FM-1 emulator, "
+    "in the browser, with the same code as on the device. On a phone it runs well, on an old computer it may stutter. "
+    "Sound on first, then [[PLAY STOP]].",
+    "Ohne Gerät: Die Projektseite (g0rst.github.io/ro-MINImal) öffnet die Firmware im FM-1-Emulator, im Browser, mit "
+    "demselben Code wie auf dem Gerät. Auf einem Handy läuft sie gut, auf einem alten Computer kann sie stocken. Erst "
+    "den Ton einschalten, dann [[PLAY STOP]].",
+    "Fără aparat: pagina proiectului (g0rst.github.io/ro-MINImal) deschide firmware-ul în emulatorul FM-1, în browser, "
+    "cu același cod ca pe aparat. Pe un telefon merge bine, pe un calculator vechi poate sacada. Întâi pornește "
+    "sunetul, apoi [[PLAY STOP]]."))
+ol(T("Download rominimal.fwsc from the page of the project. It is built from the code on every change; SHA256SUMS "
+     "beside it lets you check the file.",
+     "rominimal.fwsc von der Projektseite laden. Es wird bei jeder Änderung aus dem Code gebaut; mit SHA256SUMS daneben "
+     "lässt sich die Datei prüfen.",
+     "Descarcă rominimal.fwsc de pe pagina proiectului. Se construiește din cod la fiecare schimbare; SHA256SUMS de "
+     "lângă el verifică fișierul."),
+   T("Install it with a tool that installs FM-1 firmware packages, such as the FM-1 Firmware Hub "
+     "(fm1.designburgapps.com). The firmware describes itself to such tools (firmware.json beside it).",
+     "Mit einem Werkzeug installieren, das FM-1-Firmware-Pakete installiert, etwa dem FM-1 Firmware Hub "
+     "(fm1.designburgapps.com). Die Firmware beschreibt sich solchen Werkzeugen selbst (firmware.json daneben).",
+     "Instalează-l cu un instrument care instalează pachete de firmware FM-1, de exemplu FM-1 Firmware Hub "
+     "(fm1.designburgapps.com). Firmware-ul se descrie singur acestor instrumente (firmware.json alături)."),
+   T("Switch on. The name flies in, the screen fades to the steps, a groove waits for [[PLAY STOP]].",
+     "Einschalten. Der Name fliegt herein, das Bild blendet zu den Steps über, ein Groove wartet auf [[PLAY STOP]].",
+     "Pornește. Numele intră în zbor, imaginea trece la pași, un groove așteaptă [[PLAY STOP]]."))
+note(T("The way back: M-VAVE's own firmware, through the FM-1 Firmware Hub or M-VAVE's updater. Your projects live in "
+       "a part of the flash of their own and are not part of the firmware.",
+       "Der Weg zurück: die Firmware von M-VAVE, über den FM-1 Firmware Hub oder den Updater von M-VAVE. Deine Projekte "
+       "liegen in einem eigenen Teil des Flash und gehören nicht zur Firmware.",
+       "Drumul înapoi: firmware-ul M-VAVE, prin FM-1 Firmware Hub sau updater-ul M-VAVE. Proiectele tale stau într-o "
+       "parte separată a flash-ului și nu fac parte din firmware."))
+
+h("a", 4, T("the first minute", "die erste minute", "primul minut"))
 ol(T("Press [[PLAY STOP]]. A groove runs. The firmware makes a new one at every start.",
      "[[PLAY STOP]] drücken. Ein Groove läuft. Die Firmware erzeugt bei jedem Start einen neuen.",
      "Apasă [[PLAY STOP]]. Pornește un groove. Firmware-ul face unul nou la fiecare pornire."),
@@ -117,7 +135,15 @@ ol(T("Press [[PLAY STOP]]. A groove runs. The firmware makes a new one at every 
      "[[SAVE]] drücken. Das Projekt bleibt im Gerät.",
      "Apasă [[SAVE]]. Proiectul rămâne în aparat."))
 
-h("a", 4, T("the panel", "das panel", "panoul"))
+h("a", 5, T("the panel", "das panel", "panoul"))
+pre(SAME("""  MASTER   SELECT     ┌──────────┐    KNOB1   KNOB2   KNOB3   KNOB4
+                      │  screen  │
+  PRESETS  ALGORITHM  │          │    [FX]  [SEL] [ENV] [LFO] [EDIT] [GLO]
+                      └──────────┘    [HOME][SAVE][ARP] [SEQ] [PLAY] [REC]
+  [OCT-] [OCT+]
+
+  black:  KICK SUB HAT PERC STAB CLICK │ CLEAR ◀ ▶ NEW UNDO
+  white:  1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16"""))
 table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", "ce face"]),
       ("[[MASTER]]", T("volume", "Lautstärke", "volum")),
       ("[[SELECT]]", T("selects the track; on the TIMING page it steps from hit to hit",
@@ -177,7 +203,7 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
          "Spur leeren, nach links schieben, nach rechts schieben, Spur neu (gehalten: ganzer Groove), Undo",
          "golește pista, mut-o la stânga, mut-o la dreapta, pista nouă (ținut: tot groove-ul), undo")))
 
-h("a", 5, T("the screen", "das display", "ecranul"))
+h("a", 6, T("the screen", "das display", "ecranul"))
 img("groove", T("Six lanes, one per track. The selected track is marked white.",
                 "Sechs Zeilen, eine pro Spur. Die gewählte Spur ist weiß markiert.",
                 "Șase rânduri, câte unul pe pistă. Pista selectată este marcată cu alb."))
@@ -520,6 +546,50 @@ p(T("DRIFT moves timbre, decay, level and timing slowly and at random. At zero t
     "Timingul kick-ului nu se mișcă niciodată."))
 
 # ------------------------------------------------------------------ side c ---
+h("b", 6, T("factory values", "werkseinstellungen", "valori din fabrică"))
+NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+_st = F["style"]["romi"]
+SCALE_DE = {"minor": "Moll", "dorian": "Dorisch", "phrygian": "Phrygisch", "minor pentatonic": "Moll-Pentatonik",
+            "phrygian dominant": "Phrygisch-dominant", "harmonic minor": "Harmonisch Moll"}
+SCALE_RO = {"minor": "minor", "dorian": "doric", "phrygian": "frigic", "minor pentatonic": "pentatonic minor",
+            "phrygian dominant": "frigic dominant", "harmonic minor": "minor armonic"}
+p(T(f"Read from the firmware's code as this manual was built ({F['date']}, {F['commit']}). A new groove starts at "
+    f"{_st['bpm']} BPM, swing {_st['swing']} %, drift {pct(_st['drift'])}, duck {pct(_st['duck'])}, in "
+    f"{NOTE_NAMES[_st['root'] % 12]} {F['scales'][_st['scale']]}. The sounds below are where a track starts; NEW moves "
+    "colour and decay within ranges around them. Levels and sends read in per cent, as on the screen.",
+    f"Aus dem Code der Firmware gelesen, als dieses Handbuch gebaut wurde ({F['date']}, {F['commit']}). Ein neuer Groove "
+    f"startet mit {_st['bpm']} BPM, Swing {_st['swing']} %, Drift {pct(_st['drift'])}, Duck {pct(_st['duck'])}, in "
+    f"{NOTE_NAMES[_st['root'] % 12]} {SCALE_DE[F['scales'][_st['scale']]]}. Die Klänge unten sind der Startpunkt einer Spur; NEW "
+    "bewegt Klangfarbe und Ausklang in Bereichen darum. Pegel und Sends in Prozent, wie auf dem Display.",
+    f"Citite din codul firmware-ului la construirea acestui manual ({F['date']}, {F['commit']}). Un groove nou pornește "
+    f"la {_st['bpm']} BPM, swing {_st['swing']} %, drift {pct(_st['drift'])}, duck {pct(_st['duck'])}, în "
+    f"{NOTE_NAMES[_st['root'] % 12]} {SCALE_RO[F['scales'][_st['scale']]]}. Sunetele de mai jos sunt punctul de pornire al unei "
+    "piste; NEW mișcă timbrul și decay-ul în jurul lor. Nivelurile și send-urile în procente, ca pe ecran."))
+
+
+def _knobs(names, vals):
+    """name and value as the screen shows them (PITCH in semitones from its middle), unbroken"""
+    return "<br>".join(f"{n}\u00a0{(v - 24) if n == 'PITCH' else v}" for n, v in zip(names, vals))
+
+
+table(T(["track", "SOUND", "SOUND 2", "level", "pan", "delay", "reverb"],
+        ["spur", "SOUND", "SOUND 2", "pegel", "pan", "delay", "hall"],
+        ["pistă", "SOUND", "SOUND 2", "nivel", "pan", "delay", "reverb"]),
+      *[(f"[[{F['tracks']['romi'][t]}]]", _knobs(F["sound"]["romi"][t], F["romi_def"][t][:4]),
+         _knobs(F["sound2"]["romi"][t], F["romi_q"][t]), pct(F["romi_def"][t][4]), pan(F["romi_def"][t][5]),
+         pct(F["romi_def"][t][6]), pct(F["romi_def"][t][7])) for t in range(6)])
+p(T("Tracks 5 and 6 take these when an engine is chosen on GROOVE 2 (NOISE comes as a clap: LENGTH far left).",
+    "Die Spuren 5 und 6 übernehmen diese Werte, wenn auf GROOVE 2 eine Engine gewählt wird (NOISE kommt als Clap: "
+    "LENGTH ganz links).",
+    "Pistele 5 și 6 iau aceste valori când se alege un engine pe GROOVE 2 (NOISE vine ca un clap: LENGTH complet la "
+    "stânga)."))
+table(T(["engine", "SOUND", "SOUND 2", "level", "pan", "delay", "reverb"],
+        ["engine", "SOUND", "SOUND 2", "pegel", "pan", "delay", "hall"],
+        ["engine", "SOUND", "SOUND 2", "nivel", "pan", "delay", "reverb"]),
+      *[(F["engines"]["romi"][e], _knobs(F["eng_sound"][e][0], F["eng_def"][e][:4]),
+         _knobs(F["eng_sound"][e][1], F["eng_def"][e][8:12]), pct(F["eng_def"][e][4]), pan(F["eng_def"][e][5]),
+         pct(F["eng_def"][e][6]), pct(F["eng_def"][e][7])) for e in range(len(F["eng_def"]))])
+
 h("c", 1, T("loop length", "looplänge", "lungimea buclei"))
 p(T("[[ALGORITHM]] sets how many steps the selected track loops over. Unequal lengths run against each other.",
     "[[ALGORITHM]] setzt, über wie viele Steps die gewählte Spur läuft. Ungleiche Längen laufen gegeneinander.",
@@ -717,70 +787,7 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "UNDO, die letzte schwarze Taste, nimmt die letzte Änderung an A zurück. Nochmal gedrückt, holt es sie wieder.",
      "UNDO, ultima clapă neagră, anulează ultima schimbare a lui A. Apăsat din nou, o readuce."))
 
-h("d", 2, T("the second style: suom1saundi", "der zweite stil: suom1saundi", "al doilea stil: suom1saundi"))
-p(T("The same machine can play suomisaundi, Finnish freestyle psytrance: the voices and rules of suom1saundi. "
-    "There are two packages of the same firmware: rominimal.fwsc starts as "
-    "ro:MINImal, suom1saundi.fwsc as suom1saundi; each has the other as a bonus. Everything else stays: pages, "
-    "LAZY and HARD, B to D, conditions, slides, links, the screensaver. The colour turns acid green.",
-    "Dieselbe Maschine kann Suomisaundi, finnischen Freestyle-Psytrance: die Stimmen und Regeln von suom1saundi. "
-    "Es gibt zwei Pakete derselben Firmware: rominimal.fwsc startet "
-    "als ro:MINImal, suom1saundi.fwsc als suom1saundi; jedes hat das andere als Bonus. Alles andere bleibt: Seiten, "
-    "LAZY und HARD, B bis D, Bedingungen, Slides, Verknüpfungen, der Bildschirmschoner. Die Farbe wird säuregrün.",
-    "Aceeași mașină poate cânta suomisaundi, psytrance freestyle finlandez: vocile și regulile lui suom1saundi. "
-    "Există două pachete ale aceluiași firmware: rominimal.fwsc "
-    "pornește ca ro:MINImal, suom1saundi.fwsc ca suom1saundi; fiecare îl are pe celălalt ca bonus. Restul rămâne: "
-    "paginile, LAZY și HARD, B–D, condițiile, slide-urile, legăturile, screensaver-ul. Culoarea devine verde acid."))
-table(T(["track", "sound", "sound 2"], ["spur", "sound", "sound 2"], ["pistă", "sound", "sound 2"]),
-      ("POTKU", T("psy kick: a sine falling from far above, click, hold, body · TUNE DECAY SWEEP DRIVE",
-                  "Psy-Kick: Sinus, der von weit oben fällt, Klick, Hold, Body · TUNE DECAY SWEEP DRIVE",
-                  "kick psy: un sinus care cade de foarte sus, click, hold, body · TUNE DECAY SWEEP DRIVE"),
-       "PITCH CLICK SNAP CRUSH"),
-      ("BASSO", T("filter bass: saw to square and a sub into an 18 dB resonant filter · CUTOFF RESO ENVMOD DECAY",
-                  "Filterbass: Säge bis Rechteck und Sub in ein resonantes 18-dB-Filter · CUTOFF RESO ENVMOD DECAY",
-                  "bas cu filtru: saw spre square și sub într-un filtru rezonant de 18 dB · CUTOFF RESO ENVMOD DECAY"),
-       "PITCH WAVE DRIVE CRUSH"),
-      ("HATTU", T("FM metal against noise, and a sound chip's 8-bit noise · DECAY TONE METAL OPEN",
-                  "FM-Metall gegen Rauschen und das 8-Bit-Rauschen eines Soundchips · DECAY TONE METAL OPEN",
-                  "metal FM contra zgomot și zgomotul de 8 biți al unui cip de sunet · DECAY TONE METAL OPEN"),
-       "PITCH CHIP DRIVE CRUSH"),
-      ("HAPPO", T("acid line in the 303 manner: accent and slide · CUTOFF RESO ENVMOD DECAY",
-                  "Acid-Linie im 303-Stil: Akzent und Slide · CUTOFF RESO ENVMOD DECAY",
-                  "linie acid în stil 303: accent și slide · CUTOFF RESO ENVMOD DECAY"),
-       "PITCH WAVE DRIVE CRUSH"),
-      ("PIIP", T("sound chip: pulses, a 4-bit triangle, saw, noise; arpeggio, vibrato · WAVE DECAY ARP VIBRATO",
-                 "Soundchip: Pulse, 4-Bit-Dreieck, Säge, Rauschen; Arpeggio, Vibrato · WAVE DECAY ARP VIBRATO",
-                 "cip de sunet: pulsuri, triunghi pe 4 biți, saw, zgomot; arpegiu, vibrato · WAVE DECAY ARP VIBRATO"),
-       "PITCH SPEED DRIVE CRUSH"),
-      ("KLIKKI", T("ro:MINImal's clicks (instead of suom1saundi's zaps) · DECAY FREQ RESO SCATTER",
-                   "die Clicks von ro:MINImal (statt der Zaps von suom1saundi) · DECAY FREQ RESO SCATTER",
-                   "click-urile lui ro:MINImal (în locul zap-urilor lui suom1saundi) · DECAY FREQ RESO SCATTER"),
-       "PITCH ATTACK DRIVE CRUSH"))
-p(T("The pump is the heart of it. The bass never plays on the kick but behind it: mostly the roll (kick, bass, "
-    "bass, bass), else the gallop (kick, rest, bass, bass). On the root, the octave at the end of the bar, often on "
-    "a slide; the sixteenth after the kick soft, the off-beat accented, a short decay, and the kick ducks it fully "
-    "(SIDECHAIN AMOUNT 127). Over it the acid line walks a motif of eight notes on a loop of its own, the melody "
-    "answers where the acid rests, the hats sit on the off-beat, and the clicks run on odd loops of their own. "
-    "GLIDE of BASSO, HAPPO and PIIP is on TIMING, their SLIDE on a held step's third knob.",
-    "Das Pumpen ist das Herz. Der Bass spielt nie auf der Kick, sondern dahinter: meist der Roll (Kick, Bass, Bass, "
-    "Bass), sonst der Gallop (Kick, Pause, Bass, Bass). Auf dem Grundton, die Oktave am Ende des Takts, oft mit "
-    "Slide; die Sechzehntel nach der Kick leise, der Offbeat akzentuiert, kurzer Ausklang, und die Kick duckt ihn "
-    "ganz (SIDECHAIN AMOUNT 127). Darüber geht die Acid-Linie ein Motiv aus acht Tönen auf eigener Looplänge, die "
-    "Melodie antwortet, wo die Acid ruht, die Hats sitzen auf dem Offbeat, die Clicks laufen auf eigenen ungeraden Loops. "
-    "GLIDE von BASSO, HAPPO und PIIP liegt auf TIMING, ihr SLIDE auf dem dritten Regler beim gehaltenen Step.",
-    "Pompa e inima lui. Basul nu cântă niciodată pe kick, ci în spatele lui: de cele mai multe ori roll-ul (kick, "
-    "bas, bas, bas), altfel galopul (kick, pauză, bas, bas). Pe fundamentală, octava la sfârșitul măsurii, des cu "
-    "slide; șaisprezecimea de după kick încet, contratimpul accentuat, un decay scurt, iar kick-ul îl duck-uiește "
-    "complet (SIDECHAIN AMOUNT 127). Deasupra, linia acid merge un motiv de opt note pe bucla ei, melodia răspunde "
-    "unde tace acid-ul, hat-urile stau pe contratimp, iar click-urile merg pe bucle impare proprii. GLIDE pentru BASSO, "
-    "HAPPO și PIIP e pe TIMING, SLIDE-ul lor pe al treilea buton la pasul ținut."))
-note(T("suom1saundi is the first thing to go if the FM-1 runs short of time: it costs about 8 % more. Built "
-       "without it (ROMI_SUOMI=0), ro:MINImal is exactly as before.",
-       "suom1saundi fliegt als Erstes raus, wenn der FM-1 zu wenig Rechenzeit hat: Es kostet etwa 8 % mehr. Ohne "
-       "es gebaut (ROMI_SUOMI=0) ist ro:MINImal genau wie vorher.",
-       "suom1saundi pleacă primul dacă FM-1 nu mai are timp de calcul: costă cu aproximativ 8 % mai mult. Construit "
-       "fără el (ROMI_SUOMI=0), ro:MINImal e exact ca înainte."))
-
-h("d", 3, T("keys and midi", "tasten und midi", "clape și midi"))
+h("d", 2, T("keys and midi", "tasten und midi", "clape și midi"))
 ul(T("[[REC]] turns the keys into a keyboard for the selected track. C4 is the track's base note. "
      "[[OCT−]] [[OCT+]] shift two octaves each way.",
      "[[REC]] macht die Tasten zum Keyboard für die gewählte Spur. C4 ist der Grundton der Spur. "
@@ -800,7 +807,7 @@ ul(T("[[REC]] turns the keys into a keyboard for the selected track. C4 is the t
      "Start und Stopp werden empfangen. Mit CLOCK an werden Clock, Start und Stopp über USB gesendet.",
      "Start și stop sunt primite. Cu CLOCK pornit, clock, start și stop sunt trimise prin USB."))
 
-h("d", 4, T("recipes", "rezepte", "rețete"))
+h("d", 3, T("recipes", "rezepte", "rețete"))
 table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
       (T("a sub that rolls between the kicks", "einen Sub, der zwischen den Kicks rollt",
          "un sub care se rostogolește între kick-uri"),
@@ -828,7 +835,7 @@ table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
          "[[GLO]], CHAIN EVOLVE. DRIFT um 60. Laufen lassen; ab und zu an A drehen.",
          "[[GLO]], CHAIN EVOLVE. DRIFT în jur de 60. Lasă-l să meargă; atinge A din când în când.")))
 
-h("d", 5, T("small print", "kleingedrucktes", "litere mici"))
+h("d", 4, T("small print", "kleingedrucktes", "litere mici"))
 ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A step moves at most 7/16 of a step, "
      "the whole track 8/16 more, together half a sixteenth. Notes reach 32 semitones down and 31 up.",
      "Bis zu 32 Locks pro Pattern; ein weiterer und das Display zeigt LOCKS FULL. Ein Step verschiebt sich höchstens um "
@@ -890,11 +897,13 @@ def render(lang):
                 side = b[1]
                 out.append(f'<section class="side"><div class="sidehead"><span class="letter">{side}</span>'
                            f'<span>{tx(SIDES[side], lang)}</span></div>')
-            out.append(f'<h2><span class="no">{b[1]}{b[2]}</span>{tx(b[3], lang)}</h2>')
+            out.append(f'<h2 id="{lang}-{b[1]}{b[2]}"><span class="no">{b[1]}{b[2]}</span>{tx(b[3], lang)}</h2>')
         elif k == "p":
             out.append(f"<p>{tx(b[1], lang)}</p>")
         elif k == "note":
             out.append(f'<p class="note">{tx(b[1], lang)}</p>')
+        elif k == "pre":
+            out.append(f'<pre class="panel">{html.escape(b[1][lang])}</pre>')
         elif k in ("ol", "ul"):
             out.append(f"<{k}>" + "".join(f"<li>{tx(i, lang)}</li>" for i in b[1]) + f"</{k}>")
         elif k == "table":
@@ -921,7 +930,7 @@ PAGE = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ro:MINImal Manual</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Silkscreen&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* A white-label sleeve: paper, black type set small and lowercase, hairlines, much air; sections numbered like
    the sides of a double 12-inch (a1 .. d4). The only colour is the orange of the device's screen, kept for what
@@ -947,16 +956,6 @@ PAGE = r"""<!DOCTYPE html>
   color-scheme: dark;
   --paper: #0e0e0d; --ink: #e9e8e2; --soft: #8f8e87; --hair: #2c2c29; --cell: #2a2a27; --signal: #ff6a33;
 }
-/* suom1saundi (Finnish, Klingon): the device's other face, acid green on black, the name in its blocky capitals */
-:root[data-style="suomi"] {
-  color-scheme: dark;
-  --paper: #0a0c09; --ink: #e6efdc; --soft: #8a9a80; --hair: #233020; --cell: #1c2618; --signal: #aaff3c;
-  --sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-:root[data-style="suomi"] .cover h1 { font: 400 clamp(30px, 8.6vw, 60px)/1 "Silkscreen", var(--mono); letter-spacing: .02em;
-  text-transform: uppercase; }
-:root[data-style="suomi"] .cover h1 .one { color: var(--signal); }
-:root[data-style="suomi"] kbd { border-color: var(--signal); }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.55 var(--sans); }
@@ -998,6 +997,14 @@ ul li { padding-left: 18px; position: relative; }
 ul li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; background: var(--ink); }
 ol li::marker { font: 400 12px var(--mono); color: var(--soft); }
 .note { border-left: 3px solid var(--signal); padding: 2px 0 2px 14px; }
+pre.panel { font: 400 11.5px/1.45 var(--mono); color: var(--ink); background: transparent; border: 1px solid var(--hair);
+  padding: 14px 16px; overflow-x: auto; margin: 6px 0 22px; }
+.toc { margin: 40px 0 0; columns: 2 240px; column-gap: 32px; font: 400 13px/1.5 var(--mono); }
+.toc .s { break-inside: avoid; margin: 0 0 14px; }
+.toc b { display: block; font-weight: 500; color: var(--ink); text-transform: lowercase; letter-spacing: .04em; }
+.toc a { display: block; color: var(--soft); text-decoration: none; text-transform: lowercase; }
+.toc a:hover { color: var(--ink); }
+.toc a span { display: inline-block; width: 2.4em; color: var(--ink); }
 
 kbd { font: 500 11.5px/1 var(--mono); letter-spacing: .04em; padding: 3px 5px 2px; border: 1px solid var(--ink);
   border-radius: 3px; white-space: nowrap; background: transparent; color: var(--ink); }
@@ -1036,9 +1043,9 @@ article[hidden] { display: none; }
 <body>
 <div class="wrap">
   <div class="top">
-    <span>ro:MINImal · @@DATE@@ · <a class="out" href="https://g0rst.github.io/ro-MINImal/">emulator, test page, download</a></span>
+    <span>ro:MINImal · @@DATE@@ · build @@COMMIT@@ · <a class="out" href="https://g0rst.github.io/ro-MINImal/">emulator, test page, download</a></span>
     <nav class="langs" aria-label="language">
-      <a href="#en" data-l="en">english</a><a href="#de" data-l="de">deutsch</a><a href="#ro" data-l="ro">română</a><a href="#fi" data-l="fi">suomi</a><a href="#tlh" data-l="tlh">tlhIngan Hol</a>
+      <a href="#en" data-l="en">english</a><a href="#de" data-l="de">deutsch</a><a href="#ro" data-l="ro">română</a>
     </nav>
   </div>
 @@ARTICLES@@
@@ -1046,9 +1053,9 @@ article[hidden] { display: none; }
 </div>
 <script>
 (function () {
-  var langs = ["en", "de", "ro", "fi", "tlh"];
+  var langs = ["en", "de", "ro"];
   function pick() {
-    var h = location.hash.replace("#", "");
+    var h = location.hash.replace("#", "").split("-")[0];
     if (langs.indexOf(h) >= 0) return h;
     var n = (navigator.language || "en").slice(0, 2).toLowerCase();
     return langs.indexOf(n) >= 0 ? n : "en";
@@ -1057,12 +1064,15 @@ article[hidden] { display: none; }
     var l = pick();
     langs.forEach(function (k) { document.getElementById("m-" + k).hidden = k !== l; });
     document.documentElement.lang = l;
-    document.documentElement.setAttribute("data-style", l === "fi" || l === "tlh" ? "suomi" : "romi");
     Array.prototype.forEach.call(document.querySelectorAll(".langs a"), function (a) {
       a.setAttribute("aria-current", a.getAttribute("data-l") === l ? "true" : "false");
     });
   }
-  window.addEventListener("hashchange", function () { show(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", function () {
+    var lang = location.hash.indexOf("-") < 0;
+    show();
+    if (lang) window.scrollTo(0, 0);
+  });
   show();
 })();
 </script>
@@ -1072,30 +1082,39 @@ article[hidden] { display: none; }
 
 COVER = """<article id="m-{lang}" lang="{lang}"{hidden}>
   <header class="cover">
-    <h1>{name}</h1>
+    <h1><span>ro:</span>MINI<span>mal</span></h1>
     <p class="what"><b>{title}</b> · {sub}</p>
     <div class="disc" aria-hidden="true">{disc}</div>
-    <p class="what try"><a href="https://joakimeriksson.github.io/fm1-emu/?package=https%3A%2F%2Fg0rst.github.io%2Fro-MINImal%2F{pkg}.fwsc&amp;name={pname}">▶ {emu}</a></p>
+    <p class="what try"><a href="https://joakimeriksson.github.io/fm1-emu/?package=https%3A%2F%2Fg0rst.github.io%2Fro-MINImal%2Frominimal.fwsc&amp;name=ro%3AMINImal">▶ {emu}</a></p>
+    <nav class="toc" aria-label="contents">{toc}</nav>
   </header>
 {body}
 </article>"""
 
 
+def toc(lang):
+    out, side = [], None
+    for b in B:
+        if b[0] != "h":
+            continue
+        if b[1] != side:
+            if side:
+                out.append("</div>")
+            side = b[1]
+            out.append(f'<div class="s"><b>{side} · {tx(SIDES[side], lang)}</b>')
+        out.append(f'<a href="#{lang}-{b[1]}{b[2]}"><span>{b[1]}{b[2]}</span>{tx(b[3], lang)}</a>')
+    return "".join(out) + "</div>"
+
+
 def main():
     disc = "".join(f'<i class="{c}"></i>' for c in ["k", "", "", "", "k", "", "", "s", "k", "", "", "", "k", "", "", ""])
-    def cover(l):
-        su = l in SUOMI
-        return COVER.format(lang=l, hidden="" if l == "en" else " hidden", title=TITLE[l], sub=SUB[l], disc=disc, emu=EMU[l],
-                            name='SUOM<span class="one">1</span>SAUNDI' if su else "<span>ro:</span>MINI<span>mal</span>",
-                            pkg="suom1saundi" if su else "rominimal", pname="suom1saundi" if su else "ro%3AMINImal",
-                            body=render(l))
-    arts = "\n".join(cover(l) for l in LANGS)
-    import datetime
-    page = PAGE.replace("@@ARTICLES@@", arts).replace("@@DATE@@", datetime.date.today().strftime("%Y-%m"))
+    arts = "\n".join(COVER.format(lang=l, hidden="" if l == "en" else " hidden", title=TITLE[l], sub=SUB[l], disc=disc,
+                                  emu=EMU[l], toc=toc(l), body=render(l)) for l in LANGS)
+    page = PAGE.replace("@@ARTICLES@@", arts).replace("@@DATE@@", F["date"]).replace("@@COMMIT@@", F["commit"])
     dest = ROOT / "docs" / "manual.html"
     dest.write_text(page, encoding="utf-8")
     words = {l: len(re.sub(r"<[^>]+>", " ", render(l)).split()) for l in LANGS}
-    print(f"{dest}: {len(page)} bytes; words {words}; not translated yet: {MISSING}")
+    print(f"{dest}: {len(page)} bytes; words {words}")
 
 
 if __name__ == "__main__":

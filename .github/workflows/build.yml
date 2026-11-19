@@ -146,9 +146,11 @@ jobs:
           sh tests/run_tests.sh >/dev/null    # (the screens the manual shows)
           sh sim/build.sh
           python3 manual/build.py
+          python3 manual/suomi.py
           mkdir -p _site
           cp site/index.html _site/
           cp docs/manual.html _site/manual.html
+          cp docs/suomi.html _site/suomi.html
           cp docs/index.html _site/testseite.html
           cp dist/rominimal.fwsc dist/firmware.json _site/
           cp dist-suomi/suom1saundi.fwsc _site/
