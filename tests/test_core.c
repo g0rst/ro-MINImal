@@ -330,7 +330,23 @@ int main(int argc, char **argv)
         { int k; for (k = 0; k < 15; k++) turn(ROMI_E_K3, -3); }   /* down to 53 */
         CHECK(tr->eu_prob == 53 && ROMI_CHANCE(&tr->step[2]) == 53, "EUCLID chance down: %d", tr->eu_prob);
         turn(ROMI_E_K4, 2);
-        CHECK(ROMI_CHANCE(&tr->step[2]) == 53 && (tr->step[2].flags & ROMI_ST_ACC), "chance and accent: %d %02x", ROMI_CHANCE(&tr->step[2]), tr->step[2].flags);
+        CHECK(ROMI_CHANCE(&tr->step[2]) == 53 && (tr->step[2].flags & ROMI_ST_ACC), "chance and accent: %d %02x", ROMI_CHANCE(&tr->step[2]), tr->step[2].flags);        {                                           /* ACCENT RANDOM: some hits, at least one, thrown anew */
+            int k, na, all = 0, differ = 0;
+            uint32_t prev = 0, cur;
+            turn(ROMI_E_K1, 3);                     /* 8 hits */
+            turn(ROMI_E_K4, 3);
+            CHECK(tr->eu_acc == 5, "ACCENT RANDOM: %d", tr->eu_acc);
+            for (k = 0; k < 30; k++) {
+                turn(ROMI_E_K2, 1);
+                for (na = 0, cur = 0, i = 0; i < 16; i++)
+                    if ((tr->step[i].flags & ROMI_ST_ON) && (tr->step[i].flags & ROMI_ST_ACC)) { na++; cur |= 1u << ((i + 16 - tr->eu_rot) % 16); }
+                CHECK(na >= 1, "RANDOM: no accent");
+                all += na;
+                differ += k && cur != prev;
+                prev = cur;
+            }
+            CHECK(all > 30 * 8 / 6 && all < 30 * 8 / 2 && differ > 20, "RANDOM: %d accents of 240, %d changed", all, differ);
+        }
     }
     tap_key(25);                                    /* UNDO */
     CHECK(romi_state(ROMI_Q_STEPS_ON) == v, "undo after euclid: %d, was %d", romi_state(ROMI_Q_STEPS_ON), v);

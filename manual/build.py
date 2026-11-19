@@ -495,9 +495,9 @@ table(T(["knob", "value"], ["knopf", "wert"], ["buton", "valoare"]),
       ("[[KNOB2]] ROTATE", T("turns the pattern around the loop", "dreht das Muster im Loop", "rotește tiparul în buclă")),
       ("[[KNOB3]] CHANCE", T("chance for all hits, stepless: 1 to 100 %", "Chance für alle Schläge, stufenlos: 1 bis 100 %",
                              "șansa pentru toate loviturile, continuu: 1–100 %")),
-      ("[[KNOB4]] ACCENT", T("accent on every hit, or every 2nd, 3rd, 4th",
-                             "Akzent auf jedem Schlag oder jedem 2., 3., 4.",
-                             "accent pe fiecare lovitură sau la fiecare a 2-a, a 3-a, a 4-a")))
+      ("[[KNOB4]] ACCENT", T("accent on every hit, or every 2nd, 3rd, 4th; RANDOM: on about one hit in three, thrown anew with each turn",
+                             "Akzent auf jedem Schlag oder jedem 2., 3., 4.; RANDOM: auf etwa jedem dritten Schlag, zufällig, bei jedem Drehen neu",
+                             "accent pe fiecare lovitură sau la fiecare a 2-a, a 3-a, a 4-a; RANDOM: pe cam una din trei, aleator, din nou la fiecare rotire")))
 grid([("PERC", "x...x..x..x..x..")], T("5 hits in 16 steps.", "5 Schläge in 16 Steps.", "5 lovituri în 16 pași."))
 
 h("c", 3, SAME("link"))

@@ -2011,7 +2011,7 @@ static void new_seeds(void)
 static void apply_euclid(int t)
 {
     romi_track_t *tr = &EDT->tr[t];
-    uint32_t i, n = 0, len = tr->len ? tr->len : 1u;
+    uint32_t i, n = 0, len = tr->len ? tr->len : 1u, racc = 0;
     if (tr->eu_hits > len)
         tr->eu_hits = (uint8_t)len;
     if (tr->eu_rot >= len)
@@ -2020,11 +2020,21 @@ static void apply_euclid(int t)
         tr->step[i].flags = 0;
     for (i = 0; i < len; i++)
         if (i * tr->eu_hits % len < tr->eu_hits) {
-            uint32_t acc = tr->eu_acc && n % tr->eu_acc == 0u ? ROMI_ST_ACC : 0u;
+            uint32_t acc = tr->eu_acc == 5u ? (urand(3) == 0 ? ROMI_ST_ACC : 0u)   /* RANDOM: newly thrown on each turn */
+                         : tr->eu_acc && n % tr->eu_acc == 0u ? ROMI_ST_ACC : 0u;
+            racc |= acc;
             tr->step[(i + tr->eu_rot) % len].flags = (uint8_t)(ROMI_ST_ON | acc);
             tr->step[(i + tr->eu_rot) % len].chance = tr->eu_prob >= 100u ? 0u : tr->eu_prob;   /* stepless, 1..100 % */
             n++;
         }
+    if (tr->eu_acc == 5u && !racc && n) {   /* RANDOM: one accent at least */
+        uint32_t k = urand(n);
+        for (i = 0; i < len; i++)
+            if ((tr->step[i].flags & ROMI_ST_ON) && k-- == 0u) {
+                tr->step[i].flags |= ROMI_ST_ACC;
+                break;
+            }
+    }
 }
 
 static void mutate_track(int t)
@@ -2236,7 +2246,7 @@ static void prj_sanitize(romi_project_t *p)
             LIM(tr->eu_hits, 0, tr->len);
             LIM(tr->eu_rot, 0, tr->len - 1);
             LIM(tr->eu_prob, 1, 100);
-            LIM(tr->eu_acc, 0, 4);
+            LIM(tr->eu_acc, 0, 5);
             for (i = 0; i < 4; i++)
                 LIM(tr->p[i], 0, 127);
             LIM(tr->q[0], 0, 48);
@@ -2849,7 +2859,7 @@ static int page_params(param_t p[4])
         P(0, "HITS", &tr->eu_hits, 0, tr->len, F_NUM, 0);
         P(1, "ROTATE", &tr->eu_rot, 0, (uint8_t)(tr->len - 1u), F_NUM, 0);
         P(2, "CHANCE", &tr->eu_prob, 1, 100, F_EPROB, 0);   /* stepless, 1 % a click */
-        P(3, "ACCENT", &tr->eu_acc, 0, 4, F_EACC, 0);
+        P(3, "ACCENT", &tr->eu_acc, 0, 5, F_EACC, 0);
         break;
     case ROMI_PG_TIMING: {              /* (signed values: F_SHIFT is handled apart, -8..8) */
         static char name[10];
@@ -2956,7 +2966,7 @@ static void param_text(const param_t *p, char *t)
     static const char *const DTIME[3] = {"1/16", "1/8", "3/16"};
     static const char *const CHORD[5] = {"MIN", "MIN7", "MIN9", "SUS", "5TH"};
     static const char *const CHAIN[5] = {"OFF", "A-B", "A-C", "A-D", "EVOLVE"};
-    static const char *const EACC[5] = {"OFF", "ALL", "2ND", "3RD", "4TH"};
+    static const char *const EACC[6] = {"OFF", "ALL", "2ND", "3RD", "4TH", "RANDOM"};
     static const char *const DEPMODE[3] = {"WITH", "GAPS", "AFTER"};
     int v = *p->v;
     t[0] = 0;
@@ -2999,7 +3009,7 @@ static void param_text(const param_t *p, char *t)
     case F_CHORD: cat(t, CHORD[v * 5 / 128]); break;
     case F_CHAIN: cat(t, CHAIN[v > 4 ? 4 : v]); break;
     case F_EPROB: cat_int(t, v); cat(t, "%"); break;
-    case F_EACC: cat(t, EACC[v > 4 ? 4 : v]); break;
+    case F_EACC: cat(t, EACC[v > 5 ? 5 : v]); break;
     case F_TRACK: cat(t, track_name(v % ROMI_TRACKS)); break;
     case F_DEPSRC: cat(t, v && v <= ROMI_TRACKS ? track_name(v - 1) : "OFF"); break;
     case F_DEPMODE: cat(t, DEPMODE[v > 2 ? 2 : v]); break;

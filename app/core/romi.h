@@ -71,7 +71,7 @@ typedef struct {
     uint8_t level, pan, dly, rev;       /* 0..127 */
     uint8_t eu_hits, eu_rot;            /* the EUCLID page: hits spread over the loop, rotated */
     uint8_t eu_prob;                    /* 1..100 %: the chance of all of them, stepless */
-    uint8_t eu_acc;                     /* 0: none; n: every n-th hit accented */
+    uint8_t eu_acc;                     /* 0: none; n: every n-th hit accented; 5 RANDOM: about one hit in three */
     uint8_t sc;                         /* 0..127: how much the sidechain ducks this track */
     uint8_t dep_src;                    /* the LINK page: 0 none, else track + 1 whose hits gate this track's steps */
     int8_t tshift;                      /* microtiming of the whole track, -8..8, added to each step's shift */
