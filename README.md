@@ -80,6 +80,8 @@ Grundton (oder der Terz). In ro:MINImal heißt PIIP **8-BIT**, der Click bei suo
 SUHINA): Rauschen durch ein resonantes Filter, dessen Cutoff über eine Sechzehntel bis acht Takte nach oben oder unten
 läuft (Riser, Downlifter, Zischen); SOUND LENGTH, SWEEP, TONE, RESO, SOUND 2 PITCH, SWELL, DRIVE, CRUSH.
 TONE, SWEEP, RESO und SWELL wirken sofort auf den laufenden Sweep, LENGTH ab der nächsten Note.
+LENGTH ganz links ist **CLAP**: drei Rauschstöße im Abstand von 9 ms und eine Fahne durch den Bandpass (TONE um 1,3 kHz,
+RESO, SWEEP wird TAIL 60–500 ms); der Generator setzt ihn in der Hälfte der Fälle auf 2 und 4 (manchmal mit Vorschlag).
 
 Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
 HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30). GLIDE von BASSO, HAPPO und PIIP

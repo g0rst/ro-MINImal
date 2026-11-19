@@ -367,19 +367,28 @@ p(T("NOISE (SUHINA in suom1saundi) hisses, rises and falls: white noise through 
     "SWEEPs up or down over the note's LENGTH, a sixteenth to eight bars; TONE where it starts, RESO how narrow; "
     "SWELL on SOUND 2 lets it fall from the start (left), swell to the end (right) or rise and fall. Its generator "
     "puts a riser on bar four of four (a trig condition), a downlifter on bar one, or hiss on the off-beats. "
-    "TONE, SWEEP, RESO and SWELL are heard at once, while a sweep runs; LENGTH from the next note on.",
+    "TONE, SWEEP, RESO and SWELL are heard at once, while a sweep runs; LENGTH from the next note on. LENGTH all the "
+    "way left is CLAP: three short bursts 9 ms apart and a tail, TONE its centre (about 1.3 kHz), RESO how narrow, "
+    "SWEEP becomes TAIL (60 to 500 ms). Half the time the generator puts it on 2 and 4, now and then with a flam "
+    "before the 4: the 1-3 kHz that lend a groove its presence.",
     "NOISE (bei suom1saundi SUHINA) zischt, steigt und fällt: weißes Rauschen durch ein resonantes Filter, dessen "
     "Cutoff über die LENGTH der Note (eine Sechzehntel bis acht Takte) nach oben oder unten SWEEPt; TONE wo es "
     "beginnt, RESO wie eng; SWELL auf SOUND 2 lässt es ab dem Anfang fallen (links), bis zum Ende anschwellen "
     "(rechts) oder steigen und fallen. Sein Generator setzt einen Riser in Takt vier von vier (eine Trig-Bedingung), "
     "einen Downlifter in Takt eins oder Zischen auf die Offbeats. TONE, SWEEP, RESO und SWELL hört man sofort, "
-    "während ein Sweep läuft; LENGTH ab der nächsten Note.",
+    "während ein Sweep läuft; LENGTH ab der nächsten Note. LENGTH ganz links ist CLAP: drei kurze Rauschstöße "
+    "im Abstand von 9 ms und eine Fahne, TONE ihre Mitte (um 1,3 kHz), RESO wie eng, SWEEP wird TAIL (60 bis 500 ms). "
+    "Der Generator setzt ihn in der Hälfte der Fälle auf 2 und 4, manchmal mit einem Vorschlag vor der 4: die "
+    "1–3 kHz, die einem Groove Präsenz geben.",
     "NOISE (SUHINA în suom1saundi) șuieră, urcă și coboară: zgomot alb printr-un filtru rezonant al cărui cutoff "
     "face SWEEP în sus sau în jos pe LENGTH-ul notei, de la o șaisprezecime la opt măsuri; TONE de unde pornește, "
     "RESO cât de îngust; SWELL pe SOUND 2 îl face să scadă de la început (stânga), să crească până la sfârșit "
     "(dreapta) sau să urce și să coboare. Generatorul lui pune un riser în măsura patru din patru (o condiție de "
     "trig), un downlifter în măsura unu sau șuierat pe contratimpi. TONE, SWEEP, RESO și SWELL se aud imediat, "
-    "cât timp merge un sweep; LENGTH de la nota următoare."))
+    "cât timp merge un sweep; LENGTH de la nota următoare. LENGTH complet la stânga e CLAP: trei rafale scurte "
+    "la 9 ms una de alta și o coadă, TONE centrul (cam 1,3 kHz), RESO cât de îngust, SWEEP devine TAIL (60–500 ms). "
+    "Generatorul îl pune în jumătate din cazuri pe 2 și 4, uneori cu un flam înainte de 4: cei 1–3 kHz care dau "
+    "prezență unui groove."))
 p(T("The master, on GROOVE 2 ([[HOME]] twice): FILTER, one knob, low-pass to the left, high-pass to the right, off "
     "in the middle; BASS adds the lows below 100 Hz once more, up to about +9 dB; its partner for the top is AIR on [[GLO]] twice, knob 3: what lies over about 2.5 kHz once more, up to +6 dB (31 % at the start: presence and air). BEAT REPEAT: hold [[SEL]] and a "
     "white key 1 to 4, and the master repeats the beat, eighth, sixteenth or thirty-second from that moment until "

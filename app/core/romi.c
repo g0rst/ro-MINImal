@@ -1647,23 +1647,34 @@ static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const
  * out of them (bar one of four, falling and fading), or hiss on the off-beats */
 static void noise_gen(romi_track_t *tr)
 {
-    uint32_t k = urand(3), i;
-    if (k == 0) {
+    uint32_t k = urand(5), i;
+    if (k <= 1) {                       /* the clap on 2 and 4 (half the time), now and then a flam before the 4 */
+        set_step(tr, 4, 0, 0, 0);
+        set_step(tr, 12, 1, 0, 0);
+        if (urand(4) == 0)
+            set_step(tr, 11, 0, 2, 0);
+        tr->p[0] = NLEN_V(0);
+        tr->p[1] = near(56, 14);        /* the tail, 150 ms or so */
+        tr->p[2] = near(77, 6);         /* about 1.3 kHz */
+        tr->p[3] = near(40, 16);
+        tr->q[1] = 0;
+        return;
+    } else if (k == 2) {
         set_step(tr, 0, 1, 0, 0);
         tr->step[0].cond = 9;           /* 4:4 */
-        tr->p[0] = 64;                  /* a bar */
+        tr->p[0] = NLEN_V(5);           /* a bar */
         tr->p[1] = (uint8_t)(100 + urand(28));
         tr->q[1] = 127;
-    } else if (k == 1) {
+    } else if (k == 3) {
         set_step(tr, 0, 1, 0, 0);
         tr->step[0].cond = 6;           /* 1:4 */
-        tr->p[0] = 64;
+        tr->p[0] = NLEN_V(5);
         tr->p[1] = (uint8_t)(urand(28));
         tr->q[1] = 0;
     } else {
         for (i = 2; i < 16; i += 4)
             set_step(tr, i, 0, (int)urand(2), 0);
-        tr->p[0] = 0;                   /* a sixteenth */
+        tr->p[0] = NLEN_V(1);           /* a sixteenth */
         tr->p[1] = 64;
         tr->q[1] = 30;
     }
@@ -2876,6 +2887,10 @@ static int page_params(param_t p[4])
             } else if (tr->engine == ROMI_ENG_NOISE) {
                 p[0].fmt = F_NLEN;
                 p[1].fmt = F_NSWEEP;
+                if (tr->p[0] * 9 / 128 == 0) {   /* CLAP: SWEEP is its tail */
+                    p[1].name = "TAIL";
+                    p[1].fmt = F_P127;
+                }
             }
             break;
         }
@@ -3018,8 +3033,8 @@ static void param_text(const param_t *p, char *t)
     case F_PCT: cat_int(t, v); cat(t, "%"); break;
     case F_P127: cat_int(t, (v * 100 + 63) / 127); cat(t, "%"); break;   /* 0..127 as 0..100 % */
     case F_NLEN: {
-        static const char *const L[8] = {"1/16", "1/8", "1/4", "1/2", "1 BAR", "2 BARS", "4 BARS", "8 BARS"};
-        cat(t, L[v * 8 / 128]);
+        static const char *const L[9] = {"CLAP", "1/16", "1/8", "1/4", "1/2", "1 BAR", "2 BARS", "4 BARS", "8 BARS"};
+        cat(t, L[v * 9 / 128]);
         break;
     }
     case F_NSWEEP:                      /* down, none, up */

@@ -1695,7 +1695,7 @@ int main(int argc, char **argv)
         CHECK(nz->engine == ROMI_ENG_NOISE && nz->mute, "NOISE on track 6: engine %d mute %d", nz->engine, nz->mute);
         for (t = 0; t < ROMI_TRACKS; t++) romi_project()->pat[0].tr[t].mute = t != ROMI_CLICK;
         for (k = 0; k < 16; k++) { nz->step[k].flags = 0; nz->step[k].cond = 0; nz->step[k].chance = 0; }
-        nz->step[0].flags = ROMI_ST_ON; nz->len = 16; nz->p[0] = 64; nz->q[1] = 127; nz->dly = nz->rev = 0;
+        nz->step[0].flags = ROMI_ST_ON; nz->len = 16; nz->p[0] = 72; nz->q[1] = 127;   /* a bar */ nz->dly = nz->rev = 0;
         romi_project()->rev_size = 0;
         tap_button(ROMI_B_PLAY);
         run(60.0 * 4 / romi_project()->bpm, pa, 0, 0);   /* one bar */
@@ -1704,6 +1704,29 @@ int main(int argc, char **argv)
         for (i = (int)n * 3 / 4 - 2000; i < (int)n - 2000; i++) e2 += (double)pa[2 * i] * pa[2 * i];
         printf("noise: riser energy first quarter %.3g, last %.3g\n", e1, e2);
         CHECK(e2 > e1 * 4.0 && e2 > 0.0, "a riser that does not rise: %g -> %g", e1, e2);
+        {                                   /* CLAP (LENGTH left): a burst at the hit, gone well before the next; in the
+                                             * 1-3 kHz more than below 300 Hz */
+            double at = 0.0, later = 0.0, lo = 0.0, mid = 0.0, l1 = 0.0, b1 = 0.0;
+            uint32_t st = (uint32_t)(44100.0 * 60.0 / 4.0 / romi_project()->bpm);
+            tap_button(ROMI_B_PLAY);
+            nz->p[0] = 0; nz->p[1] = 56; nz->p[2] = 77; nz->p[3] = 40; nz->q[1] = 0;
+            for (k = 0; k < 16; k++) nz->step[k].flags = 0;
+            nz->step[4].flags = ROMI_ST_ON;
+            tap_button(ROMI_B_PLAY);
+            run(60.0 * 4 / romi_project()->bpm, pa, 0, 0);
+            for (i = (int)(4 * st); i < (int)(4 * st + 4410); i++) at += (double)pa[2 * i] * pa[2 * i];
+            for (i = (int)(10 * st); i < (int)(10 * st + 4410); i++) later += (double)pa[2 * i] * pa[2 * i];
+            for (i = (int)(4 * st); i < (int)(4 * st + 8820); i++) {   /* a crude split: one-poles at 300 Hz and 3 kHz */
+                double x = pa[2 * i];
+                l1 += (x - l1) * 0.042;
+                b1 += (x - b1) * 0.35;
+                lo += l1 * l1;
+                mid += (b1 - l1) * (b1 - l1);
+            }
+            printf("clap: %.3g at the hit, %.3g later; mid/low %.1f\n", at, later, mid / (lo + 1.0));
+            CHECK(at > 0.0 && later < at * 0.01, "CLAP: %g at the hit, %g later", at, later);
+            CHECK(mid > lo * 4.0, "CLAP: not in the mids (%g vs %g)", mid, lo);
+        }
         /* FILTER low-pass and BASS on the whole groove */
         for (k = 0; k < 3; k++) {
             double hi = 0, lo = 0, lp = 0, prev = 0;
