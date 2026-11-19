@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Builds the ro:MINImal manual: one self-contained page in English, German and Romanian. (suom1saundi has a manual
-of its own, in its own dress: manual/suomi.py.) The tables of factory values come from the firmware's code
+"""Builds the ro:MINImal manual: one self-contained page in English, German and Romanian. (It does not speak of
+suom1saundi: that has a manual of its own, apart, manual/suomi.py.) The tables of factory values come from the firmware's code
 (manual/codefacts.py), so they cannot drift from it.
 
     python3 manual/build.py        ->  docs/manual.html
@@ -409,7 +409,7 @@ p(T("Amounts read in per cent: levels, sends, drift, duck, depths (LFO and ENV f
     "Cantitățile se citesc în procente: niveluri, send-uri, drift, duck, adâncimi (LFO și ENV de la -100 la +100 %), "
     "drive, crush, rezonanță, mix, random și altele asemenea; timpii, înălțimile și numărătorile își păstrează "
     "unitățile. Kick-ul pornește la 72 %."))
-p(T("NOISE (SUHINA in suom1saundi) hisses, rises and falls: white noise through a resonant filter whose cutoff "
+p(T("NOISE hisses, rises and falls: white noise through a resonant filter whose cutoff "
     "SWEEPs up or down over the note's LENGTH, a sixteenth to eight bars; TONE where it starts, RESO how narrow; "
     "SWELL on SOUND 2 lets it fall from the start (left), swell to the end (right) or rise and fall. Its generator "
     "puts a riser on bar four of four (a trig condition), a downlifter on bar one, or hiss on the off-beats. "
@@ -420,7 +420,7 @@ p(T("NOISE (SUHINA in suom1saundi) hisses, rises and falls: white noise through 
     "and 4 (steps 5 and 13); turned to CLAP, LENGTH moves the steps there too. NEW keeps to the mode: a clap stays on 2 and 4 with a figure around it (a flam, a ghost, a fill in bar four), "
     "a sweep stays a riser, a downlifter or hiss. B and C vary each engine by its own rules: a clap gains or loses its "
     "ghost in B and a fill in C, stab chords change order, clicks turn, a melody stays.",
-    "NOISE (bei suom1saundi SUHINA) zischt, steigt und fällt: weißes Rauschen durch ein resonantes Filter, dessen "
+    "NOISE zischt, steigt und fällt: weißes Rauschen durch ein resonantes Filter, dessen "
     "Cutoff über die LENGTH der Note (eine Sechzehntel bis acht Takte) nach oben oder unten SWEEPt; TONE wo es "
     "beginnt, RESO wie eng; SWELL auf SOUND 2 lässt es ab dem Anfang fallen (links), bis zum Ende anschwellen "
     "(rechts) oder steigen und fallen. Sein Generator setzt einen Riser in Takt vier von vier (eine Trig-Bedingung), "
@@ -433,7 +433,7 @@ p(T("NOISE (SUHINA in suom1saundi) hisses, rises and falls: white noise through 
     "in Takt vier), ein Sweep bleibt Riser, Downlifter oder Zischen. B und C variieren jede Engine nach ihren eigenen "
     "Regeln: der Clap bekommt in B einen Geister-Clap dazu oder verliert ihn, in C einen Fill; Stab-Akkorde wechseln die "
     "Reihenfolge, Clicks drehen sich, eine Melodie bleibt.",
-    "NOISE (SUHINA în suom1saundi) șuieră, urcă și coboară: zgomot alb printr-un filtru rezonant al cărui cutoff "
+    "NOISE șuieră, urcă și coboară: zgomot alb printr-un filtru rezonant al cărui cutoff "
     "face SWEEP în sus sau în jos pe LENGTH-ul notei, de la o șaisprezecime la opt măsuri; TONE de unde pornește, "
     "RESO cât de îngust; SWELL pe SOUND 2 îl face să scadă de la început (stânga), să crească până la sfârșit "
     "(dreapta) sau să urce și să coboare. Generatorul lui pune un riser în măsura patru din patru (o condiție de "
@@ -456,20 +456,17 @@ p(T("The master, on GROOVE 2 ([[HOME]] twice): FILTER, one knob, low-pass to the
     "Suma, pe GROOVE 2 ([[HOME]] de două ori): FILTER, un buton, low-pass la stânga, high-pass la dreapta, oprit la "
     "mijloc; BASS adaugă încă o dată joasele sub 100 Hz, până la circa +9 dB; perechea lui pentru sus e AIR pe [[GLO]] de două ori, butonul 3: tot ce e peste circa 2,5 kHz încă o dată, până la +6 dB (31 % la pornire: prezență și aer). BEAT REPEAT: ține [[SEL]] și o clapă "
     "albă 1–4, iar suma repetă din acel moment o pătrime, optime, șaisprezecime sau treizecidoime până dai drumul."))
-p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each plays STAB (ro:MINImal's FM chords), CLICK "
-    "(its noise grains; KLIKKI in suom1saundi) or PIIP (suom1saundi's sound chip), in either style, two of the same "
-    "too; in ro:MINImal PIIP is called 8-BIT. A new engine brings its sound and a pattern in its rules and comes in muted: [[SEL]] brings it in when the "
+p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each plays STAB (FM chords), CLICK "
+    "(noise grains), 8-BIT (a sound chip) or NOISE (hiss, risers, the clap), two of the same too. A new engine brings its sound and a pattern in its rules and comes in muted: [[SEL]] brings it in when the "
     "moment is right; undo brings the old one back. The track changes in all four patterns (in HARD the new track "
     "is copied into the other three), as long as [[GLO]] twice, knob 4 WORK, says LIVE. WORK PROD is for producing ahead: in HARD only the pattern edited changes, so a track can play another engine in each pattern. Live, that is a voice to swap without leaving the groove.",
-    "Die Spuren 5 und 6 sind frei: [[HOME]] zweimal, GROOVE 2, Regler 1 und 2, und jede spielt STAB (die FM-Akkorde von ro:MINImal), "
-    "CLICK (seine Rauschkörner; bei suom1saundi KLIKKI) oder PIIP (der Soundchip von suom1saundi), in beiden "
-    "Stilen, auch zweimal dasselbe; in ro:MINImal heißt PIIP 8-BIT. Eine neue Engine bringt ihren Klang und ein Pattern nach ihren Regeln mit und "
+    "Die Spuren 5 und 6 sind frei: [[HOME]] zweimal, GROOVE 2, Regler 1 und 2, und jede spielt STAB (FM-Akkorde), "
+    "CLICK (Rauschkörner), 8-BIT (ein Soundchip) oder NOISE (Rauschen, Riser, der Clap), auch zweimal dasselbe. Eine neue Engine bringt ihren Klang und ein Pattern nach ihren Regeln mit und "
     "kommt stumm dazu: [[SEL]] holt sie rein, wenn der Moment passt; Undo holt das alte zurück. Die Spur wechselt in "
     "allen vier Patterns (bei HARD wird die neue Spur in die anderen drei übernommen), solange [[GLO]] zweimal, Regler 4 WORK, auf LIVE steht. WORK PROD ist zum Vorproduzieren: bei HARD wechselt nur das bearbeitete Pattern, so spielt eine Spur in jedem Pattern eine andere Engine. Live ist das eine "
     "Stimme zum Tauschen, ohne den Groove zu verlassen.",
-    "Pistele 5 și 6 sunt libere: [[HOME]] de două ori, GROOVE 2, butoanele 1 și 2, și fiecare cântă STAB (acordurile FM ale lui "
-    "ro:MINImal), CLICK (boabele lui de zgomot; KLIKKI în suom1saundi) sau PIIP (cipul de sunet al lui suom1saundi), "
-    "în ambele stiluri, chiar de două ori același; în ro:MINImal PIIP se numește 8-BIT. Un engine nou își aduce sunetul și un pattern după regulile lui și "
+    "Pistele 5 și 6 sunt libere: [[HOME]] de două ori, GROOVE 2, butoanele 1 și 2, și fiecare cântă STAB (acorduri FM), "
+    "CLICK (boabe de zgomot), 8-BIT (un cip de sunet) sau NOISE (șuierat, risere, clapul), chiar de două ori același. Un engine nou își aduce sunetul și un pattern după regulile lui și "
     "vine pe mut: [[SEL]] îl aduce când e momentul; undo îl aduce înapoi pe cel vechi. Pista se schimbă în toate "
     "cele patru pattern-uri (în HARD pista nouă e copiată în celelalte trei), cât timp [[GLO]] de două ori, butonul 4 WORK, e pe LIVE. WORK PROD e pentru pre-producție: în HARD se schimbă doar pattern-ul editat, așa o pistă poate cânta alt engine în fiecare pattern. Live e o voce de schimbat "
     "fără să ieși din groove."))
