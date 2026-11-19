@@ -1371,8 +1371,9 @@ int main(int argc, char **argv)
      * nothing; a touch skips the show */
     {
         int k, f, m;
-        double e = 0.0;
+        double e = 0.0, mid = 0.0, after;
         romi_init(90);
+        tap_button(ROMI_B_PLAY);                /* the music goes out with the picture and comes back with the fade */
         tap_button(ROMI_B_GLO);
         CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_GLOBAL && !romi_state(ROMI_Q_UFO), "GLO tap: page %d", romi_state(ROMI_Q_PAGE));
         held_b |= 1u << ROMI_B_GLO;
@@ -1386,12 +1387,14 @@ int main(int argc, char **argv)
             for (k = 0; k < 120; k++) frame(0);
             held_b &= ~(1u << ROMI_B_GLO);
             CHECK(romi_state(ROMI_Q_UFO) == m, "GLO held 2 s: show %d, not %d", romi_state(ROMI_Q_UFO), m);
-            for (f = 0, e = 0.0; f < 400 && romi_state(ROMI_Q_UFO); f++) {
+            for (f = 0, e = 0.0, mid = 0.0; f < 400 && romi_state(ROMI_Q_UFO); f++) {
                 romi_input(held_b, held_k, (const int32_t[ROMI_NE]){0}, now_ms);
                 for (k = 0; k < 6; k++) {
                     int i;
                     romi_render(blk, 128, 4096);
                     for (i = 0; i < 256; i++) e += (double)blk[i] * blk[i];
+                    if (m == 2 && f >= 30 && f < 100)   /* the fly-in after the smack: nothing */
+                        for (i = 0; i < 256; i++) mid += (double)blk[i] * blk[i];
                 }
                 if ((m == 1 && (f == 4 || f == 12 || f == 22 || f == 60 || f == 135 || f == 160 || f == 175 || f == 220)) ||
                     (m == 2 && (f == 8 || f == 30 || f == 40 || f == 50 || f == 60 || f == 100))) {
@@ -1400,12 +1403,20 @@ int main(int argc, char **argv)
                 }
                 now_ms += 17;
             }
-            printf("style change %d: %d frames of 17 ms, sound %.3g\n", m, f, e);
+            printf("style change %d: %d frames of 17 ms, sound %.3g, quiet %.3g\n", m, f, e, mid);
+            CHECK(m == 1 || mid < 1e9, "fly-in: the music still plays (%g)", mid);
             CHECK(m == 1 ? f > 220 && f < 240 : f > 108 && f < 125, "show %d: %d frames", m, f);
             CHECK(e > (m == 1 ? 1e15 : 1e13), "show %d: no sound (%g)", m, e);
             snprintf(path, sizeof path, "%s/screen-change%d-fade.ppm", out, m);
             frame(0); frame(0); frame(0); frame(0);
             write_screen(path);
+            for (k = 0; k < 40; k++) frame(0);
+            for (after = 0.0, k = 0; k < 60; k++) {
+                int i;
+                romi_render(blk, 128, 4096);
+                for (i = 0; i < 256; i++) after += (double)blk[i] * blk[i];
+            }
+            CHECK(after > 1e13 && romi_state(ROMI_Q_PLAYING), "after show %d: no music (%g)", m, after);
             CHECK(romi_project()->style == (m == 1) && romi_state(ROMI_Q_PAGE) == ROMI_PG_GLOBAL,
                   "after show %d: style %d page %d", m, romi_project()->style, romi_state(ROMI_Q_PAGE));
         }

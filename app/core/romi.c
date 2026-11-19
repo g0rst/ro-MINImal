@@ -176,6 +176,8 @@ static struct {
     uint32_t fade_t, fade_ms;
     volatile uint8_t jg_want;           /* the jingle: asked for by the UI (1 UFO, 2 the beep alone, 3 stop) */
     uint8_t jg_mode;
+    volatile uint8_t mus_on;            /* the music: 0 fades out with the picture (the show), 1 back with the fade */
+    float mus_g;                        /* where it is, 0..1 */
     uint32_t jg_n, jg_rng;
     float jg_ph;
     uint32_t sv_hits[ROMI_TRACKS];      /* hits seen: they light the dots, the kick's swell the name */
@@ -1087,9 +1089,18 @@ static float jingle(void)
     if (n < JG_S(0.09f)) {              /* the beep */
         f = 1500.0f;
         a = 0.12f * (1.0f - (float)n * (1.0f / (0.09f * (float)ROMI_SR)));
+    } else if (n >= JG_S(0.30f) && n < JG_S(0.38f)) {   /* the music gone: a smack, the tube's last breath */
+        float u = (float)(n - JG_S(0.30f)) * (1.0f / (0.08f * (float)ROMI_SR)), d = 1.0f - u;
+        R.jg_ph += (40.0f + 260.0f * d * d * d) * (1.0f / (float)ROMI_SR);   /* a thump falling fast */
+        o = fsin(R.jg_ph) * 0.55f * d * d;
+        if (u < 0.1f)                   /* and the wet click at its front */
+            o += (float)(int32_t)xs32(&R.jg_rng) * (1.0f / 2147483648.0f) * 0.35f * (1.0f - u * 10.0f);
+        return o;
     } else if (R.jg_mode != 1u || n < JG_S(JG_UFO)) {
-        if (R.jg_mode != 1u)
+        if (R.jg_mode != 1u && n >= JG_S(0.38f))
             R.jg_n = 0;
+        if (n == JG_S(0.30f) - 1u)
+            R.jg_ph = 0.0f;
         return 0.0f;
     } else {
         n -= JG_S(JG_UFO);
@@ -1377,6 +1388,15 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         r += dly_r + rr * duck;
         if (mmode || R.prj.bass || R.br_on >= 0 || R.br_x > 0.0f)
             master_run(&l, &r, mf, mq, mmode);
+        if (R.mus_on ? R.mus_g < 1.0f : R.mus_g > 0.0f) {   /* the show: the music out with the picture (0.3 s),
+                                                                 * back with the fade (0.3 s) */
+            R.mus_g += R.mus_on ? 1.0f / (0.3f * (float)ROMI_SR) : -1.0f / (0.3f * (float)ROMI_SR);
+            R.mus_g = R.mus_g < 0.0f ? 0.0f : R.mus_g > 1.0f ? 1.0f : R.mus_g;
+        }
+        if (R.mus_g < 1.0f) {
+            l *= R.mus_g * R.mus_g;
+            r *= R.mus_g * R.mus_g;
+        }
         if (R.jg_n | R.jg_want) {       /* the change's sound, over all of it */
             float j = jingle();
             l += j;
@@ -2546,6 +2566,8 @@ void romi_init(uint32_t seed)
     R.rng = seed | 1u;
     R.ui_rng = (seed * 2654435761u) | 1u;
     R.jg_rng = 22222u;
+    R.mus_on = 1;
+    R.mus_g = 1.0f;
     R.pending_pat = 0xFFu;
     R.solo = -1;
     R.prj.style = ROMI_SUOMI ? ROMI_START_STYLE : 0;   /* the firmware ro:MINImal or suom1saundi */
@@ -3859,6 +3881,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             R.ufo = STYLE ? 2u : 1u;
             R.ufo_t = R.ufo_ms = now_ms;
             R.jg_want = R.ufo;
+            R.mus_on = 0;               /* the music goes with the picture */
             R.dirty |= STRIP_ALL;
         }
     }
@@ -3880,6 +3903,9 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             if (any)
                 R.jg_want = 3;
             R.fade = R.ufo;             /* a few frames of fade into the pages, not a hard cut */
+            R.mus_on = 1;               /* and the music back with it, from the top of the new groove */
+            if (R.playing)
+                R.want_play = 1;
             R.fade_t = R.fade_ms = now_ms;
             R.ufo = 0;
             R.prj.style = (uint8_t)!R.prj.style;

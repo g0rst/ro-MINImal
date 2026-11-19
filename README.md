@@ -40,10 +40,11 @@ zurückkommt (Installer von fm1-base, `base/README.md`).
 
 Derselbe Kern kann zwei Stile: **ro:MINImal** (Rominimal, Microhouse) und **suom1saundi** (Suomisaundi, finnischer
 Freestyle-Psytrance, aus [suom1saundi](https://github.com/g0rst/suom1saundi) übernommen). Umgeschaltet wird mit
-**GLO 2 s halten**: Das Bild zieht sich zusammen wie bei einem alten Röhrenbildschirm und piept kurz. Zu suom1saundi
+**GLO 2 s halten**: Das Bild zieht sich zusammen wie bei einem alten Röhrenbildschirm und piept kurz,
+die Musik blendet mit aus und endet in einem Schmatzer; während der Show läuft nur ihr eigener Ton. Zu suom1saundi
 landet ein grünes 8-Bit-UFO in einem Wald in Graustufen, der Bildschirm zoomt darauf, es explodiert in den Schriftzug
 (mit Jingle, 4 s); zurück zu ro:MINImal fliegt der Name groß auf einen cleanen schwarzen Bildschirm herein (2 s). Am Ende
-blendet das Bild in ein paar Frames in die Seiten über. Ein Druck überspringt. Das Projekt bekommt die Grundwerte des Stils (Tempo, Tonart, Skala, Klänge) und einen
+blendet das Bild in ein paar Frames in die Seiten über, und die Musik startet mit dem neuen Groove von vorn. Ein Druck überspringt. Das Projekt bekommt die Grundwerte des Stils (Tempo, Tonart, Skala, Klänge) und einen
 neuen Groove in ihm. Gebaut werden zwei Pakete aus demselben Code, jedes mit dem anderen als Bonus:
 
 | Paket | startet als | Bonus |
