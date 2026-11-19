@@ -59,7 +59,8 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
   Steps gegen die 16 der Kick. Der Takt wiederholt sich dadurch erst nach vielen Takten.
 - **Jeder Step hat eine Chance** (stufenlos 1 bis 100 %), einen Akzent, eine Note und einen Ratchet (bis zu vier
   Schläge im Step). Sub und Stab haben dazu **SLIDE** pro Step (gleitet ohne neuen Anschlag vom Ton davor) und
-  **GLIDE** pro Spur (Seite LINK, KNOB4: überlappende Töne gleiten).
+  **GLIDE** pro Spur (Seite TIMING, KNOB3: überlappende Töne gleiten). Jeder Step kann eine **Trig-Bedingung**
+  haben (Step halten + ALGORITHM): 1:2 … 8:8, FILL / !FILL (ARP gehalten), PRE / !PRE, 1ST / !1ST.
 - **Swing** verschiebt jede zweite Sechzehntel (50 bis 75 %).
 - **Drift** bewegt Klangfarbe, Ausklang, Lautstärke und Mikrotiming langsam und zufällig. Die Kick bleibt
   davon im Timing unberührt.
@@ -106,6 +107,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | 16 weiße Tasten | die Steps der gewählten Spur; tippen schaltet um |
 | weiße Taste halten + K1 / K2 / K3 / K4 | Note, Chance (stufenlos, 1 % pro Raste), Akzent (bei SUB/STAB: OFF, ACC, SLIDE, ACC+SLIDE), Ratchet (1 bis 4 Schläge) dieses Steps |
 | weiße Taste halten + SELECT | Mikrotiming dieses Steps (bequemer auf der Seite TIMING) |
+| weiße Taste halten + ALGORITHM | Trig-Bedingung: 1:2 … 8:8 (Takt A von je B), FILL, !FILL, PRE, !PRE, 1ST, !1ST; eine Kerbe im Kästchen zeigt sie |
 | auf Seite EDIT: weiße Taste halten + K1 bis K4 | Parameter-Lock: der Klangwert gilt nur für diesen Step |
 | weiße Taste halten + SEL | Locks und Verschiebung dieses Steps löschen |
 | schwarze Tasten 1 bis 6 | Spur wählen: KICK, SUB, HAT, PERC, STAB, CLICK |
@@ -124,12 +126,13 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
 | 20 s nichts berührt | Bildschirmschoner: nur der Name, grau; er pumpt sich bei jeder Kick kugelförmig aus der Mitte auf, pro Step leuchtet der nächste Buchstabe orange (immer nur einer); dahinter, gedimmt, leuchten die 16 × 6 Step-Punkte mit, was spielt; der Name wandert. Jede Berührung weckt ihn und wirkt zugleich |
 | SEL halten + schwarze Tasten 1 bis 6 | jede Spur direkt stumm oder an, auch mehrere zugleich; die gewählte Spur bleibt |
-| ARP | Spur leicht verändern |
-| SEQ ein drittes Mal | Seite TIMING: SELECT springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). K1 schiebt den gewählten Schlag, K2 die ganze Spur, zusammen bis zu eine halbe Sechzehntel früher oder später |
+| ARP | kurz: Spur leicht verändern; halten: FILL (Steps mit FILL spielen, mit !FILL schweigen) |
+| SEQ ein drittes Mal | Seite TIMING: SELECT springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). K1 schiebt den gewählten Schlag, K2 die ganze Spur, zusammen bis zu eine halbe Sechzehntel früher oder später; K3 GLIDE (SUB, STAB) |
 | LFO | Seite LFO 1 der Spur; nochmal: LFO 2. Je RATE (1/16 bis 16 Takte), DEPTH (±), TARGET (Klangparameter beider SOUND-Seiten, Pegel, Pan, Delay, Reverb), SHAPE (Sinus, Dreieck, Säge, Rechteck, Zufall) |
+| LFO ein drittes Mal | Seite MOD: K1 RESTART (FREE oder eine Spur, deren Schläge die LFOs der Spur neu starten), K2 ENV SRC (die Lautstärke einer Spur als Modulation), K3 ENV DEPTH (±), K4 ENV TGT (dieselben Ziele wie ein LFO; Pegel, Pan, Sends fließend) |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |
 | SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance, Akzent auf jedem n-ten Schlag |
-| SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach). K3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk: SUB folgt STAB; OFF schaltet es ab) |
+| SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach). K3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk: SUB folgt STAB; OFF schaltet es ab). K4 ACCENT: akzentuierte Schläge einer anderen Spur akzentuieren diese Spur auf demselben Step |
 | SAVE | Projekt im Flash sichern (Einstellungen und Pattern A; B bis D entstehen daraus) |
 | PRESETS | Pattern A bis D, im Lauf zum nächsten Takt. Bearbeitet wird immer A, auch wenn B, C oder D läuft |
 | NEW auf B, C oder D | diese Spielart neu würfeln; A bleibt |
@@ -148,7 +151,7 @@ meldet sich nicht als Audio-Interface.
 | RAM .data + .bss | 34 312 B | 98 304 B | 35 % |
 | RAM-Pool (Delay, Reverb, fm1-base) | 118 980 B | 344 064 B | 35 % |
 | RAM-Code (.ram_text) | 5 100 B | 32 768 B | 16 % |
-| Speicherfenster 0xB1000–0xBAFFF | höchstens 2 426 B (Einstellungen 32 B, A–D je bis 598 B) | 40 960 B | 6 % |
+| Speicherfenster 0xB1000–0xBAFFF | höchstens 2 934 B (Einstellungen 32 B, A–D je bis 724 B) | 40 960 B | 7 % |
 
 Last des Renderers: Instruktionen pro Sample mit callgrind gezählt (x86-64, -O2, wie der Core gebaut wird), auf
 den AC79 (Kern r3, 360 MHz, Single-Precision-FPU) umgerechnet mit Faktor 1,6 bis 3,0 (mehr Instruktionen auf
@@ -159,7 +162,11 @@ einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Fla
 | alle Spuren stumm (Delay, Reverb, Mix, Sequencer, LFOs) | 995 | 20 / 27 / 37 % |
 | typischer Groove | 1 397 | 27 / 38 / 51 % |
 | schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends | 1 648 | 32 / 44 / 61 % |
+| dazu alle Verknüpfungen (ACCENT, RESTART, ENV auf Pegel/Klang, Bedingungen) | 1 638 | 32 / 44 / 60 % |
 
+Die Verknüpfungen kosten fast nichts: ACCENT und Bedingungen werden einmal pro Step entschieden, RESTART ist eine
+Zahl pro Step, ENV liest die Hüllkurve, die die Stimme ohnehin hat; nur ein ENV auf Pegel, Pan oder Sends rampt
+seine vier Mixwerte pro Sample (höchstens etwa 25 Instruktionen).
 Anteile der Stimmen im schlimmsten Fall: Stab 207, Hat 173, Sub 93, Perc 87, Kick 58, Click 40 Instr./Sample. Die
 Oberfläche (Zeichnen, Byte-Tausch der Streifen) kostet geschätzt 2 bis 4 %. Reserven, falls es eng wird: der zweite
 Kern (fm1-base `cpu2`, z. B. Reverb oder die Hälfte der Stimmen), `cpu_clock = 396`, mehr Render-Code im RAM.
@@ -170,8 +177,8 @@ Der echte Wert kommt am Gerät aus `plat_cpu_pct`.
 ### Speicher
 
 Gespeichert werden im LAZY-Modus zwei Objekte: die Einstellungen (32 Bytes, darin die Würfel für B bis D, MODE
-und PLAY) und Pattern A (502 Bytes, mit 32 Locks 598 Bytes); im HARD-Modus dazu B, C und D. Ein Step belegt 3 Bytes
-(das dritte ist die stufenlose Chance), Slide und Glide 3 Bytes pro Spur. Patterns der Version 13 werden weiter
+und PLAY) und Pattern A (628 Bytes, mit 32 Locks 724 Bytes); im HARD-Modus dazu B, C und D. Ein Step belegt 4 Bytes
+(Chance und Trig-Bedingung), Slide, Glide und die Verknüpfungen 8 Bytes pro Spur. Patterns der Versionen 13 und 14 werden weiter
 geladen (ohne Slide, die Chance in vier Stufen übernommen). Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
 32 Locks pro Pattern (sonst „LOCKS FULL“), Verschiebung eines Steps ±7/16, Noten −32 bis +31 Halbtöne um den Grundton.
 Ein beschädigtes Objekt lässt das andere unberührt.

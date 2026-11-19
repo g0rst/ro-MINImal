@@ -126,9 +126,11 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[SEL]]", T("tap: mute the track. Hold: solo. Held, the track keys mute their tracks",
                     "kurz: Spur stumm. Halten: Solo. Gehalten schalten die Spurtasten ihre Spuren stumm",
                     "scurt: pista pe mut. Ținut: solo. Ținut, clapele pistelor le pun pe mut")),
-      ("[[ARP]]", T("mutate: one small change", "Mutate: eine kleine Änderung", "mutate: o schimbare mică")),
-      ("[[LFO]]", T("page LFO 1 of the track; pressed again: LFO 2", "Seite LFO 1 der Spur; nochmal: LFO 2",
-                    "pagina LFO 1 a pistei; apăsat din nou: LFO 2")),
+      ("[[ARP]]", T("tap: mutate, one small change; hold: FILL (steps with FILL play, !FILL rest)",
+                    "kurz: Mutate, eine kleine Änderung; halten: FILL (Steps mit FILL spielen, !FILL schweigen)",
+                    "scurt: mutate, o schimbare mică; ținut: FILL (pașii cu FILL cântă, !FILL tac)")),
+      ("[[LFO]]", T("page LFO 1 of the track; again: LFO 2; a third time: MOD", "Seite LFO 1 der Spur; nochmal: LFO 2; "
+                    "ein drittes Mal: MOD", "pagina LFO 1 a pistei; din nou: LFO 2; a treia oară: MOD")),
       ("[[REC]]", T("keys mode: the keys play the track", "Tastenmodus: die Tasten spielen die Spur",
                     "modul clape: clapele cântă pista")),
       ("[[SAVE]]", T("save", "speichern", "salvează")),
@@ -270,6 +272,13 @@ table(T(["hold a step and", "result"], ["step halten und", "ergebnis"], ["ține 
        T("ratchet: 1 to 4 hits in the step", "Ratchet: 1 bis 4 Schläge im Step", "ratchet: 1 până la 4 lovituri în pas")),
       (T("turn [[SELECT]]", "[[SELECT]] drehen", "rotește [[SELECT]]"),
        T("the step plays earlier or later", "der Step spielt früher oder später", "pasul cântă mai devreme sau mai târziu")),
+      (T("turn [[ALGORITHM]]", "[[ALGORITHM]] drehen", "rotește [[ALGORITHM]]"),
+       T("trig condition: 1:2 … 8:8 (bar A of every B), FILL, !FILL, PRE, !PRE, 1ST, !1ST. A notch in the cell's "
+         "corner marks it",
+         "Trig-Bedingung: 1:2 … 8:8 (Takt A von je B), FILL, !FILL, PRE, !PRE, 1ST, !1ST. Eine Kerbe in der Ecke "
+         "des Kästchens zeigt sie",
+         "condiție de trig: 1:2 … 8:8 (măsura A din fiecare B), FILL, !FILL, PRE, !PRE, 1ST, !1ST. O crestătură în "
+         "colțul celulei o arată")),
       (T("press [[SEL]]", "[[SEL]] drücken", "apasă [[SEL]]"),
        T("removes the step's shift and locks", "löscht Verschiebung und Locks des Steps",
          "șterge decalajul și lock-urile pasului")))
@@ -317,10 +326,41 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN", "CLOCK", "CHAIN"),
       ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "", ""),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
-      ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", T("GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)")),
-      ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", "", ""),
+      ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", "ACCENT"),
+      ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", T("GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)"), ""),
       ("[[LFO]]", "LFO 1", "RATE", "DEPTH", "TARGET", "SHAPE"),
-      ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"))
+      ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"),
+      ("[[LFO]] ×3", "MOD", "RESTART", "ENV SRC", "ENV DEPTH", "ENV TGT"))
+p(T("Chains between tracks. ACCENT (LINK, fourth knob): the source's accented hits accent this track's hits on "
+    "the same step. RESTART (MOD, first knob): each hit of the chosen track starts this track's two LFOs again, "
+    "so the movement sits in the groove. ENV (MOD, knobs two to four): how loud the source sounds right now moves "
+    "a target of this track, like an LFO's: on level, pan and the sends smoothly all the time, on a sound "
+    "parameter at each new hit. KICK on the hat's level with DEPTH below zero: the hat gives way to the kick. A "
+    "muted source still works.",
+    "Ketten zwischen Spuren. ACCENT (LINK, vierter Regler): Akzentuierte Schläge der Quelle akzentuieren die "
+    "Schläge dieser Spur auf demselben Step. RESTART (MOD, erster Regler): Jeder Schlag der gewählten Spur startet "
+    "die beiden LFOs dieser Spur neu, so sitzt die Bewegung im Groove. ENV (MOD, Regler zwei bis vier): Wie laut "
+    "die Quelle gerade klingt, bewegt ein Ziel dieser Spur wie ein LFO: Pegel, Pan und Sends fließend, "
+    "Klangparameter bei jedem neuen Schlag. KICK auf den Pegel der Hat mit DEPTH unter null: Die Hat weicht der "
+    "Kick. Eine stumme Quelle wirkt weiter.",
+    "Lanțuri între piste. ACCENT (LINK, al patrulea buton): loviturile accentuate ale sursei accentuează "
+    "loviturile acestei piste pe același pas. RESTART (MOD, primul buton): fiecare lovitură a pistei alese "
+    "repornește cele două LFO ale acestei piste, ca mișcarea să stea în groove. ENV (MOD, butoanele doi–patru): "
+    "cât de tare sună sursa acum mișcă o țintă a acestei piste, ca un LFO: nivel, pan și send-uri continuu, "
+    "parametri de sunet la fiecare lovitură nouă. KICK pe nivelul hat-ului cu DEPTH sub zero: hat-ul se dă la o "
+    "parte din calea kick-ului. O sursă mută lucrează mai departe."))
+p(T("Trig conditions (hold a step, turn [[ALGORITHM]]): 1:2 plays in the first of every two bars, 3:4 in the third "
+    "of every four, up to 8:8. FILL plays only while [[ARP]] is held, !FILL only when it is not. PRE plays when "
+    "the track's last condition came out true, !PRE when not. 1ST only in the first bar after PLAY. The generator "
+    "gives some quiet hats a 1:2 or 3:4 now and then: the groove breathes over four bars.",
+    "Trig-Bedingungen (Step halten, [[ALGORITHM]] drehen): 1:2 spielt im ersten von je zwei Takten, 3:4 im dritten "
+    "von je vier, bis 8:8. FILL spielt nur, solange [[ARP]] gehalten wird, !FILL nur dann nicht. PRE spielt, wenn "
+    "die letzte Bedingung der Spur zutraf, !PRE wenn nicht. 1ST nur im ersten Takt nach PLAY. Der Generator gibt "
+    "manchen leisen Hats ab und zu ein 1:2 oder 3:4: Der Groove atmet über vier Takte.",
+    "Condiții de trig (ține un pas, rotește [[ALGORITHM]]): 1:2 cântă în prima din fiecare două măsuri, 3:4 în a "
+    "treia din fiecare patru, până la 8:8. FILL cântă doar cât e ținut [[ARP]], !FILL doar când nu. PRE cântă când "
+    "ultima condiție a pistei a fost adevărată, !PRE când nu. 1ST doar în prima măsură după PLAY. Generatorul dă "
+    "din când în când unor hat-uri încete un 1:2 sau 3:4: groove-ul respiră peste patru măsuri."))
 p(T("Twenty seconds untouched and the screen dreams: only the name, grey. Every kick pumps it up like a ball from "
     "its middle; on every step the next letter glows orange, one at a time. Behind it, dimmed, the sixteen by six "
     "dots light with what plays. The name drifts and bounces. Any touch wakes it, and still does what it does.",
@@ -485,15 +525,15 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "sau cvinta, decay, sweep, click și drive mutate puțin), de la D încolo și la fel în toate pattern-urile, și "
      "în A. Rămâne așa până îl schimbi de mână sau până ce pauza din C aruncă iar zarul. O dată pe trecere prin C; "
      "în LAZY și HARD."),
-   T("Sub and stab flow: GLIDE (LINK page, fourth knob) lets a note that comes while the last one still sounds "
+   T("Sub and stab flow: GLIDE (TIMING page, third knob) lets a note that comes while the last one still sounds "
      "glide there; for the sub it is the same knob as on SOUND. SLIDE on a step (hold it, third knob) binds it to "
      "the note before: no new attack, the pitch glides over (with GLIDE at zero in 50 ms). The generator puts a "
      "slide in now and then.",
-     "Sub und Stab fließen: GLIDE (Seite LINK, vierter Regler) lässt einen Ton, der kommt, während der letzte noch "
+     "Sub und Stab fließen: GLIDE (Seite TIMING, dritter Regler) lässt einen Ton, der kommt, während der letzte noch "
      "klingt, dorthin gleiten; beim Sub ist es derselbe Wert wie auf SOUND. SLIDE auf einem Step (halten, dritter "
      "Regler) bindet ihn an den Ton davor: kein neuer Anschlag, die Tonhöhe gleitet hinüber (bei GLIDE null in "
      "50 ms). Der Generator setzt ab und zu einen Slide.",
-     "Sub-ul și stab-ul curg: GLIDE (pagina LINK, al patrulea buton) face ca o notă care vine cât încă sună cea "
+     "Sub-ul și stab-ul curg: GLIDE (pagina TIMING, al treilea buton) face ca o notă care vine cât încă sună cea "
      "dinainte să alunece acolo; la sub e aceeași valoare ca pe SOUND. SLIDE pe un pas (ține-l, al treilea buton) "
      "îl leagă de nota dinainte: fără atac nou, înălțimea alunecă (cu GLIDE la zero, în 50 ms). Generatorul pune "
      "din când în când un slide."),

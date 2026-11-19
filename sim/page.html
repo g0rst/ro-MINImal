@@ -170,19 +170,19 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
     <ul>
       <li>Die Bedienelemente sitzen wie am Gerät. <b>PLAY STOP</b> startet den Groove. Die 16 weißen Tasten sind die Steps der gewählten Spur: tippen schaltet einen Step.</li>
       <li>Schwarze Tasten links wählen die Spur: KICK, SUB, HAT, PERC, STAB, CLICK. Rechts: CLR leert die Spur, ◀ ▶ verschieben sie, NEW erneuert die gewählte Spur (gehalten: den ganzen Groove), UNDO nimmt das zurück.</li>
-      <li>Weiße Taste halten und drehen: <b>KNOB1</b> Note, <b>KNOB2</b> Chance (stufenlos, 1 bis 100 %), <b>KNOB3</b> Akzent (bei SUB und STAB: OFF, ACC, SLIDE, ACC+SLIDE), <b>KNOB4</b> Ratchet. GLIDE für Sub und Stab: SEQ zweimal (LINK), KNOB4.</li>
+      <li>Weiße Taste halten und drehen: <b>KNOB1</b> Note, <b>KNOB2</b> Chance (stufenlos, 1 bis 100 %), <b>KNOB3</b> Akzent (bei SUB und STAB: OFF, ACC, SLIDE, ACC+SLIDE), <b>KNOB4</b> Ratchet, <b>ALGORITHM</b> Trig-Bedingung (1:2 … 8:8, FILL, PRE, 1ST und ihr Gegenteil). GLIDE für Sub und Stab: SEQ dreimal (TIMING), KNOB3.</li>
       <li><b>SEQ</b> dreimal: Seite TIMING. <b>SELECT</b> springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). KNOB1 schiebt den gewählten Schlag früher oder später, KNOB2 die ganze Spur.</li>
       <li>Auf der Seite <b>EDIT</b> eine weiße Taste halten und drehen: Der Klangwert gilt nur für diesen Step (Lock, orange markiert). Step halten und <b>SEL</b>: Locks und Verschiebung des Steps löschen.</li>
       <li><b>SEQ</b> öffnet die Euklid-Seite der Spur: KNOB1 Schläge, KNOB2 Rotation, KNOB3 Chance, KNOB4 Akzent auf jedem n-ten Schlag. <b>ALGORITHM</b> setzt die Looplänge (1 bis 16).</li>
-      <li><b>SEQ</b> zweimal: Seite LINK. Die Steps der Spur spielen abhängig von einer anderen Spur. KNOB1 Quelle, KNOB2 Modus: WITH nur wenn die Quelle schlägt, GAPS nur in ihren Lücken, AFTER einen Step danach. Das gilt auch, wenn die Quelle stumm ist. KNOB3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk folgt SUB dem STAB; OFF schaltet es ab).</li>
+      <li><b>SEQ</b> zweimal: Seite LINK. Die Steps der Spur spielen abhängig von einer anderen Spur. KNOB1 Quelle, KNOB2 Modus: WITH nur wenn die Quelle schlägt, GAPS nur in ihren Lücken, AFTER einen Step danach. Das gilt auch, wenn die Quelle stumm ist. KNOB3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk folgt SUB dem STAB; OFF schaltet es ab). KNOB4 ACCENT: Akzente einer anderen Spur übernehmen.</li>
     </ul>
     <ul>
       <li>Seiten für KNOB1 bis KNOB4: <b>HOME</b> Tempo, Swing, Drift, Duck. <b>EDIT</b> Klang der Spur, nochmal: SOUND 2 (PITCH, ATTACK oder Zeit, DRIVE, CRUSH). <b>ENV</b> Pegel, Pan, Delay, Reverb. <b>GLO</b> Grundton, Skala, MIDI-Clock, Chain.</li>
       <li><b>FX</b> einmal: Delay und Reverb. FX zweimal: Sidechain mit Quelle, Tiefe, Release und dem Anteil der gewählten Spur. Die Quelle duckt auch, wenn sie stumm ist.</li>
       <li><b>PRESETS</b>: A ist der Groove, B spielt ihn variiert, C mit Drum-Rolls, D in einer verwandten Tonart. B bis D folgen jeder Änderung an A; bearbeitet wird immer A. NEW auf B, C oder D würfelt diese Spielart neu. Setzt die Kick in C auf 13 bis 16 aus, wird sie mit Chance 1:3 eine andere, in allen Patterns. <b>GLO</b> CHAIN EVOLVE: A bis D, danach neue B, C, D. <b>GLO</b> zweimal: MODE LAZY (so) oder HARD (B bis D sind Kopien von A, jedes Pattern bearbeitest du selbst); KNOB2 PLAY: LOOP, A-D (je vier Takte, dann wieder A) oder RANDOM. <b>SAVE</b>: speichern.</li>
-      <li><b>PRESETS</b> wechselt zum nächsten Takt. <b>SEL</b> kurz: Spur stumm, halten: Solo. SEL halten und schwarze Spurtasten drücken: diese Spuren stumm oder an, auch mehrere. <b>ARP</b> verändert die Spur leicht.</li>
+      <li><b>PRESETS</b> wechselt zum nächsten Takt. <b>SEL</b> kurz: Spur stumm, halten: Solo. SEL halten und schwarze Spurtasten drücken: diese Spuren stumm oder an, auch mehrere. <b>ARP</b> kurz: Spur leicht verändern; halten: FILL.</li>
       <li>20 Sekunden nichts berührt: Bildschirmschoner (der Name pumpt mit der Kick, pro Step ein Buchstabe orange). Jede Taste oder jeder Regler weckt ihn und wirkt zugleich.</li>
-      <li><b>LFO</b>: Seite LFO 1 der Spur, nochmal: LFO 2. KNOB1 RATE (1/16 bis 16 Takte), KNOB2 DEPTH (±, null ist aus), KNOB3 TARGET (Klangparameter, Pegel, Pan, Delay, Reverb), KNOB4 SHAPE.</li>
+      <li><b>LFO</b>: Seite LFO 1 der Spur, nochmal: LFO 2. KNOB1 RATE (1/16 bis 16 Takte), KNOB2 DEPTH (±, null ist aus), KNOB3 TARGET (Klangparameter, Pegel, Pan, Delay, Reverb), KNOB4 SHAPE. Ein drittes Mal: MOD mit RESTART (eine Spur startet die LFOs neu) und ENV (die Lautstärke einer Spur moduliert: Quelle, Tiefe, Ziel).</li>
       <li><b>REC</b>: die Tasten spielen die Spur chromatisch und nehmen bei laufendem Groove auf. <b>MASTER</b> ist die Lautstärke. Leertaste: PLAY.</li>
     </ul>
   </section>
@@ -194,7 +194,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--led); outli
   "use strict";
   var WASM = "@@WASM@@";
   var BTN = ["FX", "SEL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE", "ARP", "SEQ", "PLAY STOP", "REC", "OCT−", "OCT+"];
-  var BTN_SUB = ["Effekte", "Mute/Solo", "Mix", "LFO 1/2", "Sound", "Global", "Groove", "Sichern", "Mutate", "Euklid", "Start", "Keys", "Spur −", "Spur +"];
+  var BTN_SUB = ["Effekte", "Mute/Solo", "Mix", "LFO 1/2/MOD", "Sound", "Global", "Groove", "Sichern", "Mutate/Fill", "Euklid", "Start", "Keys", "Spur −", "Spur +"];
   /* as on the FM-1: FX SEL ENV LFO EDIT GLO over HOME SAVE ARP SEQ PLAY REC; OCT- OCT+ under the left knobs */
   var BTN_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   var ENC = ["SELECT", "ALGORITHM", "PRESETS", "KNOB1", "KNOB2", "KNOB3", "KNOB4"];

@@ -402,6 +402,7 @@ int main(int argc, char **argv)
             romi_project()->pat[0].tr[ROMI_KICK].step[i].flags = (uint8_t)(i % 4 == 0 ? 0x80 : 0);
             romi_project()->pat[0].tr[ROMI_HAT].step[i].flags = 0x80;
             romi_project()->pat[0].tr[ROMI_KICK].step[i].chance = romi_project()->pat[0].tr[ROMI_HAT].step[i].chance = 0;
+            romi_project()->pat[0].tr[ROMI_KICK].step[i].cond = romi_project()->pat[0].tr[ROMI_HAT].step[i].cond = 0;
         }
         romi_project()->pat[0].tr[ROMI_KICK].len = romi_project()->pat[0].tr[ROMI_HAT].len = 16;
         romi_project()->pat[0].tr[ROMI_KICK].mute = (uint8_t)(v == 1);   /* a muted source gates all the same */
@@ -702,7 +703,9 @@ int main(int argc, char **argv)
         tap_button(ROMI_B_LFO);
         CHECK(romi_state(ROMI_Q_LFO_PAGE) == 2, "LFO twice: page %d", romi_state(ROMI_Q_LFO_PAGE));
         tap_button(ROMI_B_LFO);
-        CHECK(romi_state(ROMI_Q_LFO_PAGE) == 1, "LFO three times: page %d", romi_state(ROMI_Q_LFO_PAGE));
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_MOD, "LFO three times: page %d", romi_state(ROMI_Q_PAGE));
+        tap_button(ROMI_B_LFO);
+        CHECK(romi_state(ROMI_Q_LFO_PAGE) == 1, "LFO four times: page %d", romi_state(ROMI_Q_LFO_PAGE));
         turn(ROMI_E_K1, 20); turn(ROMI_E_K1, -4);   /* rate: 1 bar */
         turn(ROMI_E_K2, -40);                       /* depth: -64 */
         turn(ROMI_E_K3, -10); turn(ROMI_E_K3, 4);   /* target: level */
@@ -1085,13 +1088,14 @@ int main(int argc, char **argv)
             const romi_track_t *sb = &romi_project()->pat[0].tr[ROMI_SUB];
             CHECK((sb->slide >> 2 & 1u) && (sb->step[2].flags & ROMI_ST_ON), "SLIDE on the sub's step 3: %04x", sb->slide);
         }
-        tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ);   /* LINK */
-        turn(ROMI_E_K4, 3);
-        CHECK(romi_project()->pat[0].tr[ROMI_SUB].p[3] > 45, "GLIDE on LINK: sub p3 %d", romi_project()->pat[0].tr[ROMI_SUB].p[3]);
+        tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ);   /* TIMING */
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_TIMING, "SEQ x3: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_K3, 3);
+        CHECK(romi_project()->pat[0].tr[ROMI_SUB].p[3] > 45, "GLIDE on TIMING: sub p3 %d", romi_project()->pat[0].tr[ROMI_SUB].p[3]);
         tap_key(10);                                /* the STAB */
         tt = romi_project()->pat[0].tr[ROMI_STAB].glide;
-        turn(ROMI_E_K4, 2);
-        CHECK(romi_project()->pat[0].tr[ROMI_STAB].glide > tt, "GLIDE on LINK: stab %d", romi_project()->pat[0].tr[ROMI_STAB].glide);
+        turn(ROMI_E_K3, 2);
+        CHECK(romi_project()->pat[0].tr[ROMI_STAB].glide > tt, "GLIDE on TIMING: stab %d", romi_project()->pat[0].tr[ROMI_STAB].glide);
         /* the sound: the sub alone, steps 1 and 3, 3 sliding or not */
         for (k = 0; k < 2; k++) {
             romi_init(52);
@@ -1123,10 +1127,10 @@ int main(int argc, char **argv)
         /* the same object as version 13: drop each track's three bytes, new sum */
         memcpy(o13, obj, 5); o13[3] = 13;
         for (m = 5, k = 5, t = 0; t < ROMI_TRACKS; t++) {
-            memcpy(o13 + m, obj + k, 19 + 4 * ROMI_LFOS + 4); m += 19 + 4 * ROMI_LFOS + 4; k += 19 + 4 * ROMI_LFOS + 4 + 3;
+            memcpy(o13 + m, obj + k, 19 + 4 * ROMI_LFOS + 4); m += 19 + 4 * ROMI_LFOS + 4; k += 19 + 4 * ROMI_LFOS + 4 + 3 + 5;
             {
                 uint32_t q;
-                for (q = 0; q < ROMI_STEPS; q++, k += 3) {   /* (chance 0: sure, the old bits 0) */
+                for (q = 0; q < ROMI_STEPS; q++, k += 4) {   /* (chance 0: sure, the old bits 0) */
                     o13[m++] = obj[k];
                     o13[m++] = obj[k + 1];
                 }
@@ -1156,6 +1160,12 @@ int main(int argc, char **argv)
         CHECK(ROMI_CHANCE(&tr->step[0]) == 99 || ROMI_CHANCE(&tr->step[0]) == 96, "chance after one click: %d", ROMI_CHANCE(&tr->step[0]));
         for (k = 0; k < 120; k++) turn(ROMI_E_K2, -1);
         CHECK(ROMI_CHANCE(&tr->step[0]) == 1, "chance at the bottom: %d", ROMI_CHANCE(&tr->step[0]));
+        {
+            int len0 = tr->len;
+            turn(ROMI_E_ALGO, 6);                   /* held: ALGORITHM, the trig condition (not the length) */
+            CHECK(tr->step[0].cond == 6 && tr->len == len0, "condition %d, length %d (was %d)", tr->step[0].cond, tr->len, len0);
+        }
+        turn(ROMI_E_ALGO, -6);
         held_k = 0; frame(0); frame(0);
         CHECK(tr->step[0].flags & ROMI_ST_ON, "the step went off");
         tr->step[0].chance = 33;
@@ -1189,6 +1199,157 @@ int main(int argc, char **argv)
         turn(ROMI_E_K1, 1);                         /* HOME: tempo */
         CHECK(!romi_state(ROMI_Q_SAVER) && romi_state(ROMI_Q_BPM) != bpm, "a knob: saver %d, bpm %d", romi_state(ROMI_Q_SAVER), romi_state(ROMI_Q_BPM));
         CHECK(romi_dirty() != 0, "woken: nothing redrawn");
+    }
+
+    /* the links of version 15: trig conditions, FILL on ARP held, accents from another track, the LFOs restarted
+     * by a track's hits, the ENV follower; and a version 14 pattern still loads */
+    {
+        static const struct { uint8_t cond; uint8_t bars; } C[6] = {
+            {1, 0x55}, {2, 0xAA}, {7, 0x22}, {12, 0x04}, {ROMI_COND_FIRST, 0x01}, {ROMI_COND_NFIRST, 0xFE}};
+        static uint8_t obj[ROMI_OBJ_MAX], o14[ROMI_OBJ_MAX];
+        int c, bar, k;
+        romi_track_t *tr;
+        /* A:B and 1ST: a perc hit on step 1 of each bar, over 8 bars; which bars it played in */
+        for (c = 0; c < 6; c++) {
+            uint32_t played = 0;
+            romi_init(81);
+            romi_project()->drift = 0;
+            tr = &romi_project()->pat[0].tr[ROMI_PERC];
+            for (k = 0; k < 16; k++) tr->step[k].flags = 0;
+            tr->len = 16;
+            tr->dep_src = 0;
+            tr->step[0].flags = ROMI_ST_ON; tr->step[0].chance = 0; tr->step[0].cond = C[c].cond; tr->step[0].shift = 0;
+            tr->tshift = 0;
+            {
+                int prev = 0;                   /* (hits count from PLAY) */
+                tap_button(ROMI_B_PLAY);
+                for (bar = 0; bar < 8; bar++) { /* bar b's step 1 has fired once the step counter is past 16 b */
+                    while (romi_state(ROMI_Q_GSTEP) < 16 * bar + 1) run(0.004, 0, 0, 0);
+                    if (romi_state(ROMI_Q_HITS + ROMI_PERC) != prev) played |= 1u << bar;
+                    prev = romi_state(ROMI_Q_HITS + ROMI_PERC);
+                }
+            }
+            CHECK(played == C[c].bars, "condition %d: bars %02x, wanted %02x", C[c].cond, played, C[c].bars);
+        }
+        /* FILL: ARP held a while; a tap still mutates */
+        romi_init(82);
+        romi_project()->drift = 0;
+        tr = &romi_project()->pat[0].tr[ROMI_PERC];
+        for (k = 0; k < 16; k++) tr->step[k].flags = 0;
+        tr->len = 16; tr->dep_src = 0; tr->tshift = 0;
+        tr->step[0].flags = ROMI_ST_ON; tr->step[0].chance = 0; tr->step[0].cond = ROMI_COND_FILL; tr->step[0].shift = 0;
+        tr->step[8].flags = ROMI_ST_ON; tr->step[8].chance = 0; tr->step[8].cond = ROMI_COND_PRE; tr->step[8].shift = 0;
+        tap_button(ROMI_B_PLAY);
+        {
+            int h0 = romi_state(ROMI_Q_HITS + ROMI_PERC);
+            run(64 * 15.0 / 126, 0, 0, 0);          /* four bars without FILL: neither (PRE follows the FILL step) */
+            CHECK(romi_state(ROMI_Q_HITS + ROMI_PERC) == h0, "FILL off: %d hits", romi_state(ROMI_Q_HITS + ROMI_PERC) - h0);
+            held_b = 1u << ROMI_B_ARP;
+            for (k = 0; k < 20; k++) frame(0);      /* 340 ms */
+            CHECK(romi_state(ROMI_Q_FILL), "ARP held: no FILL");
+            {                                       /* two whole bars with FILL: both, twice */
+                int g1 = (romi_state(ROMI_Q_GSTEP) + 15) / 16 * 16;
+                while (romi_state(ROMI_Q_GSTEP) < g1) { run(0.004, 0, 0, 0); frame(0); }
+                h0 = romi_state(ROMI_Q_HITS + ROMI_PERC);
+                while (romi_state(ROMI_Q_GSTEP) < g1 + 32) { run(0.004, 0, 0, 0); frame(0); }
+            }
+            k = romi_state(ROMI_Q_HITS + ROMI_PERC) - h0;
+            CHECK(k == 4, "FILL on: %d hits in two bars (FILL and PRE)", k);
+            held_b = 0; frame(0);
+            CHECK(!romi_state(ROMI_Q_FILL), "ARP let go: FILL still on");
+        }
+        /* accent from another track: the hat takes the kick's accents */
+        romi_init(83);
+        romi_project()->drift = 0;
+        {
+            romi_track_t *kk = &romi_project()->pat[0].tr[ROMI_KICK], *hh = &romi_project()->pat[0].tr[ROMI_HAT];
+            int acc_on = 0, acc_off = 0;
+            for (k = 0; k < 16; k++) {
+                kk->step[k].flags = (uint8_t)(k % 4 == 0 ? ROMI_ST_ON | (k == 0 ? ROMI_ST_ACC : 0u) : 0u);
+                kk->step[k].chance = 0; kk->step[k].cond = 0; kk->step[k].shift = 0;
+                hh->step[k].flags = k % 4 == 0 ? ROMI_ST_ON : 0; hh->step[k].chance = 0; hh->step[k].cond = 0; hh->step[k].shift = 0;
+            }
+            kk->len = hh->len = 16; hh->dep_src = 0; hh->tshift = kk->tshift = 0;
+            tap_key(5);                             /* HAT */
+            tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ);   /* LINK */
+            turn(ROMI_E_K4, 1);
+            CHECK(hh->acc_src == 1, "ACCENT on LINK: %d", hh->acc_src);
+            tap_button(ROMI_B_PLAY);
+            for (k = 0; k < 64; k++) {
+                int g0 = romi_state(ROMI_Q_GSTEP);
+                while (romi_state(ROMI_Q_GSTEP) == g0) run(0.004, 0, 0, 0);
+                if ((g0 & 3) == 0) {
+                    if ((g0 & 15) == 0) acc_on += romi_state(ROMI_Q_ACC + ROMI_HAT);
+                    else acc_off += romi_state(ROMI_Q_ACC + ROMI_HAT);
+                }
+            }
+            CHECK(acc_on == 4 && acc_off == 0, "accent link: %d on the kick's accents (of 4), %d elsewhere", acc_on, acc_off);
+        }
+        /* RESTART: the hat's LFO starts again on every kick (a beat apart: its 4-bar LFO never passes a beat) */
+        romi_init(84);
+        romi_project()->drift = 0;
+        {
+            romi_track_t *hh = &romi_project()->pat[0].tr[ROMI_HAT];
+            int maxph = 0, ph;
+            hh->lfo[0].rate = 8; hh->lfo[0].depth = 40;
+            tap_key(5);
+            tap_button(ROMI_B_LFO); tap_button(ROMI_B_LFO); tap_button(ROMI_B_LFO);
+            CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_MOD, "MOD page: %d", romi_state(ROMI_Q_PAGE));
+            turn(ROMI_E_K1, 1);
+            CHECK(hh->lfo_rst == 1, "RESTART: %d", hh->lfo_rst);
+            tap_button(ROMI_B_PLAY);
+            for (k = 0; k < 400; k++) {
+                run(0.01, 0, 0, 0);
+                ph = romi_state(ROMI_Q_LFOPH + ROMI_HAT);
+                if (ph > maxph) maxph = ph;
+            }
+            CHECK(maxph > 5 && maxph < 70, "RESTART: the LFO's phase went to %d/1000 (a beat of a long LFO: < 70)", maxph);
+            /* ENV: the hat's level follows the kick, down */
+            turn(ROMI_E_K2, 1);
+            turn(ROMI_E_K3, -40);
+            CHECK(hh->env_src == 1 && hh->env_depth == -64 && hh->env_tgt == 4, "ENV: src %d depth %d target %d",
+                  hh->env_src, hh->env_depth, hh->env_tgt);
+        }
+        {
+            double a, b2;
+            for (k = 0; k < 2; k++) {
+                romi_init(85);
+                romi_project()->drift = 0;
+                for (c = 0; c < ROMI_TRACKS; c++) romi_project()->pat[0].tr[c].mute = c != ROMI_HAT && c != ROMI_KICK;
+                romi_project()->pat[0].tr[ROMI_KICK].level = 0;   /* the kick unheard, still followed */
+                if (k) { romi_project()->pat[0].tr[ROMI_HAT].env_src = 1; romi_project()->pat[0].tr[ROMI_HAT].env_depth = -64; }
+                tap_button(ROMI_B_PLAY);
+                run(4.0, 0, 0, k ? &b2 : &a);
+            }
+            CHECK(b2 < a * 0.9 && b2 > 0.0, "ENV: hat rms %f with the kick ducking it, %f without", b2, a);
+        }
+        /* stored; a version 14 pattern loads without them */
+        romi_init(86);
+        tr = &romi_project()->pat[0].tr[ROMI_PERC];
+        tr->acc_src = 1; tr->lfo_rst = 2; tr->env_src = 3; tr->env_depth = -20; tr->env_tgt = 7; tr->step[5].cond = 9;
+        {
+            uint32_t n = romi_store_get(1, obj, sizeof obj), m, kk, t, a1, c1;
+            romi_init(87);
+            tr = &romi_project()->pat[0].tr[ROMI_PERC];
+            CHECK(romi_store_set(1, obj, n) == 0 && tr->acc_src == 1 && tr->lfo_rst == 2 && tr->env_src == 3 &&
+                  tr->env_depth == -20 && tr->env_tgt == 7 && tr->step[5].cond == 9, "the links not stored");
+            memcpy(o14, obj, 5); o14[3] = 14;
+            for (m = 5, kk = 5, t = 0; t < ROMI_TRACKS; t++) {
+                uint32_t q, hd = 19 + 4 * ROMI_LFOS + 4 + 3;
+                memcpy(o14 + m, obj + kk, hd); m += hd; kk += hd + 5;
+                for (q = 0; q < ROMI_STEPS; q++, kk += 4) {
+                    o14[m++] = obj[kk]; o14[m++] = obj[kk + 1]; o14[m++] = obj[kk + 2];
+                }
+            }
+            memcpy(o14 + m, obj + kk, n - 4 - kk); m += n - 4 - kk;
+            for (a1 = 1, c1 = 0, kk = 0; kk < m; kk++) { a1 = (a1 + o14[kk]) % 65521u; c1 = (c1 + a1) % 65521u; }
+            a1 = c1 << 16 | a1;
+            o14[m++] = (uint8_t)a1; o14[m++] = (uint8_t)(a1 >> 8); o14[m++] = (uint8_t)(a1 >> 16); o14[m++] = (uint8_t)(a1 >> 24);
+            romi_init(88);
+            tr = &romi_project()->pat[0].tr[ROMI_PERC];
+            CHECK(romi_store_set(1, o14, m) == 0 && tr->acc_src == 0 && tr->env_src == 0 && tr->step[5].cond == 0,
+                  "version 14 did not load (%d)", romi_store_set(1, o14, m));
+        }
     }
 
     /* MIDI: channel 1 plays the kick */

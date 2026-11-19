@@ -28,7 +28,7 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
 enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK,
-       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_PG_GLOBAL2, ROMI_NPAGES };
+       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_PG_GLOBAL2, ROMI_PG_MOD, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -43,7 +43,11 @@ typedef struct {
     uint8_t lock[8];                    /* a sound parameter for this step alone: 0 none, else value + 1
                                          * (0..3 the SOUND page's, 4..7 the SOUND 2 page's) */
     uint8_t chance;                     /* 1..100 %: how likely it plays, stepless; 0 = 100 % (a plain step) */
+    uint8_t cond;                       /* the trig condition: 0 none, else ROMI_COND_* (held step + ALGORITHM) */
 } romi_step_t;
+/* trig conditions: 1..17 A:B (plays in bar A of every B: 1:2 2:2, 1:3..3:3, 1:4..4:4, 1:8..8:8), then: */
+enum { ROMI_COND_FILL = 18, ROMI_COND_NFILL, ROMI_COND_PRE, ROMI_COND_NPRE, ROMI_COND_FIRST, ROMI_COND_NFIRST,
+       ROMI_NCOND };
 
 /* an LFO: a slow wave in time with the groove, added to one of the track's values */
 typedef struct {
@@ -73,6 +77,11 @@ typedef struct {
     uint8_t follow;                     /* 0 none, else track + 1 whose notes transpose this track's (its harmony) */
     uint16_t slide;                     /* sub and stab: bit i, step i slides from the note before (no new attack) */
     uint8_t glide;                      /* stab: 0..127, how long its chords glide when they overlap (the sub's is p3) */
+    uint8_t acc_src;                    /* 0 none, else track + 1: its accents accent this track's hits too (LINK) */
+    uint8_t lfo_rst;                    /* 0 free, else track + 1: its hits restart this track's LFOs (MOD) */
+    uint8_t env_src;                    /* 0 none, else track + 1: its loudness moves env_tgt by env_depth (MOD) */
+    int8_t env_depth;                   /* -64..63 */
+    uint8_t env_tgt;                    /* 0..11, as an LFO's target */
     romi_lfo_t lfo[ROMI_LFOS];
 } romi_track_t;
 
@@ -107,12 +116,12 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 14u
+#define ROMI_VERSION 15u
 #define ROMI_SAVER_MS 20000u             /* the screensaver: after 20 s without a touch */
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
                                          * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects
                                          * 2..4 load aside: the HARD patterns, back when HARD is chosen again */
-#define ROMI_OBJ_MAX 600u               /* the largest packed object, in bytes */
+#define ROMI_OBJ_MAX 728u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */
@@ -145,9 +154,11 @@ void romi_store_saved(int obj);
 /* ---- for tests and the simulator ---- */
 int romi_state(int what);
 enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI_Q_PATTERN, ROMI_Q_KEYS_MODE,
-       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY, ROMI_Q_LFO_PAGE, ROMI_Q_KEY_STEP, ROMI_Q_SAVER,
+       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY, ROMI_Q_LFO_PAGE, ROMI_Q_KEY_STEP, ROMI_Q_SAVER, ROMI_Q_FILL,
        ROMI_Q_HITS = 100,              /* + track: hits sounded since PLAY */
-       ROMI_Q_NOTE = 110 };            /* + track: the note of its last hit, as played (semitones from its base) */
+       ROMI_Q_NOTE = 110,              /* + track: the note of its last hit, as played (semitones from its base) */
+       ROMI_Q_ACC = 120,               /* + track: its last hit accented (its own or its accent source's) */
+       ROMI_Q_LFOPH = 130 };           /* + track: its first LFO's phase, 0..999 */
 romi_project_t *romi_project(void);
 
 #endif
