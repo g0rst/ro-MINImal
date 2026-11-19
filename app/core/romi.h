@@ -105,6 +105,7 @@ typedef struct {
     uint16_t var_seed[3];               /* the variations B, C, D of A: each one's dice */
     uint8_t order;                      /* 0 LOOP (CHAIN decides), 1 A-D and round again, 2 RANDOM; four bars each */
     uint8_t mode;                       /* 0 LAZY: B..D are made from A; 1 HARD: four patterns of their own */
+    uint8_t style;                      /* 0 ro:MINImal, 1 suom1saundi (its voices and its generator; ROMI_SUOMI) */
     uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
     uint8_t sc_rel;                     /* 0..127: how fast the ducking lets go */
     romi_pattern_t pat[ROMI_PATTERNS];
@@ -116,7 +117,16 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 15u
+#define ROMI_VERSION 16u
+/* the style SUOMI (suom1saundi's voices and generator) is built in when ROMI_SUOMI is 1: the first thing to leave
+ * (ROMI_SUOMI 0) or to become a firmware of its own, should the FM-1 run short of time. ROMI_START_STYLE: the style
+ * a fresh start comes up in: 0 the firmware ro:MINImal (suom1saundi its bonus), 1 the firmware suom1saundi */
+#ifndef ROMI_SUOMI
+#define ROMI_SUOMI 1
+#endif
+#ifndef ROMI_START_STYLE
+#define ROMI_START_STYLE 0
+#endif
 #define ROMI_SAVER_MS 59000u             /* the screensaver: after 59 s without a touch */
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
                                          * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects

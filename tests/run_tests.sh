@@ -17,3 +17,9 @@ if [ -x "$SIM" ]; then
 else
     echo "host simulator not built (./build.sh --host): skipped"
 fi
+# suom1saundi (the same core, starting in the style SUOMI), if it was built (python3 base/tools/build.py app_suomi --host)
+SIM2="$ROOT/app_suomi/build/host/suom1saundi_host"
+if [ -x "$SIM2" ]; then
+    "$SIM2" "$ROOT/app_suomi/tests/basic.txt" "$ROOT/app_suomi/build/host" | tee "$OUT/sim-suomi.log" | tail -1
+    ! grep -q "EXPECTATIONS FAILED" "$OUT/sim-suomi.log"
+fi

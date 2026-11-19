@@ -180,16 +180,24 @@ static inline int16_t rv_out(float x)
     return (int16_t)(x > 32767.0f ? 32767 : x < -32768.0f ? -32768 : (int32_t)x);
 }
 
-static const uint8_t SCALES[4][7] = {
+#define NSCALES 6
+static const uint8_t SCALES[NSCALES][7] = {
     {0, 2, 3, 5, 7, 8, 10},             /* minor */
     {0, 2, 3, 5, 7, 9, 10},             /* dorian */
     {0, 1, 3, 5, 7, 8, 10},             /* phrygian */
     {0, 3, 5, 7, 10, 12, 15},           /* minor pentatonic */
+    {0, 1, 4, 5, 7, 8, 10},             /* phrygian dominant: the psytrance scale */
+    {0, 2, 3, 5, 7, 8, 11},             /* harmonic minor */
 };
 static const int8_t CHORDS[5][3] = {{0, 3, 7}, {0, 3, 10}, {3, 10, 14}, {0, 5, 10}, {0, 7, 12}};
 static const float PERC_RATIO[8] = {1.0f, 1.41f, 1.73f, 2.0f, 2.76f, 3.5f, 4.07f, 5.33f};
 
 #define PAT (&R.prj.pat[R.prj.cur_pat])   /* the pattern playing */
+#if ROMI_SUOMI
+#define STYLE (R.prj.style)
+#else
+#define STYLE 0
+#endif
 #define BASE (&R.prj.pat[0])                /* pattern A: in LAZY the one edited, B..D are made from it */
 #define EDT (R.prj.mode ? PAT : BASE)       /* the pattern the panel edits: A (LAZY), the one playing (HARD) */
 
@@ -227,9 +235,18 @@ static float lfo_wave(const romi_lfo_t *l, int t, int k)
 }
 
 /* the sum of the track's LFOs aimed at target, in 0..127 units */
+#if ROMI_SUOMI
+static float su_env(int t);
+#endif
 static float voice_env(int t)           /* how loud a voice sounds now, 0..1: its envelope (the ENV follower) */
 {
     float e;
+#if ROMI_SUOMI
+    if (STYLE) {
+        e = su_env(t);
+        return e > 1.0f ? 1.0f : e;
+    }
+#endif
     switch (t) {
     case ROMI_KICK: e = R.kick.amp * R.kick.vel; break;
     case ROMI_SUB: e = R.sub.amp * R.sub.vel; break;
@@ -274,6 +291,10 @@ static void bus_update(int t)
     b->sr = lev * lim127((float)tr->rev + lfo_offset(t, 7)) * (1.0f / 127.0f);
 }
 
+#if ROMI_SUOMI
+#include "suomi_voices.inc"
+#endif
+
 /* lock: the step's own values for the four sound parameters (0: the track's), or NULL */
 static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
 {
@@ -295,7 +316,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     /* SOUND 2: attack (hat, stab, click), drive (all but the kick: its own is on SOUND), crush (all) */
     {
         shape_t *sh = &R.shape[t];
-        int has_att = t == ROMI_HAT || t == ROMI_STAB || t == ROMI_CLICK;
+        int has_att = !STYLE && (t == ROMI_HAT || t == ROMI_STAB || t == ROMI_CLICK);   /* (SUOMI: its own there) */
         float g = t == ROMI_KICK ? 1.0f : 1.0f + (float)q[2] * (6.0f / 127.0f);
         if (has_att && q[1]) {
             if (t != ROMI_STAB || stab_quiet)
@@ -315,6 +336,12 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     R.last_note[t] = (int8_t)note;
     if (t == (int)R.prj.sc_src)
         R.duck_env = 1.0f;
+#if ROMI_SUOMI
+    if (STYLE) {                        /* suom1saundi's voices */
+        su_trig(t, note, vel, acc, R.slide_now, p, q, root);
+        return;
+    }
+#endif
     switch (t) {
     case ROMI_KICK: {
         float g = 1.0f + (float)p[3] * (5.0f / 127.0f);
@@ -423,6 +450,9 @@ void romi_panic(void)
 {
     uint32_t i, k;
     R.kick.amp = R.sub.amp = R.hat.amp = R.perc.amp = R.stab.amp = R.click.amp = 0.0f;
+#if ROMI_SUOMI
+    su_panic();
+#endif
     R.duck_env = 0.0f;
     for (i = 0; i < ROMI_TRACKS; i++)
         R.pend[i][0].on = R.pend[i][1].on = R.early[i] = 0;
@@ -772,6 +802,12 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
             }
         }
 
+#if ROMI_SUOMI
+        if (STYLE) {
+            su_voices(v);
+        } else
+#endif
+        {
         /* kick: a sine falling in pitch, a click, a soft clipper */
         x = 0.0f;
         if (R.kick.amp > 1e-4f) {
@@ -873,6 +909,7 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
         v[ROMI_CLICK] = x;
 
+        }
         /* SOUND 2 on each voice: attack, drive, crush (each skipped when off) */
         for (k = 0; k < ROMI_TRACKS; k++) {
             float y = v[k];
@@ -963,7 +1000,7 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
 static uint32_t urand(uint32_t n) { return xs32(&R.ui_rng) % n; }
 static int scale_note(int degree)
 {
-    const uint8_t *sc = SCALES[R.prj.scale & 3u];
+    const uint8_t *sc = SCALES[R.prj.scale < NSCALES ? R.prj.scale : 0u];
     int oct = 0;
     while (degree < 0) {
         degree += 7;
@@ -1139,6 +1176,10 @@ static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const
     return got;
 }
 
+#if ROMI_SUOMI
+#include "suomi_gen.inc"
+#endif
+
 static void gen_track(int t)
 {
     romi_track_t *tr = &EDT->tr[t];
@@ -1150,6 +1191,11 @@ static void gen_track(int t)
     }
     tr->len = 16;
     tr->slide = 0;
+#if ROMI_SUOMI
+    if (STYLE)
+        su_gen(tr, t, d);               /* suom1saundi's rules */
+    else
+#endif
     switch (t) {
     case ROMI_KICK: {
         static const uint8_t GHOST[3] = {15, 30, 45};   /* % of grooves with a ghost kick */
@@ -1284,7 +1330,8 @@ static void gen_track(int t)
 /* a whole new groove: its density first (faster tempos lean sparse), then the tracks in the order they lean on */
 static void gen_all(void)
 {
-    static const uint8_t ORDER[ROMI_TRACKS] = {ROMI_KICK, ROMI_STAB, ROMI_SUB, ROMI_HAT, ROMI_PERC, ROMI_CLICK};
+    static const uint8_t ORDER[2][ROMI_TRACKS] = {{ROMI_KICK, ROMI_STAB, ROMI_SUB, ROMI_HAT, ROMI_PERC, ROMI_CLICK},
+                                                   {ROMI_KICK, ROMI_SUB, ROMI_PERC, ROMI_STAB, ROMI_HAT, ROMI_CLICK}};
     uint32_t r = urand(10), k;
     R.density = (uint8_t)(r < 3 ? 0 : r < 8 ? 1 : 2);
     if (R.prj.bpm >= 130 && R.density)
@@ -1292,7 +1339,7 @@ static void gen_all(void)
     else if (R.prj.bpm <= 116 && R.density < 2 && urand(2))
         R.density++;
     for (k = 0; k < ROMI_TRACKS; k++)
-        gen_track(ORDER[k]);
+        gen_track(ORDER[STYLE ? 1 : 0][k]);   /* (SUOMI: the melody after the acid line, to answer it) */
 }
 
 /* ---- the variations: B, C and D are made from A, always ----
@@ -1363,7 +1410,15 @@ static void vary(romi_pattern_t *d)
     for (i = 0; i < sb->len; i++)                   /* the sub: one hit beside itself, never on a quarter */
         if (sb->step[i].flags & ROMI_ST_ON)
             on[non++] = i;
-    if (non) {
+    if (STYLE && non) {                             /* SUOMI: the pump stays; a bass note of the last beat answers
+                                                     * an octave up, sliding there */
+        for (i = 12; i < 16 && i < sb->len; i++)
+            if ((sb->step[i].flags & ROMI_ST_ON) && vrand(2)) {
+                sb->step[i].note = (int8_t)(sb->step[i].note + 12 > ROMI_NOTE_MAX ? sb->step[i].note : sb->step[i].note + 12);
+                sb->slide |= (uint16_t)(1u << i);
+                break;
+            }
+    } else if (non) {
         uint32_t from = on[vrand(non)], to = vrand(2) ? from + 1u : from + sb->len - 1u;
         to %= sb->len;
         if ((to & 3u) && !(sb->step[to].flags & ROMI_ST_ON)) {
@@ -1598,6 +1653,10 @@ static void pattern_defaults(romi_pattern_t *p)
             step_plain(&tr->step[i]);
         }
     }
+#if ROMI_SUOMI
+    if (STYLE)
+        su_defaults(p);
+#endif
 }
 
 /* --------------------------------------------------------------- project --- */
@@ -1605,12 +1664,12 @@ static void prj_sanitize(romi_project_t *p)
 {
     int a, t, i;
 #define LIM(v, lo, hi) do { if ((v) < (lo)) (v) = (lo); if ((v) > (hi)) (v) = (hi); } while (0)
-    LIM(p->bpm, 90, 150);
+    LIM(p->bpm, 90, 160);
     LIM(p->swing, 50, 75);
     LIM(p->drift, 0, 127);
     LIM(p->duck, 0, 127);
     LIM(p->root, 24, 47);
-    LIM(p->scale, 0, 3);
+    LIM(p->scale, 0, NSCALES - 1);
     LIM(p->dly_time, 0, 2);
     LIM(p->dly_fb, 0, 127);
     LIM(p->rev_size, 0, 127);
@@ -1619,6 +1678,7 @@ static void prj_sanitize(romi_project_t *p)
     LIM(p->cur_pat, 0, ROMI_PATTERNS - 1);
     LIM(p->chain, 0, 4);
     LIM(p->mode, 0, 1);
+    LIM(p->style, 0, ROMI_SUOMI ? 1 : 0);
     LIM(p->order, 0, 2);
     LIM(p->sc_src, 0, ROMI_TRACKS - 1);
     LIM(p->sc_rel, 0, 127);
@@ -1734,6 +1794,7 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
         }
         d[n++] = p->mode;
         d[n++] = p->order;
+        d[n++] = p->style;
     } else {
         const romi_pattern_t *pt = &R.prj.pat[obj - 1];
         uint32_t nl = 0, at;
@@ -1802,14 +1863,14 @@ int romi_store_set(int obj, const void *src, uint32_t len)
     const uint8_t *b = (const uint8_t *)src;
     /* older versions load: 13 without slide and glide, steps of 2 bytes; 14 without the links of 15 (accent,
      * restart, ENV) and the trig conditions, steps of 3 bytes */
-    uint32_t ver = len > 3u ? b[3] : 0u, old = ver == 13u, v14 = ver == 14u;
+    uint32_t ver = len > 3u ? b[3] : 0u, old = ver == 13u, v14 = ver == 14u, v15 = ver == 15u;
     uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) +
                                               (old ? 2u : v14 ? 3u : 4u) * ROMI_STEPS) + 1u
-                        : 5u + 23u, n = 5, nl, j;
+                        : 5u + (ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the settings with the style) */
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
-    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14) ||
+    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15) ||
         b[4] != (obj ? obj - 1 : 0))
         return -2;
     if (obj)
@@ -1826,6 +1887,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
             p->var_seed[k] = (uint16_t)(b[n] | b[n + 1] << 8);
         p->mode = b[n++];
         p->order = b[n++];
+        p->style = ver >= 16u ? b[n++] : 0u;    /* (before 16: ro:MINImal) */
     } else {
         for (t = 0; t < ROMI_TRACKS; t++) {
             romi_track_t *tr = &in.tr[t];
@@ -1925,6 +1987,37 @@ void romi_store_saved(int obj)
 
 romi_project_t *romi_project(void) { return &R.prj; }
 
+/* the project's own defaults for its style: tempo, swing, drift, the sidechain, key and scale, the effects */
+static void prj_style_defaults(void)
+{
+    romi_project_t *p = &R.prj;
+    p->sc_src = ROMI_KICK;
+    p->dly_time = 2;
+    if (STYLE) {                        /* suom1saundi: 145 BPM, straight, F# phrygian dominant, the bass pumping */
+        p->bpm = 145;
+        p->swing = 50;
+        p->drift = 40;
+        p->duck = 100;
+        p->sc_rel = 50;
+        p->root = 30;                   /* F#1 */
+        p->scale = 4;                   /* phrygian dominant */
+        p->dly_fb = 60;
+        p->rev_size = 60;
+        p->rev_damp = 60;
+    } else {
+        p->bpm = 126;
+        p->swing = 56;
+        p->drift = 48;
+        p->duck = 70;
+        p->sc_rel = 54;                 /* about 90 ms */
+        p->root = 29;                   /* F1 */
+        p->scale = 0;
+        p->dly_fb = 62;
+        p->rev_size = 70;
+        p->rev_damp = 60;
+    }
+}
+
 void romi_init(uint32_t seed)
 {
     uint32_t i;
@@ -1938,18 +2031,8 @@ void romi_init(uint32_t seed)
     R.ui_rng = (seed * 2654435761u) | 1u;
     R.pending_pat = 0xFFu;
     R.solo = -1;
-    R.prj.bpm = 126;
-    R.prj.swing = 56;
-    R.prj.drift = 48;
-    R.prj.duck = 70;
-    R.prj.sc_src = ROMI_KICK;
-    R.prj.sc_rel = 54;                  /* about 90 ms */
-    R.prj.root = 29;                    /* F1 */
-    R.prj.scale = 0;
-    R.prj.dly_time = 2;
-    R.prj.dly_fb = 62;
-    R.prj.rev_size = 70;
-    R.prj.rev_damp = 60;
+    R.prj.style = ROMI_SUOMI ? ROMI_START_STYLE : 0;   /* the firmware ro:MINImal or suom1saundi */
+    prj_style_defaults();
     R.prj.clock_out = 1;
     R.prj.cur_pat = 0;                  /* A, and B..D made from it */
     pattern_defaults(BASE);
@@ -1966,7 +2049,7 @@ void romi_init(uint32_t seed)
 #define C_MID RGB(150, 147, 138)
 #define C_DIM RGB(92, 90, 84)
 #define C_LINE RGB(44, 43, 40)          /* empty steps, rules */
-#define C_ACC RGB(255, 98, 44)          /* the one colour: where the groove is, what is selected */
+#define C_ACC (STYLE ? RGB(170, 255, 60) : RGB(255, 98, 44))   /* the one colour: orange; suom1saundi's acid green */
 
 static uint16_t *cv;
 static int cv_y0;
@@ -2075,20 +2158,35 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_ORATIO };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
-static const char *const TRACK_NAME[ROMI_TRACKS] = {"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"};
+static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
+                                                        {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "OUTO"}};
+#define TRACK_NAME (TRACK_NAMES[STYLE ? 1 : 0])
 static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
                                                     "GLOBAL 2", "MOD"};
-static const char *const SOUND_NAME[ROMI_TRACKS][4] = {
+static const char *const SOUND_NAMES[2][ROMI_TRACKS][4] = {{
     {"TUNE", "DECAY", "PUNCH", "DRIVE"}, {"DECAY", "FM", "RATIO", "GLIDE"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
-};
-static const char *const SOUND2_NAME[ROMI_TRACKS][4] = {
+}, {                                    /* suom1saundi */
+    {"TUNE", "DECAY", "SWEEP", "DRIVE"}, {"CUTOFF", "RESO", "ENVMOD", "DECAY"}, {"DECAY", "TONE", "METAL", "OPEN"},
+    {"CUTOFF", "RESO", "ENVMOD", "DECAY"}, {"WAVE", "DECAY", "ARP", "VIBRATO"}, {"DECAY", "FM", "RATIO", "ZAP"},
+}};
+static const char *const SOUND2_NAMES[2][ROMI_TRACKS][4] = {{
     {"PITCH", "CLICK", "P.TIME", "CRUSH"}, {"PITCH", "FM.TIME", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
     {"PITCH", "B.TIME", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
-};
+}, {
+    {"PITCH", "CLICK", "SNAP", "CRUSH"}, {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "CHIP", "DRIVE", "CRUSH"},
+    {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"}, {"PITCH", "ZTIME", "DRIVE", "CRUSH"},
+}};
+#define SOUND_NAME (SOUND_NAMES[STYLE ? 1 : 0])
+#define SOUND2_NAME (SOUND2_NAMES[STYLE ? 1 : 0])
+/* the tracks with SLIDE steps and a GLIDE: ro:MINImal's sub and stab; suom1saundi's bass, acid and melody */
+static int slides(int t)
+{
+    return STYLE ? t == ROMI_SUB || t == ROMI_PERC || t == ROMI_STAB : t == ROMI_SUB || t == ROMI_STAB;
+}
 static const char *const NOTE_NAME[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
 static int page_params(param_t p[4])
@@ -2106,7 +2204,7 @@ static int page_params(param_t p[4])
 #define P(i, n, ptr, l, h, f, b) (p[i].name = (n), p[i].v = (ptr), p[i].lo = (l), p[i].hi = (h), p[i].fmt = (f), p[i].big = (b))
     switch (R.page) {
     case ROMI_PG_HOME:
-        P(0, "TEMPO", &R.prj.bpm, 90, 150, F_BPM, 0);
+        P(0, "TEMPO", &R.prj.bpm, 90, 160, F_BPM, 0);
         P(1, "SWING", &R.prj.swing, 50, 75, F_PCT, 0);
         P(2, "DRIFT", &R.prj.drift, 0, 127, F_NUM, 1);
         P(3, "DUCK", &R.prj.duck, 0, 127, F_NUM, 1);
@@ -2114,6 +2212,15 @@ static int page_params(param_t p[4])
     case ROMI_PG_SOUND:
         for (i = 0; i < 4; i++)
             P(i, SOUND_NAME[R.track][i], &tr->p[i], 0, 127, F_NUM, 1);
+        if (STYLE) {                    /* suom1saundi: PIIP's wave and arpeggio, OUTO's ratio */
+            if (R.track == ROMI_STAB) {
+                p[0].fmt = F_PWAVE;
+                p[2].fmt = F_PARP;
+            }
+            if (R.track == ROMI_CLICK)
+                p[2].fmt = F_ORATIO;
+            break;
+        }
         if (R.track == ROMI_SUB)
             p[2].fmt = F_SUBRATIO;
         if (R.track == ROMI_PERC)
@@ -2146,9 +2253,9 @@ static int page_params(param_t p[4])
         cat_int(name, R.cursor + 1);
         P(0, name, (uint8_t *)&tr->step[R.cursor & 15u].shift, 0, 2 * ROMI_SHIFT_MAX, F_SHIFT, 0);
         P(1, "TRACK", (uint8_t *)&tr->tshift, 0, 16, F_SHIFT, 0);
-        if (R.track == ROMI_SUB)        /* GLIDE: the sub's own (SOUND's fourth knob), the stab's */
+        if (R.track == ROMI_SUB && !STYLE)   /* GLIDE: the sub's own (SOUND's fourth knob), the stab's */
             P(2, "GLIDE", &tr->p[3], 0, 127, F_NUM, 1);
-        else if (R.track == ROMI_STAB)
+        else if (slides(R.track))
             P(2, "GLIDE", &tr->glide, 0, 127, F_NUM, 1);
         break;
     }
@@ -2187,10 +2294,13 @@ static int page_params(param_t p[4])
     case ROMI_PG_GLOBAL2:
         P(0, "MODE", &R.prj.mode, 0, 1, F_MODE, 0);
         P(1, "PLAY", &R.prj.order, 0, 2, F_ORDER, 0);
+#if ROMI_SUOMI
+        P(2, "STYLE", &R.prj.style, 0, 1, F_STYLE, 0);   /* ro:MINImal or suom1saundi: a new groove in it */
+#endif
         break;
     default:
         P(0, "ROOT", &R.prj.root, 24, 47, F_ROOT, 0);
-        P(1, "SCALE", &R.prj.scale, 0, 3, F_SCALE, 0);
+        P(1, "SCALE", &R.prj.scale, 0, NSCALES - 1, F_SCALE, 0);
         P(2, "CLOCK", &R.prj.clock_out, 0, 1, F_ONOFF, 0);
         P(3, "CHAIN", &R.prj.chain, 0, 4, F_CHAIN, 0);
         break;
@@ -2201,7 +2311,7 @@ static int page_params(param_t p[4])
 
 static void param_text(const param_t *p, char *t)
 {
-    static const char *const SCALE[4] = {"MIN", "DOR", "PHR", "PEN"};
+    static const char *const SCALE[NSCALES] = {"MIN", "DOR", "PHR", "PEN", "PDOM", "HMIN"};
     static const char *const DTIME[3] = {"1/16", "1/8", "3/16"};
     static const char *const CHORD[5] = {"MIN", "MIN7", "MIN9", "SUS", "5TH"};
     static const char *const CHAIN[5] = {"OFF", "A-B", "A-C", "A-D", "EVOLVE"};
@@ -2217,7 +2327,7 @@ static void param_text(const param_t *p, char *t)
         else { cat(t, v < 64 ? "L" : "R"); cat_int(t, v < 64 ? 64 - v : v - 64); }
         break;
     case F_ROOT: cat(t, NOTE_NAME[v % 12]); cat_int(t, v / 12 - 1); break;
-    case F_SCALE: cat(t, SCALE[v & 3]); break;
+    case F_SCALE: cat(t, SCALE[v < NSCALES ? v : 0]); break;
     case F_DTIME: cat(t, DTIME[v > 2 ? 2 : v]); break;
     case F_ONOFF: cat(t, v ? "ON" : "OFF"); break;
     case F_SUBRATIO: cat(t, "X"); cat_int(t, 1 + v * 3 / 128); break;
@@ -2247,6 +2357,22 @@ static void param_text(const param_t *p, char *t)
     case F_MODE: cat(t, v ? "HARD" : "LAZY"); break;
     case F_ORDER: cat(t, v == 1 ? "A-D" : v == 2 ? "RANDOM" : "LOOP"); break;
     case F_RST: cat(t, v && v <= ROMI_TRACKS ? TRACK_NAME[v - 1] : "FREE"); break;
+    case F_STYLE: cat(t, v ? "SUOM1" : "ROMI"); break;
+    case F_PWAVE: {
+        static const char *const W[6] = {"P12", "P25", "P50", "TRI", "SAW", "NOISE"};
+        cat(t, W[v * 6 / 128]);
+        break;
+    }
+    case F_PARP: {
+        static const char *const A[7] = {"OFF", "OCT", "MIN", "MAJ", "SUS", "5+8", "DIM"};
+        cat(t, A[v * 7 / 128]);
+        break;
+    }
+    case F_ORATIO: {
+        static const char *const O[8] = {"0.5", "1", "1.5", "2", "2.76", "3.5", "5.33", "7.1"};
+        cat(t, O[v >> 4]);
+        break;
+    }
     case F_PITCH:                       /* semitones, 24 = none */
         if (v > 24)
             cat(t, "+");
@@ -2300,17 +2426,20 @@ static int glyph(int ch)
  * than the edges) and settles; grey, and on every step the next letter orange, one at a time. Behind it, dimmed,
  * the sequencer's dots light with what plays. The name drifts and bounces off the edges. Drawn in the main loop, 30 frames a
  * second; nothing of the audio path. */
-#define SV_NAME "ro:MINImal"
-#define SV_PX 2.6f                      /* a font pixel, at rest */
+#define SV_NAME (STYLE ? "SUOM1SAUNDI" : "ro:MINImal")
+#define SV_PX (STYLE ? 2.2f : 2.6f)     /* a font pixel, at rest (the longer name smaller) */
+static int sv_len(void) { const char *s = SV_NAME; int n = 0; while (s[n]) n++; return n; }
 #define SV_PUMP 0.22f                   /* how much a kick swells all of it */
 #define SV_SWELL 0.14f                  /* and the middle more: the ball */
 static void draw_saver(void)
 {
-    static const char *const name = SV_NAME;
-    int k, n, lit = R.playing ? (int)(R.gstep_ui % 9u) : -1;   /* the step's letter (not the colon) */
+    const char *name = SV_NAME;
+    int k, n, letters = STYLE ? 11 : 9, lit = R.playing ? (int)(R.gstep_ui % (uint32_t)letters) : -1;   /* the step's
+                                                                                 * letter (not the colon) */
+    float hw = (float)(6 * sv_len() - 1) * 0.5f;   /* half the name's width, in font pixels */
     float cx = (float)R.sv_x * (1.0f / 16.0f), cy = (float)R.sv_y * (1.0f / 16.0f), env = (float)R.sv_env * (1.0f / 255.0f);
     {                                   /* behind it, dimmed: the sequencer's 16 x 6 dots, lit by what plays */
-        static const uint16_t TC[ROMI_TRACKS] = {C_ACC, C_FG, RGB(176, 173, 163), RGB(200, 160, 120), C_FG, C_MID};
+        const uint16_t TC[ROMI_TRACKS] = {C_ACC, C_FG, RGB(176, 173, 163), RGB(200, 160, 120), C_FG, C_MID};
         int t, i;
         for (t = 0; t < ROMI_TRACKS; t++) {
             int y = 72 + t * 18;
@@ -2340,8 +2469,8 @@ static void draw_saver(void)
                     /* the pixel's place from the name's middle, in font pixels. A ball: all of it swells, the
                      * middle more, falling off with the square of the distance (30: half the name's width); each
                      * pixel as big as the swell is steep there, so no letter runs into the next */
-                    float u = (float)(k * 6 + col) - 29.5f + 0.5f, v = (float)row - 3.0f;
-                    float r2 = (u * u + v * v) * (1.0f / 900.0f);
+                    float u = (float)(k * 6 + col) - hw + 0.5f, v = (float)row - 3.0f;
+                    float r2 = (u * u + v * v) / (hw * hw);
                     float f = 1.0f + env * (SV_PUMP + SV_SWELL * (1.0f - r2));
                     float sz = SV_PX * (1.0f + env * (SV_PUMP + SV_SWELL * (1.0f - 3.0f * r2)));
                     rect((int)(cx + u * SV_PX * f - sz * 0.5f), (int)(cy + v * SV_PX * f - sz * 0.5f),
@@ -2353,7 +2482,8 @@ static void draw_saver(void)
 /* the animation, a frame: the kick swells the name and sends a ring; the name moves */
 static void saver_frame(void)
 {
-    int k, w = (int)(30.0f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2, h = (int)(4.0f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2;
+    int k, w = (int)((float)(6 * sv_len()) * 0.5f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2;
+    int h = (int)(4.0f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2;
     R.sv_env = (uint8_t)(R.sv_env * 3 / 4);   /* settles in about 150 ms */
     for (k = 0; k < ROMI_TRACKS; k++) {
         uint32_t h = R.hits[k], i;
@@ -2390,9 +2520,15 @@ void romi_draw(uint16_t *px, int strip)
     }
 
     /* header: the name, the pattern, the tempo, the transport */
-    i = text(4, 5, "ro:", C_MID, 2);
-    i = text(i, 5, "MINI", C_FG, 2);
-    text(i, 5, "mal", C_MID, 2);
+    if (STYLE) {                        /* suom1saundi, as it writes itself */
+        i = text(3, 5, "SUOM", C_FG, 2);
+        i = text(i, 5, "1", C_ACC, 2);
+        text(i, 5, "SAUNDI", C_FG, 2);
+    } else {
+        i = text(4, 5, "ro:", C_MID, 2);
+        i = text(i, 5, "MINI", C_FG, 2);
+        text(i, 5, "mal", C_MID, 2);
+    }
     t[0] = (char)('A' + R.prj.cur_pat);
     t[1] = 0;
     text(140, 5, t, R.pending_pat != 0xFFu ? C_DIM : C_FG, 2);
@@ -2527,7 +2663,7 @@ void romi_draw(uint16_t *px, int strip)
         cat_int(t, (int)ROMI_CHANCE(st));
         cat(t, "%");
         text(64, PARAM_Y + 26, t, C_FG, 2);
-        if (R.track == ROMI_SUB || R.track == ROMI_STAB) {
+        if (slides(R.track)) {
             static const char *const AS[4] = {"OFF", "ACC", "SLIDE", "A+S"};
             text(124, PARAM_Y + 14, "ACC/SLIDE", C_MID, 1);
             text(124, PARAM_Y + 26, AS[((st->flags & ROMI_ST_ACC) ? 1 : 0) | (int)(EDT->tr[R.track].slide >> hs & 1u) << 1], C_FG, 2);
@@ -2591,7 +2727,7 @@ void romi_draw(uint16_t *px, int strip)
         }
         text(4, FOOT_Y + 13, R.keys_mode ? "KEYS PLAY THE TRACK  REC: STEPS" :
              R.page == ROMI_PG_TIMING ? "SELECT: NEXT HIT  KEY: PICK STEP" :
-             t[0] ? t : "SEL MUTE/SOLO  ARP MUTATE  LFO 1/2", R.prj.cur_pat && !R.keys_mode ? C_MID : C_DIM, 1);
+             t[0] ? t : "SEL MUTE/SOLO  ARP MUTATE/FILL  LFO 1/2/MOD", R.prj.cur_pat && !R.keys_mode ? C_MID : C_DIM, 1);
     }
 }
 
@@ -2628,6 +2764,29 @@ static void keep_undo(void)
     R.undo_ok = 1;
 }
 static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+/* STYLE turned (GLOBAL 2): the project in the other style, a new groove in it. LAZY: A, and B..D from it; HARD: the
+ * pattern playing, and the other three copies of it (the patterns kept aside belonged to the other style) */
+static void set_style(void)
+{
+    int k;
+    romi_pattern_t *e = EDT;
+    prj_style_defaults();
+    pattern_defaults(e);
+    gen_all();
+    if (R.prj.mode) {
+        for (k = 0; k < ROMI_PATTERNS; k++)
+            R.prj.pat[k] = *e;
+    } else {
+        new_seeds();
+        derive_all();
+    }
+    R.aside_ok = 0;
+    R.undo_ok = 0;
+    romi_message("STYLE", STYLE ? "SUOM1SAUNDI" : "RO:MINIMAL");
+    R.unsaved = 1;
+    R.dirty |= STRIP_ALL;
+}
 
 /* LAZY <-> HARD. Into HARD: B..D are the HARD patterns kept aside (if there are), else copies of A ("all the same,
  * vary them yourself"). Into LAZY: B..D go aside (nothing is lost) and are made from A again. */
@@ -2909,7 +3068,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             st->chance = (uint8_t)(c == 100 ? 0 : c);
             any = 1;
         }
-        if (enc[ROMI_E_K3] && (R.track == ROMI_SUB || R.track == ROMI_STAB)) {   /* OFF, ACC, SLIDE, ACC+SLIDE */
+        if (enc[ROMI_E_K3] && slides(R.track)) {   /* OFF, ACC, SLIDE, ACC+SLIDE */
             int v = ((st->flags & ROMI_ST_ACC) ? 1 : 0) | (int)(tr->slide >> hs & 1u) << 1;
             v = clampi(v + (enc[ROMI_E_K3] > 0 ? 1 : -1), 0, 3);
             st->flags = (uint8_t)(v & 1 ? st->flags | ROMI_ST_ACC : st->flags & ~ROMI_ST_ACC);
@@ -2931,7 +3090,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         }
     } else {
         param_t pp[4];
-        uint8_t mode_was = R.prj.mode;
+        uint8_t mode_was = R.prj.mode, style_was = R.prj.style;
         page_params(pp);
         for (i = 0; i < 4; i++) {
             int d = (int)enc[ROMI_E_K1 + i];
@@ -2954,6 +3113,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         }
         if (R.prj.mode != mode_was)
             set_mode(R.prj.mode);
+        if (R.prj.style != style_was)
+            set_style();
     }
 
     /* the keys */

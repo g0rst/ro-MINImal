@@ -323,8 +323,8 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[ENV]]", "MIX", "LEVEL", "PAN", "DELAY", "REVERB"),
       ("[[FX]]", "FX", "D.TIME<br>1/16, 1/8, 3/16", "D.FDBK", "R.SIZE", "R.DAMP"),
       ("[[FX]] ×2", "SIDECHAIN", "SOURCE", "DEPTH", "RELEASE", "AMOUNT"),
-      ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN", "CLOCK", "CHAIN"),
-      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "", ""),
+      ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN, PDOM, HMIN", "CLOCK", "CHAIN"),
+      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "STYLE<br>ROMI, SUOM1", ""),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
       ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", "ACCENT"),
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", T("GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)"), ""),
@@ -565,7 +565,73 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "UNDO, die letzte schwarze Taste, nimmt die letzte Änderung an A zurück. Nochmal gedrückt, holt es sie wieder.",
      "UNDO, ultima clapă neagră, anulează ultima schimbare a lui A. Apăsat din nou, o readuce."))
 
-h("d", 2, T("keys and midi", "tasten und midi", "clape și midi"))
+h("d", 2, T("the second style: suom1saundi", "der zweite stil: suom1saundi", "al doilea stil: suom1saundi"))
+p(T("The same machine can play suomisaundi, Finnish freestyle psytrance: the voices and rules of suom1saundi. "
+    "GLOBAL 2 ([[GLO]] twice), STYLE: the project takes the style's tempo, key, scale and sounds, and a new groove "
+    "in it. Turn it back for ro:MINImal. There are two packages of the same firmware: rominimal.fwsc starts as "
+    "ro:MINImal, suom1saundi.fwsc as suom1saundi; each has the other as a bonus. Everything else stays: pages, "
+    "LAZY and HARD, B to D, conditions, slides, links, the screensaver. The colour turns acid green.",
+    "Dieselbe Maschine kann Suomisaundi, finnischen Freestyle-Psytrance: die Stimmen und Regeln von suom1saundi. "
+    "GLOBAL 2 ([[GLO]] zweimal), STYLE: Das Projekt übernimmt Tempo, Tonart, Skala und Klänge des Stils und einen "
+    "neuen Groove darin. Zurückdrehen für ro:MINImal. Es gibt zwei Pakete derselben Firmware: rominimal.fwsc startet "
+    "als ro:MINImal, suom1saundi.fwsc als suom1saundi; jedes hat das andere als Bonus. Alles andere bleibt: Seiten, "
+    "LAZY und HARD, B bis D, Bedingungen, Slides, Verknüpfungen, der Bildschirmschoner. Die Farbe wird säuregrün.",
+    "Aceeași mașină poate cânta suomisaundi, psytrance freestyle finlandez: vocile și regulile lui suom1saundi. "
+    "GLOBAL 2 ([[GLO]] de două ori), STYLE: proiectul ia tempo-ul, tonalitatea, gama și sunetele stilului și un "
+    "groove nou în el. Rotește înapoi pentru ro:MINImal. Există două pachete ale aceluiași firmware: rominimal.fwsc "
+    "pornește ca ro:MINImal, suom1saundi.fwsc ca suom1saundi; fiecare îl are pe celălalt ca bonus. Restul rămâne: "
+    "paginile, LAZY și HARD, B–D, condițiile, slide-urile, legăturile, screensaver-ul. Culoarea devine verde acid."))
+table(T(["track", "sound", "sound 2"], ["spur", "sound", "sound 2"], ["pistă", "sound", "sound 2"]),
+      ("POTKU", T("psy kick: a sine falling from far above, click, hold, body · TUNE DECAY SWEEP DRIVE",
+                  "Psy-Kick: Sinus, der von weit oben fällt, Klick, Hold, Body · TUNE DECAY SWEEP DRIVE",
+                  "kick psy: un sinus care cade de foarte sus, click, hold, body · TUNE DECAY SWEEP DRIVE"),
+       "PITCH CLICK SNAP CRUSH"),
+      ("BASSO", T("filter bass: saw to square and a sub into an 18 dB resonant filter · CUTOFF RESO ENVMOD DECAY",
+                  "Filterbass: Säge bis Rechteck und Sub in ein resonantes 18-dB-Filter · CUTOFF RESO ENVMOD DECAY",
+                  "bas cu filtru: saw spre square și sub într-un filtru rezonant de 18 dB · CUTOFF RESO ENVMOD DECAY"),
+       "PITCH WAVE DRIVE CRUSH"),
+      ("HATTU", T("FM metal against noise, and a sound chip's 8-bit noise · DECAY TONE METAL OPEN",
+                  "FM-Metall gegen Rauschen und das 8-Bit-Rauschen eines Soundchips · DECAY TONE METAL OPEN",
+                  "metal FM contra zgomot și zgomotul de 8 biți al unui cip de sunet · DECAY TONE METAL OPEN"),
+       "PITCH CHIP DRIVE CRUSH"),
+      ("HAPPO", T("acid line in the 303 manner: accent and slide · CUTOFF RESO ENVMOD DECAY",
+                  "Acid-Linie im 303-Stil: Akzent und Slide · CUTOFF RESO ENVMOD DECAY",
+                  "linie acid în stil 303: accent și slide · CUTOFF RESO ENVMOD DECAY"),
+       "PITCH WAVE DRIVE CRUSH"),
+      ("PIIP", T("sound chip: pulses, a 4-bit triangle, saw, noise; arpeggio, vibrato · WAVE DECAY ARP VIBRATO",
+                 "Soundchip: Pulse, 4-Bit-Dreieck, Säge, Rauschen; Arpeggio, Vibrato · WAVE DECAY ARP VIBRATO",
+                 "cip de sunet: pulsuri, triunghi pe 4 biți, saw, zgomot; arpegiu, vibrato · WAVE DECAY ARP VIBRATO"),
+       "PITCH SPEED DRIVE CRUSH"),
+      ("OUTO", T("FM pair with feedback and a zap: lasers, bubbles, never the same · DECAY FM RATIO ZAP",
+                 "FM-Paar mit Feedback und Zap: Laser, Blubbern, nie gleich · DECAY FM RATIO ZAP",
+                 "pereche FM cu feedback și zap: lasere, bule, niciodată la fel · DECAY FM RATIO ZAP"),
+       "PITCH ZTIME DRIVE CRUSH"))
+p(T("The pump is the heart of it. The bass never plays on the kick but behind it: mostly the roll (kick, bass, "
+    "bass, bass), else the gallop (kick, rest, bass, bass). On the root, the octave at the end of the bar, often on "
+    "a slide; the sixteenth after the kick soft, the off-beat accented, a short decay, and the kick ducks it fully "
+    "(SIDECHAIN AMOUNT 127). Over it the acid line walks a motif of eight notes on a loop of its own, the melody "
+    "answers where the acid rests, the hats sit on the off-beat, and the zaps come seldom, each one different. "
+    "GLIDE of BASSO, HAPPO and PIIP is on TIMING, their SLIDE on a held step's third knob.",
+    "Das Pumpen ist das Herz. Der Bass spielt nie auf der Kick, sondern dahinter: meist der Roll (Kick, Bass, Bass, "
+    "Bass), sonst der Gallop (Kick, Pause, Bass, Bass). Auf dem Grundton, die Oktave am Ende des Takts, oft mit "
+    "Slide; die Sechzehntel nach der Kick leise, der Offbeat akzentuiert, kurzer Ausklang, und die Kick duckt ihn "
+    "ganz (SIDECHAIN AMOUNT 127). Darüber geht die Acid-Linie ein Motiv aus acht Tönen auf eigener Looplänge, die "
+    "Melodie antwortet, wo die Acid ruht, die Hats sitzen auf dem Offbeat, die Zaps kommen selten und jeder anders. "
+    "GLIDE von BASSO, HAPPO und PIIP liegt auf TIMING, ihr SLIDE auf dem dritten Regler beim gehaltenen Step.",
+    "Pompa e inima lui. Basul nu cântă niciodată pe kick, ci în spatele lui: de cele mai multe ori roll-ul (kick, "
+    "bas, bas, bas), altfel galopul (kick, pauză, bas, bas). Pe fundamentală, octava la sfârșitul măsurii, des cu "
+    "slide; șaisprezecimea de după kick încet, contratimpul accentuat, un decay scurt, iar kick-ul îl duck-uiește "
+    "complet (SIDECHAIN AMOUNT 127). Deasupra, linia acid merge un motiv de opt note pe bucla ei, melodia răspunde "
+    "unde tace acid-ul, hat-urile stau pe contratimp, iar zap-urile vin rar, fiecare altfel. GLIDE pentru BASSO, "
+    "HAPPO și PIIP e pe TIMING, SLIDE-ul lor pe al treilea buton la pasul ținut."))
+note(T("suom1saundi is the first thing to go if the FM-1 runs short of time: it costs about 8 % more. Built "
+       "without it (ROMI_SUOMI=0), ro:MINImal is exactly as before.",
+       "suom1saundi fliegt als Erstes raus, wenn der FM-1 zu wenig Rechenzeit hat: Es kostet etwa 8 % mehr. Ohne "
+       "es gebaut (ROMI_SUOMI=0) ist ro:MINImal genau wie vorher.",
+       "suom1saundi pleacă primul dacă FM-1 nu mai are timp de calcul: costă cu aproximativ 8 % mai mult. Construit "
+       "fără el (ROMI_SUOMI=0), ro:MINImal e exact ca înainte."))
+
+h("d", 3, T("keys and midi", "tasten und midi", "clape și midi"))
 ul(T("[[REC]] turns the keys into a keyboard for the selected track. C4 is the track's base note. "
      "[[OCT−]] [[OCT+]] shift two octaves each way.",
      "[[REC]] macht die Tasten zum Keyboard für die gewählte Spur. C4 ist der Grundton der Spur. "
@@ -585,7 +651,7 @@ ul(T("[[REC]] turns the keys into a keyboard for the selected track. C4 is the t
      "Start und Stopp werden empfangen. Mit CLOCK an werden Clock, Start und Stopp über USB gesendet.",
      "Start și stop sunt primite. Cu CLOCK pornit, clock, start și stop sunt trimise prin USB."))
 
-h("d", 3, T("recipes", "rezepte", "rețete"))
+h("d", 4, T("recipes", "rezepte", "rețete"))
 table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
       (T("a sub that rolls between the kicks", "einen Sub, der zwischen den Kicks rollt",
          "un sub care se rostogolește între kick-uri"),
@@ -613,7 +679,7 @@ table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
          "[[GLO]], CHAIN EVOLVE. DRIFT um 60. Laufen lassen; ab und zu an A drehen.",
          "[[GLO]], CHAIN EVOLVE. DRIFT în jur de 60. Lasă-l să meargă; atinge A din când în când.")))
 
-h("d", 4, T("small print", "kleingedrucktes", "litere mici"))
+h("d", 5, T("small print", "kleingedrucktes", "litere mici"))
 ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A step moves at most 7/16 of a step, "
      "the whole track 8/16 more, together half a sixteenth. Notes reach 32 semitones down and 31 up.",
      "Bis zu 32 Locks pro Pattern; ein weiterer und das Display zeigt LOCKS FULL. Ein Step verschiebt sich höchstens um "

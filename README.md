@@ -36,6 +36,59 @@ Firmware-Bank und keinen Recovery-Taster; neuere Hardware-Revisionen (M-VAVE-Log
 manche Custom-Firmwares nicht. Vorher auf die offizielle V15 gehen, Daten sichern und wissen, wie man
 zurückkommt (Installer von fm1-base, `base/README.md`).
 
+## Zwei Stile, zwei Firmwares: ro:MINImal und suom1saundi
+
+Derselbe Kern kann zwei Stile: **ro:MINImal** (Rominimal, Microhouse) und **suom1saundi** (Suomisaundi, finnischer
+Freestyle-Psytrance, aus [suom1saundi](https://github.com/g0rst/suom1saundi) übernommen). Umgeschaltet wird auf
+GLOBAL 2, KNOB3 **STYLE**: Das Projekt bekommt die Grundwerte des Stils (Tempo, Tonart, Skala, Klänge) und einen
+neuen Groove in ihm. Gebaut werden zwei Pakete aus demselben Code, jedes mit dem anderen als Bonus:
+
+| Paket | startet als | Bonus |
+|---|---|---|
+| `rominimal.fwsc` (`app/`) | ro:MINImal, 126 BPM, F Moll | suom1saundi |
+| `suom1saundi.fwsc` (`app_suomi/`) | suom1saundi, 145 BPM, F# phrygisch-dominant | ro:MINImal |
+
+**Wichtig: Der Stil suom1saundi fliegt als Erstes raus, wenn der FM-1 zu wenig Rechenzeit hat.** Mit
+`ROMI_SUOMI=0` (in `o2_cflags` von `fm1.toml`) ist ro:MINImal wieder genau wie vorher; oder suom1saundi wird eine
+eigene Firmware. Die Stimmen und der Generator von suom1saundi liegen deshalb abgetrennt in
+`app/core/suomi_voices.inc` und `app/core/suomi_gen.inc`.
+
+Von suom1saundi übernommen: die sechs Stimmen (**POTKU** Psy-Kick mit Hold und Body, **BASSO** Filterbass,
+**HATTU** Hats mit 8-Bit-Rauschkanal, **HAPPO** Acid-Linie, **PIIP** Soundchip-Melodie mit Arpeggio, **OUTO**
+FM-Zaps), ihre Generator-Regeln, die Skala phrygisch-dominant (dazu harmonisch Moll, beide jetzt auch für
+ro:MINImal), Grün als Farbe. Alles andere ist ro:MINImal: Sequencer, Seiten, LAZY/HARD, die Spielarten B bis D,
+Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
+
+| Spur | SOUND (K1–K4) | SOUND 2 (K1–K4) |
+|---|---|---|
+| POTKU | TUNE, DECAY, SWEEP, DRIVE | PITCH, CLICK, SNAP, CRUSH |
+| BASSO | CUTOFF, RESO, ENVMOD, DECAY | PITCH, WAVE, DRIVE, CRUSH |
+| HATTU | DECAY, TONE, METAL, OPEN | PITCH, CHIP, DRIVE, CRUSH |
+| HAPPO | CUTOFF, RESO, ENVMOD, DECAY | PITCH, WAVE, DRIVE, CRUSH |
+| PIIP | WAVE, DECAY, ARP, VIBRATO | PITCH, SPEED, DRIVE, CRUSH |
+| OUTO | DECAY, FM, RATIO, ZAP | PITCH, ZTIME, DRIVE, CRUSH |
+
+Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
+HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30; OUTO FEEDBK 40, RANDOM 50). GLIDE von BASSO, HAPPO und PIIP
+sitzt auf TIMING (KNOB3), SLIDE pro Step auf KNOB3 beim gehaltenen Step.
+
+**Die Pattern-Regeln von suom1saundi:**
+- **Kick:** vier auf dem Boden, gestimmt; manchmal ein Ghost vor dem Takt oder ein Doppelschlag auf der letzten Viertel.
+- **Der pumpende Bass:** nie auf der Kick, sondern dahinter: meist der **Roll** (Kick, Bass, Bass, Bass), sonst der
+  **Gallop** (Kick, –, Bass, Bass) und Mischformen. Grundton, die Oktave am Ende des Takts (oft mit Slide), die
+  Sechzehntel nach der Kick leise, der Offbeat akzentuiert, kurzer Ausklang, voll von der Kick geduckt (AMOUNT 127):
+  so pumpt er.
+- **Acid (HAPPO):** eine Rhythmuszelle aus acht Steps und ein Motiv aus acht Tönen über dem Akkord, auf eigener
+  Looplänge; große Sprünge gleiten.
+- **Melodie (PIIP):** Frage und Antwort über dem Akkord, sie lässt Platz, wo die Acid-Linie spielt.
+- **Hats:** der Offbeat, meist offen, dazu leise Sechzehntel.
+- **Zaps (OUTO):** selten, auf ungerader Länge, jeder anders (eigene Locks für FM, Ratio und Zap).
+- **Spielarten:** wie bei ro:MINImal; in B bleibt der Bass-Puls stehen, stattdessen antwortet ein Ton der letzten
+  Viertel eine Oktave höher mit Slide.
+
+Last: Der Stil suom1saundi braucht etwa 8 % mehr Rechenzeit (typisch 1 519 statt 1 398, schlimmster Fall 1 777 statt
+1 646 Instruktionen pro Sample, geschätzt 35 bis 65 % des FM-1). Er macht die Firmware etwa 17 KB größer.
+
 ## Konzept
 
 Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bewegen. Daraus folgt der Aufbau:
@@ -121,8 +174,8 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
-| GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
-| GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns); PLAY LOOP, A-D oder RANDOM |
+| GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik, Phrygisch-dominant, Harmonisch Moll), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
+| GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns); PLAY LOOP, A-D oder RANDOM; STYLE ROMI oder SUOM1 (neuer Groove im Stil) |
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
 | 59 s nichts berührt | Bildschirmschoner: nur der Name, grau; er pumpt sich bei jeder Kick kugelförmig aus der Mitte auf, pro Step leuchtet der nächste Buchstabe orange (immer nur einer); dahinter, gedimmt, leuchten die 16 × 6 Step-Punkte mit, was spielt; der Name wandert. Jede Berührung weckt ihn und wirkt zugleich |
 | SEL halten + schwarze Tasten 1 bis 6 | jede Spur direkt stumm oder an, auch mehrere zugleich; die gewählte Spur bleibt |
@@ -199,7 +252,9 @@ einem SMK-37: vollständige Flash-Sicherung, wie im Playbook beschrieben.
 
     app/core/romi.h, romi.c   der ganze Synthesizer: portables C99 ohne libc und ohne Plattform-Aufrufe
     app/app.c, app.h          Anbindung an fm1-base (Audio, MIDI, Panel, Display, Speicher)
+    app/core/suomi_*.inc      der Stil suom1saundi (Stimmen, Generator): fällt mit ROMI_SUOMI=0 weg
     app/fm1.toml              Build-Einstellungen für fm1-base
+    app_suomi/                dieselbe Firmware als suom1saundi (startet im Stil SUOMI): fm1.toml, app.h, Testskript
     app/tests/basic.txt       Testskript für den Host-Simulator von fm1-base
     base/                     fm1-base als Submodul (darin felucca-bsp): Plattform, Build, Installer
     sim/                      Browser-Testseite: wasm.c, page.html, build.sh  ->  docs/index.html
@@ -216,6 +271,8 @@ Gerät, Simulator und Browser dasselbe Bild.
     sim/build.sh              # Browser-Testseite (clang mit wasm32-Target, wasm-ld, python3)
     ./build.sh --host         # Host-Simulator von fm1-base (python3, Pillow, cc)
     ./build.sh                # Firmware-Paket app/build/rominimal.fwsc (JieLi-Toolchain, AC79-SDK)
+    python3 base/tools/build.py app_suomi          # dasselbe als app_suomi/build/suom1saundi.fwsc
+    python3 base/tools/build.py app_suomi --host   # dessen Host-Simulator (tests/run_tests.sh führt ihn mit aus)
 
 Ohne eigene Toolchain: Das Paket liegt auf der Projektseite (https://g0rst.github.io/ro-MINImal/rominimal.fwsc)
 und als Artefakt `firmware` an jedem Lauf des Workflows `build` unter Actions

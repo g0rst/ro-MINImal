@@ -37,9 +37,10 @@ jobs:
           python3 -m pip install -q Pillow
       - name: Core tests
         run: sh tests/run_tests.sh
-      - name: Host simulator (fm1-base) and its test script
+      - name: Host simulator (fm1-base) and its test scripts (ro:MINImal and suom1saundi)
         run: |
           ./build.sh --host
+          python3 base/tools/build.py app_suomi --host
           sh tests/run_tests.sh
       - name: Browser test page and manual
         run: |
@@ -93,8 +94,9 @@ jobs:
         run: |
           export JIELI_TOOLCHAIN="$HOME/.jieli/toolchain" AC79_SDK="$HOME/.jieli/ac79-sdk"
           ./build.sh
-          ls -l app/build/
-          sha256sum app/build/rominimal.fwsc
+          python3 base/tools/build.py app_suomi     # the same firmware, starting as suom1saundi
+          ls -l app/build/ app_suomi/build/
+          sha256sum app/build/rominimal.fwsc app_suomi/build/suom1saundi.fwsc
       - uses: actions/upload-artifact@v4
         with:
           name: firmware
@@ -102,6 +104,14 @@ jobs:
             app/build/rominimal.fwsc
             app/build/rominimal.bin
             app/build/firmware.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-suom1saundi
+          path: |
+            app_suomi/build/suom1saundi.fwsc
+            app_suomi/build/suom1saundi.bin
+            app_suomi/build/firmware.json
           if-no-files-found: error
 
   pages:
@@ -123,6 +133,10 @@ jobs:
         with:
           name: firmware
           path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware-suom1saundi
+          path: dist-suomi
       - name: Build the site
         run: |
           set -eu
@@ -137,7 +151,9 @@ jobs:
           cp docs/manual.html _site/manual.html
           cp docs/index.html _site/testseite.html
           cp dist/rominimal.fwsc dist/firmware.json _site/
-          (cd _site && sha256sum rominimal.fwsc > SHA256SUMS)
+          cp dist-suomi/suom1saundi.fwsc _site/
+          cp dist-suomi/firmware.json _site/firmware-suom1saundi.json
+          (cd _site && sha256sum rominimal.fwsc suom1saundi.fwsc > SHA256SUMS)
           ls -l _site
       - uses: actions/upload-pages-artifact@v3
       - id: deploy

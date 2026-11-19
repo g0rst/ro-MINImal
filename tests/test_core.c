@@ -1352,6 +1352,62 @@ int main(int argc, char **argv)
         }
     }
 
+    /* the style SUOMI (GLOBAL 2, knob 3): suom1saundi's voices and rules; the bass pumps, three sixteenths after the
+     * kick or two, never on it; it plays clean; B..D from A; stored; back to ro:MINImal */
+    {
+        static uint8_t obj[ROMI_NOBJ][ROMI_OBJ_MAX];
+        uint32_t len[ROMI_NOBJ];
+        int g, k, pumping = 0, rolls = 0;
+        double peak, rms;
+        romi_init(91);
+        CHECK(romi_project()->style == ROMI_START_STYLE, "start style %d", romi_project()->style);
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        turn(ROMI_E_K3, 1);
+        CHECK(romi_project()->style == 1 && romi_project()->bpm == 145 && romi_project()->scale == 4,
+              "SUOMI: style %d bpm %d scale %d", romi_project()->style, romi_project()->bpm, romi_project()->scale);
+        CHECK(romi_project()->pat[0].tr[ROMI_SUB].sc == 127 && romi_project()->pat[0].tr[ROMI_SUB].glide == 50,
+              "SUOMI: the bass's duck %d glide %d", romi_project()->pat[0].tr[ROMI_SUB].sc, romi_project()->pat[0].tr[ROMI_SUB].glide);
+        snprintf(path, sizeof path, "%s/screen-suomi.ppm", out);
+        write_screen(path);
+        for (g = 0; g < 60; g++) {              /* NEW held: whole grooves */
+            const romi_track_t *kk, *bs;
+            int on_kick = 0, hits = 0, roll = 0;
+            held_k = 1u << 22; for (k = 0; k < 32; k++) frame(0); held_k = 0; frame(0);
+            kk = &romi_project()->pat[0].tr[ROMI_KICK]; bs = &romi_project()->pat[0].tr[ROMI_SUB];
+            for (k = 0; k < 16; k += 4)
+                CHECK(kk->step[k].flags & ROMI_ST_ON, "SUOMI groove %d: no kick on %d", g, k);
+            for (k = 0; k < 16; k++)
+                if (bs->step[k].flags & ROMI_ST_ON) {
+                    hits++;
+                    on_kick += (k & 3) == 0;
+                }
+            for (k = 0; k < 12; k += 4)
+                roll += (bs->step[k + 1].flags & ROMI_ST_ON) && (bs->step[k + 2].flags & ROMI_ST_ON) && (bs->step[k + 3].flags & ROMI_ST_ON);
+            CHECK(on_kick == 0, "SUOMI groove %d: the bass on the kick %d times", g, on_kick);
+            pumping += hits >= 8;
+            rolls += roll == 3;
+            CHECK(memcmp(&romi_project()->pat[0], &romi_project()->pat[1], sizeof romi_project()->pat[0]) &&
+                  memcmp(&romi_project()->pat[0], &romi_project()->pat[3], sizeof romi_project()->pat[0]),
+                  "SUOMI groove %d: a variation the same as A", g);
+        }
+        printf("suomi: %d of 60 grooves with a pumping bass, %d rolling (kick bass bass bass)\n", pumping, rolls);
+        CHECK(pumping >= 55 && rolls >= 25, "SUOMI: pumping %d, rolling %d of 60", pumping, rolls);
+        tap_button(ROMI_B_PLAY);
+        run(6.0, 0, &peak, &rms);
+        printf("suomi: peak %.3f rms %.3f\n", peak, rms);
+        CHECK(peak > 0.3 && peak <= 1.0 && rms > 0.05 && rms < 0.5, "SUOMI plays: peak %f rms %f", peak, rms);
+        tap_button(ROMI_B_SAVE);
+        romi_save_wanted();
+        for (k = 0; k < ROMI_NOBJ; k++) len[k] = romi_store_get(k, obj[k], sizeof obj[k]);
+        romi_init(92);
+        CHECK(romi_store_set(0, obj[0], len[0]) == 0 && romi_store_set(1, obj[1], len[1]) == 0 &&
+              romi_project()->style == 1, "SUOMI not stored: style %d", romi_project()->style);
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        turn(ROMI_E_K3, -1);
+        CHECK(romi_project()->style == 0 && romi_project()->bpm == 126, "back to ro:MINImal: style %d bpm %d",
+              romi_project()->style, romi_project()->bpm);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

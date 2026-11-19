@@ -5,9 +5,11 @@
 #include <stdint.h>
 #include "plat.h"
 
+#ifndef APP_NAME                        /* (app_suomi/app.h: the same firmware as suom1saundi) */
 #define APP_NAME "ro:MINImal"
 #define APP_TAGLINE "rominimal + microhouse"
 #define APP_SPLASH_RGB RGB(255, 98, 44)
+#endif
 #define APP_BLOCK 256u                   /* frames per audio block: 5.8 ms */
 
 /* the store: the settings, each pattern on its own (about 400 bytes packed: core/romi.c "store"), and the

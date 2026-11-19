@@ -1,0 +1,22 @@
+# suom1saundi: ro:MINImal's firmware starting in the style SUOMI (base/tools/build.py)
+name = "SUOM1SAUNDI"            # names the build's files: app_suomi/build/suom1saundi.fwsc
+title = "suom1saundi"
+id_prefix = "FM-1_48"          # package identity: dev FM-1_4800, releases FM-1_48XXYYZZ
+usb_manufacturer = "g0rst"
+usb_product = "suom1saundi FM-1"
+o2 = ["../app/core/romi.c"]    # the instrument (ro:MINImal's core): its own unit at -O2
+o2_cflags = ["-DROMI_FM1_POOL", "-DROMI_START_STYLE=1"]   # the pool; and it starts as suom1saundi
+words = "words.tsv"
+ble = false                    # no radio: nothing of JieLi's is linked
+usb_audio_in = false           # no USB audio interface: the FM-1 is MIDI only over USB
+usb_audio_out = false
+tagline = "suomisaundi groove synth (with ro:MINImal as a bonus)"
+repo = "https://github.com/g0rst/ro-MINImal"
+licence = "MIT"
+credits = "Built on fm1-base and felucca-bsp (MPL-2.0)."
+author = "g0rst"
+description = "suom1saundi: a six-voice groove synthesizer for suomisaundi, Finnish freestyle psytrance: psy kick, pumping filter bass, acid line, chip melody, FM zaps and hats with an 8-bit noise channel, on ro:MINImal's polymetric sequencer, generator and pattern variations. ro:MINImal (rominimal and microhouse) comes along as the second style."
+tags = ["groovebox", "synth", "sequencer", "generative"]
+install = "https://github.com/g0rst/ro-MINImal"
+site = "https://github.com/g0rst/ro-MINImal"
+screenshot = "docs/screen-suomi.png"
