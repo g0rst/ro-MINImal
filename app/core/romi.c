@@ -158,6 +158,8 @@ static struct {
     uint32_t arp_t;                     /* ARP pressed: when (a tap mutates, a hold fills) */
     uint32_t lfo_t;                     /* LFO pressed: when (a tap turns the pages, a hold resets the track) */
     uint8_t lfo_held;
+    romi_track_t eng_keep[ROMI_PATTERNS];   /* HARD, an engine changed: the track as it was in each pattern (undo) */
+    uint8_t eng_keep_ok, eng_keep_t;
     uint32_t fx_t;                      /* FX pressed: when (a tap turns the pages, a hold resets the effects) */
     uint8_t fx_held;
     float lfo_t0[ROMI_TRACKS];          /* where the track's LFOs were last restarted, in steps of the song */
@@ -3312,6 +3314,7 @@ static void changed(void)
 }
 static void keep_undo(void)
 {
+    R.eng_keep_ok = 0;                  /* (an engine's change in HARD: undone with the next undo only) */
     R.undo = *EDT;
     R.undo_pat = R.prj.mode ? R.prj.cur_pat : 0;
     R.undo_ok = 1;
@@ -3400,7 +3403,8 @@ static void reset_fx(int t)
     changed();
 }
 
-/* An engine turned (GROOVE 2, HOME twice): track 5 or 6 plays another engine, muted until SEL brings it in. Its sound
+/* An engine turned (GROOVE 2, HOME twice): track 5 or 6 plays another engine, muted until SEL brings it in, in all
+ * four patterns (LAZY: B..D follow A; HARD: the track is copied into the other three). Its sound
  * comes from the engine's defaults, its pattern from the engine's rules (undo brings the old one back). A sub that followed a stab that is now a
  * click follows nothing. */
 static void set_engine(int t, uint8_t was)
@@ -3412,6 +3416,16 @@ static void set_engine(int t, uint8_t was)
     engine_sound(tr, en);
     gen_track(t);
     tr->mute = 1;                       /* it comes in muted: brought in live when wanted (SEL) */
+    if (R.prj.mode) {                   /* HARD: the track changes in all four patterns, as in this one */
+        int k;
+        for (k = 0; k < ROMI_PATTERNS; k++)
+            if (&R.prj.pat[k] != EDT) {
+                R.eng_keep[k] = R.prj.pat[k].tr[t];
+                R.prj.pat[k].tr[t] = *tr;
+            }
+        R.eng_keep_t = (uint8_t)t;
+        R.eng_keep_ok = 1;
+    }
     if (en == ROMI_ENG_CLICK && EDT->tr[ROMI_SUB].follow == t + 1)
         EDT->tr[ROMI_SUB].follow = 0;
     romi_message(t == ROMI_STAB ? "TRACK 5 MUTED" : "TRACK 6 MUTED", track_name(t));
@@ -3884,6 +3898,15 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 now = *EDT;
                 *EDT = R.undo;
                 R.undo = now;           /* undo again: redo */
+                if (R.eng_keep_ok) {    /* an engine changed in HARD: the other patterns' track too */
+                    int k;
+                    for (k = 0; k < ROMI_PATTERNS; k++)
+                        if (&R.prj.pat[k] != EDT) {
+                            romi_track_t x = R.prj.pat[k].tr[R.eng_keep_t];
+                            R.prj.pat[k].tr[R.eng_keep_t] = R.eng_keep[k];
+                            R.eng_keep[k] = x;
+                        }
+                }
                 romi_message("UNDO", "");
                 changed();
             }

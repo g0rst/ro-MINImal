@@ -1672,6 +1672,33 @@ int main(int argc, char **argv)
         CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SC, "FX tapped twice: page %d", romi_state(ROMI_Q_PAGE));
     }
 
+    /* an engine changed in HARD: the track changes in all four patterns; undo takes all four back */
+    {
+        int k;
+        romi_init(141);
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        turn(ROMI_E_K1, 1);                         /* HARD */
+        turn(ROMI_E_PRESET, 2);                     /* on C */
+        tap_button(ROMI_B_HOME); tap_button(ROMI_B_HOME);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE, "GROOVE 2: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_K2, 3);                         /* track 6: NOISE */
+        for (k = 0; k < 4; k++)
+            CHECK(romi_project()->pat[k].tr[ROMI_CLICK].engine == ROMI_ENG_NOISE && romi_project()->pat[k].tr[ROMI_CLICK].mute,
+                  "HARD: pattern %c's track 6 engine %d", 'A' + k, romi_project()->pat[k].tr[ROMI_CLICK].engine);
+        tap_key(25);                                /* UNDO */
+        for (k = 0; k < 4; k++)
+            CHECK(romi_project()->pat[k].tr[ROMI_CLICK].engine == ROMI_ENG_CLICK, "undo: pattern %c engine %d", 'A' + k,
+                  romi_project()->pat[k].tr[ROMI_CLICK].engine);
+        /* LAZY: B..D follow A */
+        romi_init(142);
+        turn(ROMI_E_PRESET, 1);
+        tap_button(ROMI_B_HOME);
+        turn(ROMI_E_K1, 2);                         /* track 5: 8-BIT */
+        for (k = 0; k < 4; k++)
+            CHECK(romi_project()->pat[k].tr[ROMI_STAB].engine == ROMI_ENG_PIIP, "LAZY: pattern %c engine %d", 'A' + k,
+                  romi_project()->pat[k].tr[ROMI_STAB].engine);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

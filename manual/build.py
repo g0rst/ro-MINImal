@@ -386,16 +386,19 @@ p(T("The master, on GROOVE 2 ([[HOME]] twice): FILTER, one knob, low-pass to the
 p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each plays STAB (ro:MINImal's FM chords), CLICK "
     "(its noise grains; KLIKKI in suom1saundi) or PIIP (suom1saundi's sound chip), in either style, two of the same "
     "too; in ro:MINImal PIIP is called 8-BIT. A new engine brings its sound and a pattern in its rules and comes in muted: [[SEL]] brings it in when the "
-    "moment is right; undo brings the old one back. Live, that is a voice to swap without leaving the groove.",
+    "moment is right; undo brings the old one back. The track changes in all four patterns (in HARD the new track "
+    "is copied into the other three). Live, that is a voice to swap without leaving the groove.",
     "Die Spuren 5 und 6 sind frei: [[HOME]] zweimal, GROOVE 2, Regler 1 und 2, und jede spielt STAB (die FM-Akkorde von ro:MINImal), "
     "CLICK (seine Rauschkörner; bei suom1saundi KLIKKI) oder PIIP (der Soundchip von suom1saundi), in beiden "
     "Stilen, auch zweimal dasselbe; in ro:MINImal heißt PIIP 8-BIT. Eine neue Engine bringt ihren Klang und ein Pattern nach ihren Regeln mit und "
-    "kommt stumm dazu: [[SEL]] holt sie rein, wenn der Moment passt; Undo holt das alte zurück. Live ist das eine "
+    "kommt stumm dazu: [[SEL]] holt sie rein, wenn der Moment passt; Undo holt das alte zurück. Die Spur wechselt in "
+    "allen vier Patterns (bei HARD wird die neue Spur in die anderen drei übernommen). Live ist das eine "
     "Stimme zum Tauschen, ohne den Groove zu verlassen.",
     "Pistele 5 și 6 sunt libere: [[HOME]] de două ori, GROOVE 2, butoanele 1 și 2, și fiecare cântă STAB (acordurile FM ale lui "
     "ro:MINImal), CLICK (boabele lui de zgomot; KLIKKI în suom1saundi) sau PIIP (cipul de sunet al lui suom1saundi), "
     "în ambele stiluri, chiar de două ori același; în ro:MINImal PIIP se numește 8-BIT. Un engine nou își aduce sunetul și un pattern după regulile lui și "
-    "vine pe mut: [[SEL]] îl aduce când e momentul; undo îl aduce înapoi pe cel vechi. Live e o voce de schimbat "
+    "vine pe mut: [[SEL]] îl aduce când e momentul; undo îl aduce înapoi pe cel vechi. Pista se schimbă în toate "
+    "cele patru pattern-uri (în HARD pista nouă e copiată în celelalte trei). Live e o voce de schimbat "
     "fără să ieși din groove."))
 p(T("SLICE ([[FX]] three times) cuts up the sound of hat, percussion, stab and click; never the kick and the sub. "
     "GATE opens and shuts it on a grid from the hit (1/32 to 1/128; RANDOM 0 alternates, more shuts slices at "
