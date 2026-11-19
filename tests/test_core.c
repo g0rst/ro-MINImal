@@ -219,13 +219,13 @@ int main(int argc, char **argv)
         romi_track_t *tr = &romi_project()->pat[0].tr[ROMI_PERC];
         uint32_t n;
         int k, t2, got = 0;
-        tr->step[3].flags = 0x80 | 0x40 | 0x20 | 0x02; tr->step[3].shift = -7; tr->step[3].note = -32;
+        tr->step[3].flags = 0x80 | 0x40 | 0x02; tr->step[3].shift = -7; tr->step[3].note = -32; tr->step[3].chance = 37;
         tr->step[4].flags = 0x80; tr->step[4].shift = 7; tr->step[4].note = 31;
         n = romi_store_get(1, obj, sizeof obj);
         romi_init(42);
         CHECK(romi_store_set(1, obj, n) == 0, "limits: did not load");
         tr = &romi_project()->pat[0].tr[ROMI_PERC];
-        CHECK(tr->step[3].flags == 0xE2 && tr->step[3].shift == -7 && tr->step[3].note == -32 &&
+        CHECK(tr->step[3].flags == 0xC2 && tr->step[3].chance == 37 && tr->step[3].shift == -7 && tr->step[3].note == -32 &&
               tr->step[4].shift == 7 && tr->step[4].note == 31, "limits: %02x %d %d / %d %d", tr->step[3].flags,
               tr->step[3].shift, tr->step[3].note, tr->step[4].shift, tr->step[4].note);
         tap_button(ROMI_B_EDIT);                    /* 32 locks by hand: the kick's 16 steps, two knobs each */
@@ -316,7 +316,7 @@ int main(int argc, char **argv)
         CHECK(!(tr->step[0].flags & ROMI_ST_ON) && (tr->step[2].flags & ROMI_ST_ON), "rotate by 2");
         turn(ROMI_E_K3, -2);
         turn(ROMI_E_K4, 2);
-        CHECK(ROMI_ST_PROB(tr->step[2].flags) == 2 && (tr->step[2].flags & ROMI_ST_ACC), "chance and accent: %02x", tr->step[2].flags);
+        CHECK(ROMI_CHANCE(&tr->step[2]) == 50 && (tr->step[2].flags & ROMI_ST_ACC), "chance and accent: %d %02x", ROMI_CHANCE(&tr->step[2]), tr->step[2].flags);
     }
     tap_key(25);                                    /* UNDO */
     CHECK(romi_state(ROMI_Q_STEPS_ON) == v, "undo after euclid: %d, was %d", romi_state(ROMI_Q_STEPS_ON), v);
@@ -401,6 +401,7 @@ int main(int argc, char **argv)
         for (i = 0; i < ROMI_STEPS; i++) {
             romi_project()->pat[0].tr[ROMI_KICK].step[i].flags = (uint8_t)(i % 4 == 0 ? 0x80 : 0);
             romi_project()->pat[0].tr[ROMI_HAT].step[i].flags = 0x80;
+            romi_project()->pat[0].tr[ROMI_KICK].step[i].chance = romi_project()->pat[0].tr[ROMI_HAT].step[i].chance = 0;
         }
         romi_project()->pat[0].tr[ROMI_KICK].len = romi_project()->pat[0].tr[ROMI_HAT].len = 16;
         romi_project()->pat[0].tr[ROMI_KICK].mute = (uint8_t)(v == 1);   /* a muted source gates all the same */
@@ -1064,6 +1065,110 @@ int main(int argc, char **argv)
             printf("kick: mode %d, %d new kicks in 30 visits of C\n", mode, changes);
             CHECK(changes >= 3 && changes <= 20, "mode %d: %d new kicks in 30 visits", mode, changes);
         }
+    }
+
+    /* SLIDE and GLIDE (sub, stab): a held step's third knob runs OFF, ACC, SLIDE, ACC+SLIDE; LINK's fourth knob is
+     * the GLIDE (the sub's p3, the stab's own); a slide sounds other than a new attack; both are stored, and a
+     * version 13 pattern still loads (without them) */
+    {
+        static uint8_t obj[ROMI_OBJ_MAX], o13[ROMI_OBJ_MAX];
+        static int16_t pa[2 * 44100], pb[2 * 44100];
+        uint32_t n, m, k, t, a1, c1, diff = 0;
+        int tt;
+        romi_init(51);
+        tap_key(3);                                 /* black key 2: the SUB */
+        CHECK(romi_state(ROMI_Q_TRACK) == ROMI_SUB, "track %d", romi_state(ROMI_Q_TRACK));
+        held_k = 1u << 4; frame(0);                 /* hold step 3 */
+        turn(ROMI_E_K3, 1); turn(ROMI_E_K3, 1);     /* OFF -> ACC -> SLIDE (one step per turn) */
+        held_k = 0; frame(0); frame(0);
+        {
+            const romi_track_t *sb = &romi_project()->pat[0].tr[ROMI_SUB];
+            CHECK((sb->slide >> 2 & 1u) && (sb->step[2].flags & ROMI_ST_ON), "SLIDE on the sub's step 3: %04x", sb->slide);
+        }
+        tap_button(ROMI_B_SEQ); tap_button(ROMI_B_SEQ);   /* LINK */
+        turn(ROMI_E_K4, 3);
+        CHECK(romi_project()->pat[0].tr[ROMI_SUB].p[3] > 45, "GLIDE on LINK: sub p3 %d", romi_project()->pat[0].tr[ROMI_SUB].p[3]);
+        tap_key(10);                                /* the STAB */
+        tt = romi_project()->pat[0].tr[ROMI_STAB].glide;
+        turn(ROMI_E_K4, 2);
+        CHECK(romi_project()->pat[0].tr[ROMI_STAB].glide > tt, "GLIDE on LINK: stab %d", romi_project()->pat[0].tr[ROMI_STAB].glide);
+        /* the sound: the sub alone, steps 1 and 3, 3 sliding or not */
+        for (k = 0; k < 2; k++) {
+            romi_init(52);
+            romi_project()->drift = 0;
+            for (t = 0; t < ROMI_TRACKS; t++)
+                romi_project()->pat[0].tr[t].mute = t != ROMI_SUB;
+            {
+                romi_track_t *sb = &romi_project()->pat[0].tr[ROMI_SUB];
+                for (t = 0; t < 16; t++) sb->step[t].flags = 0;
+                sb->follow = 0;
+                sb->step[0].flags = ROMI_ST_ON; sb->step[0].note = 0;
+                sb->step[2].flags = ROMI_ST_ON; sb->step[2].note = 7;
+                sb->slide = k ? 1u << 2 : 0;
+                sb->p[3] = 0;
+            }
+            tap_button(ROMI_B_PLAY);
+            run(1.0, k ? pb : pa, 0, 0);
+        }
+        for (t = 0; t < 2 * 44100; t++) diff += pa[t] != pb[t];
+        CHECK(diff > 1000, "a slide sounds like a new attack (%u samples differ)", diff);
+        /* stored, and version 13 still loads */
+        romi_init(53);
+        romi_project()->pat[0].tr[ROMI_STAB].slide = 0x0110;
+        romi_project()->pat[0].tr[ROMI_STAB].glide = 77;
+        n = romi_store_get(1, obj, sizeof obj);
+        romi_init(54);
+        CHECK(romi_store_set(1, obj, n) == 0 && romi_project()->pat[0].tr[ROMI_STAB].slide == 0x0110 &&
+              romi_project()->pat[0].tr[ROMI_STAB].glide == 77, "slide and glide not stored");
+        /* the same object as version 13: drop each track's three bytes, new sum */
+        memcpy(o13, obj, 5); o13[3] = 13;
+        for (m = 5, k = 5, t = 0; t < ROMI_TRACKS; t++) {
+            memcpy(o13 + m, obj + k, 19 + 4 * ROMI_LFOS + 4); m += 19 + 4 * ROMI_LFOS + 4; k += 19 + 4 * ROMI_LFOS + 4 + 3;
+            {
+                uint32_t q;
+                for (q = 0; q < ROMI_STEPS; q++, k += 3) {   /* (chance 0: sure, the old bits 0) */
+                    o13[m++] = obj[k];
+                    o13[m++] = obj[k + 1];
+                }
+            }
+        }
+        memcpy(o13 + m, obj + k, n - 4 - k); m += n - 4 - k;
+        for (a1 = 1, c1 = 0, k = 0; k < m; k++) { a1 = (a1 + o13[k]) % 65521u; c1 = (c1 + a1) % 65521u; }
+        a1 = c1 << 16 | a1;
+        o13[m++] = (uint8_t)a1; o13[m++] = (uint8_t)(a1 >> 8); o13[m++] = (uint8_t)(a1 >> 16); o13[m++] = (uint8_t)(a1 >> 24);
+        romi_init(55);
+        CHECK(romi_store_set(1, o13, m) == 0, "a version 13 pattern did not load (%d)", romi_store_set(1, o13, m));
+        CHECK(romi_project()->pat[0].tr[ROMI_STAB].slide == 0 && romi_project()->pat[0].tr[ROMI_STAB].glide == 24,
+              "version 13: slide %04x glide %d", romi_project()->pat[0].tr[ROMI_STAB].slide, romi_project()->pat[0].tr[ROMI_STAB].glide);
+    }
+
+    /* the step chance, stepless: a held step's second knob, 1 % a click (x4 when fast), 1..100; it plays that often */
+    {
+        romi_track_t *tr;
+        int k, hits;
+        romi_init(61);
+        tap_key(8);                                 /* PERC */
+        tap_key(15);                                /* clear */
+        tap_key(0);                                 /* step 1 on */
+        tr = &romi_project()->pat[0].tr[ROMI_PERC];
+        held_k = 1u << 0; frame(0);
+        turn(ROMI_E_K2, -1);
+        CHECK(ROMI_CHANCE(&tr->step[0]) == 99 || ROMI_CHANCE(&tr->step[0]) == 96, "chance after one click: %d", ROMI_CHANCE(&tr->step[0]));
+        for (k = 0; k < 120; k++) turn(ROMI_E_K2, -1);
+        CHECK(ROMI_CHANCE(&tr->step[0]) == 1, "chance at the bottom: %d", ROMI_CHANCE(&tr->step[0]));
+        held_k = 0; frame(0); frame(0);
+        CHECK(tr->step[0].flags & ROMI_ST_ON, "the step went off");
+        tr->step[0].chance = 33;
+        tr->len = 1;                                /* every step is step 1 */
+        romi_project()->drift = 0;
+        tap_button(ROMI_B_PLAY);
+        hits = romi_state(ROMI_Q_HITS + ROMI_PERC);
+        for (k = 0; k < 600; k++) {
+            int g0 = romi_state(ROMI_Q_GSTEP);
+            while (romi_state(ROMI_Q_GSTEP) == g0) run(0.004, 0, 0, 0);
+        }
+        hits = romi_state(ROMI_Q_HITS + ROMI_PERC) - hits;
+        CHECK(hits > 600 * 25 / 100 && hits < 600 * 41 / 100, "chance 33 %%: %d hits in 600 steps", hits);
     }
 
     /* MIDI: channel 1 plays the kick */

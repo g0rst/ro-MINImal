@@ -33,7 +33,7 @@ enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROM
 /* step flags */
 #define ROMI_ST_ON 0x80u
 #define ROMI_ST_ACC 0x40u
-#define ROMI_ST_PROB(f) (((f) >> 4) & 3u)   /* 0: 100 %, 1: 75 %, 2: 50 %, 3: 25 % */
+#define ROMI_CHANCE(st) ((st)->chance ? (st)->chance : 100u)   /* a step's chance in %, 1..100 (0 stored: sure) */
 #define ROMI_ST_RATCH(f) (((f) & 3u) + 1u)  /* 1..4 hits within the step */
 
 typedef struct {
@@ -42,7 +42,7 @@ typedef struct {
     int8_t shift;                       /* microtiming, -7..7: sixteenths of a step early or late */
     uint8_t lock[8];                    /* a sound parameter for this step alone: 0 none, else value + 1
                                          * (0..3 the SOUND page's, 4..7 the SOUND 2 page's) */
-    uint8_t rsv;
+    uint8_t chance;                     /* 1..100 %: how likely it plays, stepless; 0 = 100 % (a plain step) */
 } romi_step_t;
 
 /* an LFO: a slow wave in time with the groove, added to one of the track's values */
@@ -71,6 +71,8 @@ typedef struct {
     int8_t tshift;                      /* microtiming of the whole track, -8..8, added to each step's shift */
     uint8_t dep_mode;                   /* 0 WITH: only on its hits; 1 GAPS: only where it is silent; 2 AFTER: a step later */
     uint8_t follow;                     /* 0 none, else track + 1 whose notes transpose this track's (its harmony) */
+    uint16_t slide;                     /* sub and stab: bit i, step i slides from the note before (no new attack) */
+    uint8_t glide;                      /* stab: 0..127, how long its chords glide when they overlap (the sub's is p3) */
     romi_lfo_t lfo[ROMI_LFOS];
 } romi_track_t;
 
@@ -105,11 +107,11 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 13u
+#define ROMI_VERSION 14u
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
                                          * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects
                                          * 2..4 load aside: the HARD patterns, back when HARD is chosen again */
-#define ROMI_OBJ_MAX 488u               /* the largest packed object, in bytes */
+#define ROMI_OBJ_MAX 600u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */

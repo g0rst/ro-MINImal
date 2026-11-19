@@ -149,9 +149,12 @@ img("groove", T("Six lanes, one per track. The selected track is marked white.",
 ul(T("A filled cell is a step that plays. A tall cell has an accent.",
      "Ein gefülltes Kästchen ist ein Step, der spielt. Ein hohes Kästchen hat einen Akzent.",
      "O celulă plină este un pas care cântă. O celulă înaltă are accent."),
-   T("The darker the cell, the lower its chance: 100, 75, 50, 25 %.",
-     "Je dunkler das Kästchen, desto geringer die Chance: 100, 75, 50, 25 %.",
-     "Cu cât celula e mai închisă, cu atât șansa e mai mică: 100, 75, 50, 25 %."),
+   T("The darker the cell, the lower its chance (stepless, 1 to 100 %). A short bar before a sub or stab cell: it "
+     "slides from the note before.",
+     "Je dunkler das Kästchen, desto geringer die Chance (stufenlos, 1 bis 100 %). Ein kurzer Strich vor einem "
+     "Sub- oder Stab-Kästchen: Es gleitet vom Ton davor.",
+     "Cu cât celula e mai închisă, cu atât șansa e mai mică (continuu, 1–100 %). O liniuță scurtă înaintea unei "
+     "celule de sub sau stab: alunecă de la nota dinainte."),
    T("A cell split by lines is a ratchet: two to four hits in one step.",
      "Ein durch Linien geteiltes Kästchen ist ein Ratchet: zwei bis vier Schläge in einem Step.",
      "O celulă împărțită de linii este un ratchet: două până la patru lovituri într-un pas."),
@@ -254,9 +257,15 @@ table(T(["hold a step and", "result"], ["step halten und", "ergebnis"], ["ține 
        T("note, up to 24 semitones up or down", "Note, bis zu 24 Halbtöne hoch oder runter",
          "nota, până la 24 de semitonuri în sus sau în jos")),
       (T("turn [[KNOB2]]", "[[KNOB2]] drehen", "rotește [[KNOB2]]"),
-       T("chance: 100, 75, 50, 25 %", "Chance: 100, 75, 50, 25 %", "șansa: 100, 75, 50, 25 %")),
+       T("chance, stepless: 1 % a click, 1 to 100 %", "Chance, stufenlos: 1 % pro Raste, 1 bis 100 %",
+         "șansa, continuu: 1 % pe treaptă, 1–100 %")),
       (T("turn [[KNOB3]]", "[[KNOB3]] drehen", "rotește [[KNOB3]]"),
-       T("accent on or off", "Akzent an oder aus", "accent pornit sau oprit")),
+       T("accent on or off; on SUB and STAB: OFF, ACC, SLIDE, ACC+SLIDE. A slide glides from the note before "
+         "without a new attack",
+         "Akzent an oder aus; bei SUB und STAB: OFF, ACC, SLIDE, ACC+SLIDE. Ein Slide gleitet vom Ton davor, ohne "
+         "neuen Anschlag",
+         "accent pornit sau oprit; la SUB și STAB: OFF, ACC, SLIDE, ACC+SLIDE. Un slide alunecă de la nota "
+         "dinainte, fără atac nou")),
       (T("turn [[KNOB4]]", "[[KNOB4]] drehen", "rotește [[KNOB4]]"),
        T("ratchet: 1 to 4 hits in the step", "Ratchet: 1 bis 4 Schläge im Step", "ratchet: 1 până la 4 lovituri în pas")),
       (T("turn [[SELECT]]", "[[SELECT]] drehen", "rotește [[SELECT]]"),
@@ -308,7 +317,7 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN", "CLOCK", "CHAIN"),
       ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "", ""),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
-      ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", ""),
+      ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", T("GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)")),
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", "", ""),
       ("[[LFO]]", "LFO 1", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"))
@@ -467,6 +476,18 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "sau cvinta, decay, sweep, click și drive mutate puțin), de la D încolo și la fel în toate pattern-urile, și "
      "în A. Rămâne așa până îl schimbi de mână sau până ce pauza din C aruncă iar zarul. O dată pe trecere prin C; "
      "în LAZY și HARD."),
+   T("Sub and stab flow: GLIDE (LINK page, fourth knob) lets a note that comes while the last one still sounds "
+     "glide there; for the sub it is the same knob as on SOUND. SLIDE on a step (hold it, third knob) binds it to "
+     "the note before: no new attack, the pitch glides over (with GLIDE at zero in 50 ms). The generator puts a "
+     "slide in now and then.",
+     "Sub und Stab fließen: GLIDE (Seite LINK, vierter Regler) lässt einen Ton, der kommt, während der letzte noch "
+     "klingt, dorthin gleiten; beim Sub ist es derselbe Wert wie auf SOUND. SLIDE auf einem Step (halten, dritter "
+     "Regler) bindet ihn an den Ton davor: kein neuer Anschlag, die Tonhöhe gleitet hinüber (bei GLIDE null in "
+     "50 ms). Der Generator setzt ab und zu einen Slide.",
+     "Sub-ul și stab-ul curg: GLIDE (pagina LINK, al patrulea buton) face ca o notă care vine cât încă sună cea "
+     "dinainte să alunece acolo; la sub e aceeași valoare ca pe SOUND. SLIDE pe un pas (ține-l, al treilea buton) "
+     "îl leagă de nota dinainte: fără atac nou, înălțimea alunecă (cu GLIDE la zero, în 50 ms). Generatorul pune "
+     "din când în când un slide."),
    T("Two modes, on GLOBAL 2 ([[GLO]] twice), MODE. LAZY is all of the above: the set grows by itself. HARD: "
      "B, C and D start as copies of A and then are yours; you edit the pattern that plays, NEW renews its track "
      "(hold: the whole pattern), all four are saved, EVOLVE stays still. Back in LAZY the HARD patterns wait aside "

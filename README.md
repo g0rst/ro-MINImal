@@ -57,8 +57,9 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 - **Die Kick ist das Raster.** Vier auf dem Boden in A und D, nichts sonst ist sicher.
 - **Jede Spur hat ihre eigene Looplänge** (1 bis 16 Steps). Percussion und Clicks laufen auf 7, 9, 11 oder 13
   Steps gegen die 16 der Kick. Der Takt wiederholt sich dadurch erst nach vielen Takten.
-- **Jeder Step hat eine Chance** (100, 75, 50, 25 %), einen Akzent, eine Note und einen Ratchet (bis zu vier
-  Schläge im Step).
+- **Jeder Step hat eine Chance** (stufenlos 1 bis 100 %), einen Akzent, eine Note und einen Ratchet (bis zu vier
+  Schläge im Step). Sub und Stab haben dazu **SLIDE** pro Step (gleitet ohne neuen Anschlag vom Ton davor) und
+  **GLIDE** pro Spur (Seite LINK, KNOB4: überlappende Töne gleiten).
 - **Swing** verschiebt jede zweite Sechzehntel (50 bis 75 %).
 - **Drift** bewegt Klangfarbe, Ausklang, Lautstärke und Mikrotiming langsam und zufällig. Die Kick bleibt
   davon im Timing unberührt.
@@ -103,7 +104,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | --- | --- |
 | PLAY | Start und Stopp |
 | 16 weiße Tasten | die Steps der gewählten Spur; tippen schaltet um |
-| weiße Taste halten + K1 / K2 / K3 / K4 | Note, Chance, Akzent, Ratchet (1 bis 4 Schläge) dieses Steps |
+| weiße Taste halten + K1 / K2 / K3 / K4 | Note, Chance (stufenlos, 1 % pro Raste), Akzent (bei SUB/STAB: OFF, ACC, SLIDE, ACC+SLIDE), Ratchet (1 bis 4 Schläge) dieses Steps |
 | weiße Taste halten + SELECT | Mikrotiming dieses Steps (bequemer auf der Seite TIMING) |
 | auf Seite EDIT: weiße Taste halten + K1 bis K4 | Parameter-Lock: der Klangwert gilt nur für diesen Step |
 | weiße Taste halten + SEL | Locks und Verschiebung dieses Steps löschen |
@@ -140,9 +141,10 @@ meldet sich nicht als Audio-Interface.
 
 ### Speicher
 
-Gespeichert werden zwei Objekte: die Einstellungen (30 Bytes, darin die Würfel für B bis D) und Pattern A
-(388 Bytes, mit 32 Locks 484 Bytes). B, C und D entstehen beim Laden daraus; ihre drei Objekte bleiben im Flash
-reserviert, werden aber nicht beschrieben. Ein Step belegt dabei 2 Bytes, Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
+Gespeichert werden im LAZY-Modus zwei Objekte: die Einstellungen (32 Bytes, darin die Würfel für B bis D, MODE
+und PLAY) und Pattern A (502 Bytes, mit 32 Locks 598 Bytes); im HARD-Modus dazu B, C und D. Ein Step belegt 3 Bytes
+(das dritte ist die stufenlose Chance), Slide und Glide 3 Bytes pro Spur. Patterns der Version 13 werden weiter
+geladen (ohne Slide, die Chance in vier Stufen übernommen). Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
 32 Locks pro Pattern (sonst „LOCKS FULL“), Verschiebung eines Steps ±7/16, Noten −32 bis +31 Halbtöne um den Grundton.
 Ein beschädigtes Objekt lässt das andere unberührt.
 
