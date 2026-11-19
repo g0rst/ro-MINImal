@@ -55,6 +55,12 @@ wie immer (jetzt beim Loslassen). Akzentfarbe Dunkelrot, Gute Nacht „DOBROU NO
 | SCREAM | Engine 8-BIT als Säge mit Vibrato | Melodie-Regeln der Engine |
 | SIREN | Engine NOISE als Riser | Riser, Downlifter oder Zischen |
 
+Klang: Die Summe läuft in FRE3tek durch einen Kompressor (schneller Attack, 150 ms Release, 1:5, aufgeholt), alles
+liegt auf einem Akkord (die SCREAM-Melodie bleibt auf den Tönen des Grundakkords, der Drone von Kick und Acid), die
+Acid-Linie bleibt meist auf Grundton, Oktave und Quinte, AIR fast aus. SIREN kommt stumm (SEL holt sie rein).
+In allen drei Stilen steht der TUNE der Kick jetzt auf Halbtonschritten: eine Kick in der Tonart sitzt auf den Cent
+genau (vorher bis zu einem Viertelton daneben, gemessen −18 Cent in FRE3tek).
+
 Last im Simulator (schlimmster Fall): 1 943 Instruktionen pro Sample, etwa wie suom1saundi (1 929); mit GRAIN auf zwei
 Spuren 2 478. Braucht die Stimmen von suom1saundi: ohne sie gebaut (ROMI_SUOMI=0) gibt es FRE3tek nicht. Eigenes
 Handbuch im Flyer-Look, Deutsch und Englisch: https://g0rst.github.io/ro-MINImal/fre3tek.html (`manual/fre3tek.py`).

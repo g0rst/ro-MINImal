@@ -7,7 +7,8 @@
  *           2 HAT    open hats on the off-beat, a sixteenth ride under them at a chance
  *           3 TRIBE  FM toms, polyrhythmic (five or seven in twelve or sixteen), root, fifth and octave
  *           4 SCREAM  PIIP as a saw with vibrato: the mental screams        5 SIREN  NOISE: risers and falls
- * 180 BPM, F phrygian. B, C, D as ever: C rolls the toms up to the bar instead of the hats alone. */
+ * 180 BPM, F phrygian. B, C, D as ever: C rolls the toms up to the bar instead of the hats alone. One chord over all of
+ * it (the drone of the kick and the acid): the scream's melody keeps to its tones. The sum through a compressor (romi.c). */
 
 static void tek_gen(romi_track_t *tr, int t, uint32_t d)
 {
@@ -22,11 +23,13 @@ static void tek_gen(romi_track_t *tr, int t, uint32_t d)
         break;
     }
     case ROMI_SUB: {                            /* ACID: sixteenths that roll, a few rests, the accent every third */
-        static const int8_t DEG[10] = {0, 0, 0, 0, 7, 4, 2, 1, -2, 3};
+        /* the root most, its octave, the fifth, the minor seventh below and the minor third; the flat second (the
+         * phrygian sting) seldom: a line that stays on the kick's drone */
+        static const int8_t DEG[12] = {0, 0, 0, 0, 0, 7, 7, 4, -1, 2, 0, 1};
         uint32_t rests = 2u + urand(3u - (d > 2 ? 2 : d)), cyc = 3u + urand(2);
         tr->len = urand(3) == 0 ? 12 : 16;
         for (i = 0; i < tr->len; i++) {
-            int deg = (i & 3u) == 0u ? 0 : DEG[urand(10)];
+            int deg = (i & 3u) == 0u ? 0 : DEG[urand(12)];
             set_step(tr, i, i % cyc == 0u, (i & 1u) && urand(5) == 0 ? 1 : 0, scale_note(deg));
             if (i && urand(5) == 0)
                 tr->slide |= (uint16_t)(1u << i);
@@ -58,10 +61,10 @@ static void tek_gen(romi_track_t *tr, int t, uint32_t d)
                     n++;
                 }
         }
-        tr->p[0] = near(50, 12);                /* decay */
-        tr->p[1] = near(18, 10);                /* fm: little, a skin */
+        tr->p[0] = near(44, 10);                /* decay */
+        tr->p[1] = near(14, 8);                 /* fm: little, a skin */
         tr->p[2] = (uint8_t)(urand(2) * 16u + 4u);   /* ratio: the tom's */
-        tr->p[3] = near(70, 16);                /* bend: the drop of a tom */
+        tr->p[3] = near(60, 12);                /* bend: the drop of a tom */
         break;
     }
     default:
@@ -74,10 +77,10 @@ static void tek_defaults(romi_pattern_t *p)
 {
     static const uint8_t DEF[4][9] = {
         /* p0   p1   p2   p3 level pan  dly  rev  q1 */
-        {  44,  92,  50, 100,  96,  64,   0,   0,  70},   /* KICK: TUNE DECAY (the tail) SWEEP DRIVE (q1 CLICK) */
-        {  50, 100,  80,  40,  92,  64,  40,  10,  20},   /* ACID: CUTOFF RESO ENVMOD DECAY (q1 WAVE: saw) */
-        {  36,  80,  90,  80,  80,  76,  10,  20,   0},   /* HAT: DECAY TONE METAL OPEN (q1 CHIP) */
-        {  50,  18,   8,  70,  84,  40,  20,  40,  64},   /* TRIBE: DECAY FM RATIO BEND (q1 B.TIME) */
+        {  44,  84,  28,  70, 100,  64,   0,   0,  60},   /* KICK: TUNE DECAY (the tail) SWEEP DRIVE (q1 CLICK) */
+        {  60,  80,  64,  48,  90,  64,  34,   8,  30},   /* ACID: CUTOFF RESO ENVMOD DECAY (q1 WAVE): the mids */
+        {  28,  66,  58,  44,  54,  76,   8,  14,   0},   /* HAT: DECAY TONE METAL OPEN (q1 CHIP): less fizz */
+        {  44,  14,   8,  60,  70,  40,  16,  30,  64},   /* TRIBE: DECAY FM RATIO BEND (q1 B.TIME) */
     };
     static const uint8_t SC[4] = {0, 100, 60, 60};
     int t, i;
@@ -106,8 +109,8 @@ static void tek_engines(romi_pattern_t *p)
     s->p[0] = 86;                               /* WAVE: SAW */
     s->p[1] = 60;
     s->p[2] = 0;                                /* no arpeggio */
-    s->p[3] = 90;                               /* VIBRATO: the scream */
-    s->level = 66;
+    s->p[3] = 34;                               /* VIBRATO: the scream, still in tune */
+    s->level = 54;                              /* the scream plays (the mids), the siren comes in by hand (SEL) */
     s->dly = 60;
     s->rev = 50;
     n->p[0] = NLEN_V(5);                        /* a bar */
@@ -115,5 +118,6 @@ static void tek_engines(romi_pattern_t *p)
     n->p[2] = 60;
     n->p[3] = 70;
     n->q[1] = 127;                              /* swelling to the end */
-    n->level = 70;
+    n->level = 62;
+    n->mute = 1;
 }

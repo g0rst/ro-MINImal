@@ -166,7 +166,7 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
     switch (t) {
     case ROMI_KICK: {                   /* TUNE DECAY SWEEP DRIVE | SNAP CLICK HOLD BODY */
         float g = 1.0f + (float)s[3] * (6.0f / 127.0f);
-        SU.kick.f0 = pmap((float)s[0], 36.0f, 1.0f) * semis((float)note);
+        SU.kick.f0 = in_tune(pmap((float)s[0], 36.0f, 1.0f)) * semis((float)note);
         SU.kick.ac = decay_coef(pmap(drifted(t, 0, s[1]), 0.04f, 3.2f));
         SU.kick.pd = (float)s[2] * (40.0f / 127.0f);
         SU.kick.pc = decay_coef(pmap((float)s[4], 0.004f, 3.5f));

@@ -58,6 +58,17 @@ static float fexp2(float x)
 }
 
 static float note_hz(float note) { return 440.0f * fexp2((note - 69.0f) * (1.0f / 12.0f)); }
+/* a frequency on the nearest note of the equal-tempered scale: the kicks' TUNE in semitone steps, so a kick put in
+ * the key sits there to the cent (the bass and the acid are notes; a kick a quarter-tone beside them beats) */
+static float in_tune(float hz)
+{
+    float n = 12.0f, f = note_hz(n);
+    while (f * 1.0293022f < hz && n < 120.0f) {   /* (the half-semitone up: 2^(1/24)) */
+        n += 1.0f;
+        f = note_hz(n);
+    }
+    return f;
+}
 /* the per-sample factor of a decay with time constant tau seconds */
 static float decay_coef(float tau) { return fexp2(-1.442695f * INV_SR / tau); }
 /* 0..127 on an exponential scale from lo to lo * 2^octaves */
@@ -185,6 +196,7 @@ static struct {
     uint8_t jg_mode;
     volatile uint8_t mus_on;            /* the music: 0 fades out with the picture (the show), 1 back with the fade */
     float mus_g;                        /* where it is, 0..1 */
+    float cmp_env;                      /* FRE3tek's compressor: the level it follows */
     uint32_t jg_n, jg_rng;
     float jg_ph;
     uint32_t sv_hits[ROMI_TRACKS];      /* hits seen: they light the dots, the kick's swell the name */
@@ -464,7 +476,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     switch (t) {
     case ROMI_KICK: {
         float g = 1.0f + (float)p[3] * (5.0f / 127.0f);
-        R.kick.f0 = pmap((float)p[0], 36.0f, 1.0f) * fexp2((float)note * (1.0f / 12.0f));
+        R.kick.f0 = in_tune(pmap((float)p[0], 36.0f, 1.0f)) * fexp2((float)note * (1.0f / 12.0f));
         R.kick.ac = decay_coef(pmap(drifted(t, 0, p[1]), 0.05f, 3.0f));
         R.kick.pd = drifted(t, 1, p[2]) * (7.0f / 127.0f);
         R.kick.pc = decay_coef(pmap((float)q[2], 0.006f, 3.0f));   /* SOUND 2: P.TIME */
@@ -1469,6 +1481,15 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         r += dly_r + rr * duck;
         if (mmode || R.prj.bass || R.prj.air || R.br_on >= 0 || R.br_x > 0.0f)
             master_run(&l, &r, mf, mq, mmode);
+        if (TEK) {                      /* FRE3tek: the sum glued as on a rig, a compressor: fast attack, 150 ms
+                                         * release, above the threshold 1:4, made up */
+            float pk = l > 0.0f ? l : -l, pr = r > 0.0f ? r : -r, g;
+            pk = pk > pr ? pk : pr;
+            R.cmp_env += (pk - R.cmp_env) * (pk > R.cmp_env ? 0.02f : 0.00015f);
+            g = R.cmp_env > 0.32f ? (0.32f + (R.cmp_env - 0.32f) * 0.2f) / R.cmp_env : 1.0f;
+            l *= g * 1.6f;
+            r *= g * 1.6f;
+        }
         if (R.mus_on ? R.mus_g < 1.0f : R.mus_g > 0.0f) {   /* the show: the music out with the picture (0.3 s),
                                                                  * back with the fade (0.3 s) */
             R.mus_g += R.mus_on ? 1.0f / (0.3f * (float)ROMI_SR) : -1.0f / (0.3f * (float)ROMI_SR);
@@ -1630,7 +1651,7 @@ static uint8_t near(int v, int spread)
 /* the kick's note that puts its fundamental on the key's root (a pitch class), a fifth up or down at most */
 static int kick_in_key(const romi_track_t *tr, int shift)
 {
-    float f0 = pmap((float)tr->p[0], 36.0f, 1.0f) * fexp2(((float)tr->q[0] - 24.0f) * (1.0f / 12.0f));
+    float f0 = in_tune(pmap((float)tr->p[0], 36.0f, 1.0f)) * fexp2(((float)tr->q[0] - 24.0f) * (1.0f / 12.0f));
     float fr = note_hz((float)(R.prj.root + shift)), best = 9.0f;
     int n, pick = 0;
     for (n = -6; n <= 5; n++) {
@@ -2722,6 +2743,7 @@ static void prj_style_defaults(void)
     romi_project_t *p = &R.prj;
     p->sc_src = ROMI_KICK;
     p->dly_time = 2;
+    p->air = 40;                        /* a little presence and air (+2.4 dB): the hats and the clicks forward */
     if (TEK) {                          /* FRE3tek: 180 BPM, straight, F phrygian, the kick is the bass */
         p->bpm = 180;
         p->swing = 50;
@@ -2733,6 +2755,7 @@ static void prj_style_defaults(void)
         p->dly_fb = 50;
         p->rev_size = 40;
         p->rev_damp = 80;
+        p->air = 8;                     /* hardly any air: the hats fizz enough */
     } else if (STYLE) {                 /* suom1saundi: 145 BPM, straight, F# phrygian dominant, the bass pumping */
         p->bpm = 145;
         p->swing = 50;
@@ -2781,7 +2804,6 @@ void romi_init(uint32_t seed)
     R.prj.clock_out = 1;
     R.prj.filter = 64;                  /* the master filter off, no bass shelf */
     R.prj.bass = 0;
-    R.prj.air = 40;                     /* a little presence and air (+2.4 dB): the hats and the clicks forward */
     R.br_req = R.br_on = -1;
     R.prj.cur_pat = 0;                  /* A, and B..D made from it */
     pattern_defaults(BASE);
