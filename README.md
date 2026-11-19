@@ -239,11 +239,11 @@ meldet sich nicht als Audio-Interface.
 
 | | belegt | verfügbar | Anteil |
 |---|---|---|---|
-| Firmware-Image (Flash) | 120 336 B | 581 564 B (App-Slot) | 21 % |
-| RAM .data + .bss | 34 312 B | 98 304 B | 35 % |
-| RAM-Pool (Delay, Reverb, fm1-base) | 118 980 B | 344 064 B | 35 % |
+| Firmware-Image (Flash) | 165 100 B | 581 564 B (App-Slot) | 28 % |
+| RAM .data + .bss | 42 348 B | 98 304 B | 43 % |
+| RAM-Pool (Delay, Reverb, Beat Repeat, GRAIN, fm1-base) | 302 276 B | 344 064 B | 88 % |
 | RAM-Code (.ram_text) | 5 100 B | 32 768 B | 16 % |
-| Speicherfenster 0xB1000–0xBAFFF | höchstens 3 145 B (Einstellungen 33 B, A–D je bis 778 B) | 40 960 B | 8 % |
+| Speicherfenster 0xB1000–0xBAFFF | höchstens 3 149 B (Einstellungen 37 B, A–D je bis 778 B) | 40 960 B | 8 % |
 
 Last des Renderers: Instruktionen pro Sample mit callgrind gezählt (x86-64, -O2, wie der Core gebaut wird), auf
 den AC79 (Kern r3, 360 MHz, Single-Precision-FPU) umgerechnet mit Faktor 1,6 bis 3,0 (mehr Instruktionen auf
@@ -252,11 +252,11 @@ einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Fla
 | Fall | Instr./Sample | Last (1,6 / 2,2 / 3,0) |
 |---|---|---|
 | alle Spuren stumm (Delay, Reverb, Mix, Sequencer, LFOs) | 995 | 20 / 27 / 37 % |
-| typischer Groove | 1 397 | 27 / 38 / 51 % |
-| schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends | 1 648 | 32 / 44 / 61 % |
+| typischer Groove (Stand Nov. 2026: Stab mit stehender FM, AIR an) | 1 567 | 31 / 42 / 58 % |
+| schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends, alle Verknüpfungen, FILTER, BASS, AIR | 1 834 | 36 / 49 / 67 % |
 | dazu alle Verknüpfungen (ACCENT, RESTART, ENV auf Pegel/Klang, Bedingungen) | 1 638 | 32 / 44 / 60 % |
 | suom1saundi, schlimmster Fall | 1 750 | 34 / 47 / 64 % |
-| suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 230 | 44 / 60 / 82 % |
+| suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 230 (geschätzt heute ~2 420) | 44 / 60 / 82 % (heute ~47 / 65 / 89 %) |
 
 SLICE: GATE kostet fast nichts, STUTTER wenig, GRAIN etwa 170 Instruktionen pro Sample und Spur. Deshalb höchstens
 zwei Spuren mit GRAIN, und GRAIN ist nach suom1saundi das Erste, was rausfliegt, wenn es am Gerät eng wird.
