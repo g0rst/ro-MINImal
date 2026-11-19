@@ -38,11 +38,11 @@ def _rows(block):
 
 
 def facts():
-    romi, gen = _src("romi.c"), _src("suomi_gen.inc")
-    tracks = _strings(_block(romi, "TRACK_NAMES[2][ROMI_TRACKS] ="))
-    engines = _strings(_block(romi, "ENG_NAMES[2][ROMI_NENG] ="))
-    sound = _strings(_block(romi, "SOUND_NAMES[2][ROMI_TRACKS][4] ="))
-    sound2 = _strings(_block(romi, "SOUND2_NAMES[2][ROMI_TRACKS][4] ="))
+    romi, gen, tek = _src("romi.c"), _src("suomi_gen.inc"), _src("tek_gen.inc")
+    tracks = _strings(_block(romi, "TRACK_NAMES[3][ROMI_TRACKS] ="))
+    engines = _strings(_block(romi, "ENG_NAMES[3][ROMI_NENG] ="))
+    sound = _strings(_block(romi, "SOUND_NAMES[3][ROMI_TRACKS][4] ="))
+    sound2 = _strings(_block(romi, "SOUND2_NAMES[3][ROMI_TRACKS][4] ="))
     eng_sound = _strings(_block(romi, "ENG_SOUND[ROMI_NENG][2][4] ="))
     pages = _strings(_block(romi, "PAGE_NAME[ROMI_NPAGES] ="))
     romi_def = _rows(_block(romi, "static const uint8_t DEF[ROMI_TRACKS][8] ="))
@@ -50,12 +50,16 @@ def facts():
     eng_def = _rows(_block(romi, "static const uint8_t D[ROMI_NENG][13] ="))
     su_def = _rows(_block(gen, "static const uint8_t DEF[ROMI_TRACKS][9] ="))
     su_glide = _rows(_block(gen, "static const uint8_t GLIDE[ROMI_TRACKS] ="))[0]
+    tek_def = _rows(_block(tek, "static const uint8_t DEF[4][9] ="))
+    tek_sc = _rows(_block(tek, "static const uint8_t SC[4] ="))[0]
     scales = re.findall(r"/\*\s*([a-z ]+?)(?::[^*]*)?\s*\*/", _block(romi, "static const uint8_t SCALES[NSCALES][7] ="))
     style = {}
-    m = re.search(r"if \(STYLE\) \{\s*/\*[^*]*\*/(.*?)\} else \{(.*?)\}", _block(romi, "static void prj_style_defaults(void)"), re.S)
-    for k, part in (("suomi", m.group(1)), ("romi", m.group(2))):
+    m = re.search(r"if \(TEK\) \{\s*/\*[^*]*\*/(.*?)\} else if \(STYLE\) \{\s*/\*[^*]*\*/(.*?)\} else \{(.*?)\}",
+                  _block(romi, "static void prj_style_defaults(void)"), re.S)
+    for k, part in (("tek", m.group(1)), ("suomi", m.group(2)), ("romi", m.group(3))):
         style[k] = {a: int(b) for a, b in re.findall(r"p->(\w+)\s*=\s*(\d+);", part)}
-    n = len(tracks) // 2
+    n = 6
+    S = ("romi", "suomi", "tek")
     try:
         rev = subprocess.run(["git", "-C", str(ROOT), "log", "-1", "--format=%h %cs"], capture_output=True,
                              text=True, check=True).stdout.split()
@@ -63,10 +67,11 @@ def facts():
         rev = ["", ""]
     store = int(re.search(r"#define ROMI_VERSION (\d+)u", _src("romi.h")).group(1))
     return {
-        "tracks": {"romi": tracks[:n], "suomi": tracks[n:]},
-        "engines": {"romi": engines[:4], "suomi": engines[4:]},
-        "sound": {"romi": [sound[i * 4:i * 4 + 4] for i in range(n)], "suomi": [sound[(n + i) * 4:(n + i) * 4 + 4] for i in range(n)]},
-        "sound2": {"romi": [sound2[i * 4:i * 4 + 4] for i in range(n)], "suomi": [sound2[(n + i) * 4:(n + i) * 4 + 4] for i in range(n)]},
+        "tracks": {k: tracks[j * n:(j + 1) * n] for j, k in enumerate(S)},
+        "engines": {k: engines[j * 4:(j + 1) * 4] for j, k in enumerate(S)},
+        "sound": {k: [sound[(j * n + i) * 4:(j * n + i) * 4 + 4] for i in range(n)] for j, k in enumerate(S)},
+        "sound2": {k: [sound2[(j * n + i) * 4:(j * n + i) * 4 + 4] for i in range(n)] for j, k in enumerate(S)},
+        "tek_def": tek_def, "tek_sc": tek_sc,
         "eng_sound": [[eng_sound[e * 8:e * 8 + 4], eng_sound[e * 8 + 4:e * 8 + 8]] for e in range(len(eng_sound) // 8)],
         "pages": pages,
         "romi_def": romi_def, "romi_q": romi_q, "eng_def": eng_def,

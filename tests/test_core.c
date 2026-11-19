@@ -1486,6 +1486,57 @@ int main(int argc, char **argv)
         CHECK(!romi_state(ROMI_Q_NIGHT) && !romi_state(ROMI_Q_PLAYING), "woken: night %d", romi_state(ROMI_Q_NIGHT));
     }
 
+    /* FRE3tek (HOME held 2 s): the tube collapses, a wall of speakers pumps, the name slams in; free tekno at 180,
+     * F phrygian, KICK ACID HAT TRIBE SCREECH SIREN; HOME held again goes back where it came from. A tap on HOME
+     * still turns its pages, a shorter hold nothing */
+    {
+        int k, f, i, kicks = 0, acid = 0;
+        double peak, rms;
+        romi_init(150);
+        frame(0);
+        tap_key(3);                                 /* (the intro away) */
+        tap_button(ROMI_B_HOME);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE && !romi_state(ROMI_Q_UFO), "HOME tap: page %d",
+              romi_state(ROMI_Q_PAGE));
+        tap_button(ROMI_B_HOME);
+        held_b |= 1u << ROMI_B_HOME;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_HOME);
+        CHECK(romi_state(ROMI_Q_UFO) == 3, "HOME held: no FRE3tek show (%d)", romi_state(ROMI_Q_UFO));
+        for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) {
+            frame(0);
+            if (f == 30 || f == 60 || f == 82 || f == 95) {
+                snprintf(path, sizeof path, "%s/screen-tek-%03d.ppm", out, f);
+                write_screen(path);
+            }
+        }
+        CHECK(romi_project()->style == 2 && romi_project()->bpm == 180 && romi_project()->scale == 2,
+              "FRE3tek: style %d bpm %d scale %d", romi_project()->style, romi_project()->bpm, romi_project()->scale);
+        for (k = 0; k < 40; k++) frame(0);
+        snprintf(path, sizeof path, "%s/screen-tek.ppm", out);
+        write_screen(path);
+        {
+            const romi_pattern_t *a = &romi_project()->pat[0];
+            for (i = 0; i < 16; i++) {
+                kicks += (a->tr[ROMI_KICK].step[i].flags & ROMI_ST_ON) && (i & 3) == 0;
+                acid += (a->tr[ROMI_SUB].step[i].flags & ROMI_ST_ON) != 0;
+            }
+            CHECK(kicks == 4 && acid >= 8, "FRE3tek: %d kicks on the beats, %d acid steps", kicks, acid);
+            CHECK(a->tr[ROMI_CLICK].engine == ROMI_ENG_NOISE && a->tr[ROMI_STAB].engine == ROMI_ENG_PIIP,
+                  "FRE3tek engines: %d %d", a->tr[ROMI_STAB].engine, a->tr[ROMI_CLICK].engine);
+        }
+        tap_button(ROMI_B_PLAY);
+        run(4.0, 0, &peak, &rms);
+        printf("fre3tek: peak %.3f rms %.3f\n", peak, rms);
+        CHECK(peak > 0.2 && peak < 1.01 && rms > 0.03, "FRE3tek sound: peak %g rms %g", peak, rms);
+        held_b |= 1u << ROMI_B_HOME;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_HOME);
+        CHECK(romi_state(ROMI_Q_UFO) == 2, "HOME held in FRE3tek: back with the fly-in (%d)", romi_state(ROMI_Q_UFO));
+        for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) frame(0);
+        CHECK(romi_project()->style == 0, "back from FRE3tek: style %d", romi_project()->style);
+    }
+
     /* the style SUOMI (GLO held 2 s): suom1saundi's voices and rules; the bass pumps, three sixteenths after the
      * kick or two, never on it; it plays clean; B..D from A; stored; back to ro:MINImal */
     {

@@ -147,10 +147,12 @@ jobs:
           sh sim/build.sh
           python3 manual/build.py
           python3 manual/suomi.py
+          python3 manual/fre3tek.py
           mkdir -p _site
           cp site/index.html _site/
           cp docs/manual.html _site/manual.html
           cp docs/suomi.html _site/suomi.html
+          cp docs/fre3tek.html _site/fre3tek.html
           cp docs/index.html _site/testseite.html
           cp dist/rominimal.fwsc dist/firmware.json _site/
           cp dist-suomi/suom1saundi.fwsc _site/

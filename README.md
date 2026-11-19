@@ -39,6 +39,26 @@ Firmware-Bank und keinen Recovery-Taster; neuere Hardware-Revisionen (M-VAVE-Log
 manche Custom-Firmwares nicht. Vorher auf die offizielle V15 gehen, Daten sichern und wissen, wie man
 zurückkommt (Installer von fm1-base, `base/README.md`).
 
+## Dritter Stil: FRE3tek (HOME 2 s halten)
+
+**FRE3tek** ist Free Tekno: Acid, Mental, Tribe, 180 BPM, F phrygisch. **HOME 2 Sekunden halten** schaltet hinein
+(Röhre zieht sich zusammen, eine Pixel-Boxenwand pumpt viermal im Takt, der Name knallt rein, die 3 in Dunkelrot, vier
+Tekno-Kicks als Jingle); nochmal 2 s halten führt zurück in den Stil, aus dem man kam. Ein kurzer Tipp auf HOME blättert
+wie immer (jetzt beim Loslassen). Akzentfarbe Dunkelrot, Gute Nacht „DOBROU NOC“.
+
+| Spur | Stimme | Regeln |
+|---|---|---|
+| KICK | Kick von suom1saundi, lange tonale Fahne, viel Drive: die Kick ist der Bass | jede Viertel, gestimmt; manchmal ein Doppel vor dem Takt |
+| ACID | Acid-Stimme von suom1saundi, eine Oktave höher, ohne Sub | rollende Sechzehntel, Akzent alle 3–4 Steps gegen die Vier, Slides, Loop 16 oder 12 |
+| HAT | HATTU | offen auf jedem Offbeat, Ride mit 25/50 % |
+| TRIBE | FM-Percussion von ro:MINImal als Toms | Euclid 5 oder 7 in 12/16, fallend Oktave–Quinte–Grundton |
+| SCREAM | Engine 8-BIT als Säge mit Vibrato | Melodie-Regeln der Engine |
+| SIREN | Engine NOISE als Riser | Riser, Downlifter oder Zischen |
+
+Last im Simulator (schlimmster Fall): 1 943 Instruktionen pro Sample, etwa wie suom1saundi (1 929); mit GRAIN auf zwei
+Spuren 2 478. Braucht die Stimmen von suom1saundi: ohne sie gebaut (ROMI_SUOMI=0) gibt es FRE3tek nicht. Eigenes
+Handbuch im Flyer-Look, Deutsch und Englisch: https://g0rst.github.io/ro-MINImal/fre3tek.html (`manual/fre3tek.py`).
+
 ## Zwei Stile, zwei Firmwares: ro:MINImal und suom1saundi
 
 Derselbe Kern kann zwei Stile: **ro:MINImal** (Rominimal, Microhouse) und **suom1saundi** (Suomisaundi, finnischer

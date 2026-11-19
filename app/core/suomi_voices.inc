@@ -182,8 +182,9 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
         SU.kick.vel = vel;
         break;
     }
-    case ROMI_SUB:
-        acid_trig(&SU.basso, t, s, note_hz(root + (float)note), vel, acc, slide, 1);
+    case ROMI_SUB:                      /* (FRE3tek: its ACID, an octave up, accented as HAPPO) */
+        acid_trig(&SU.basso, t, s, note_hz(root + (R.prj.style == 2 ? 12.0f : 0.0f) + (float)note), vel, acc, slide,
+                  R.prj.style != 2);
         break;
     case ROMI_HAT: {                    /* DECAY TONE METAL OPEN | CHIP SHAKE SPREAD CUT */
         float open = acc ? 1.0f + (float)s[3] * (7.0f / 127.0f) : 1.0f;
