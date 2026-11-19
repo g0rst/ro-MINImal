@@ -174,6 +174,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
+| FX ein drittes Mal | Seite SLICE (Hat, Perc, Stab, Click; nicht Kick und Sub): K1 MODE OFF, GATE (Raster 1/32 bis 1/128, an und aus), STUTTER (das erste Stück des Schlags immer wieder), GRAIN (Granular light: zwei Körner aus den letzten 186 ms der Spur); K2 RATE (Rastergröße, Stück- oder Korngröße), K3 RANDOM (Zufall: welche Stücke, rückwärts, Oktave, wo), K4 MIX. GRAIN auf höchstens zwei Spuren |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik, Phrygisch-dominant, Harmonisch Moll), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
 | GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns); PLAY LOOP, A-D oder RANDOM; STYLE ROMI oder SUOM1 (neuer Groove im Stil) |
 | SEL | kurz: Spur stumm; halten: Solo (beim Loslassen) |
@@ -204,7 +205,7 @@ meldet sich nicht als Audio-Interface.
 | RAM .data + .bss | 34 312 B | 98 304 B | 35 % |
 | RAM-Pool (Delay, Reverb, fm1-base) | 118 980 B | 344 064 B | 35 % |
 | RAM-Code (.ram_text) | 5 100 B | 32 768 B | 16 % |
-| Speicherfenster 0xB1000–0xBAFFF | höchstens 2 934 B (Einstellungen 32 B, A–D je bis 724 B) | 40 960 B | 7 % |
+| Speicherfenster 0xB1000–0xBAFFF | höchstens 3 025 B (Einstellungen 33 B, A–D je bis 748 B) | 40 960 B | 7 % |
 
 Last des Renderers: Instruktionen pro Sample mit callgrind gezählt (x86-64, -O2, wie der Core gebaut wird), auf
 den AC79 (Kern r3, 360 MHz, Single-Precision-FPU) umgerechnet mit Faktor 1,6 bis 3,0 (mehr Instruktionen auf
@@ -216,7 +217,11 @@ einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Fla
 | typischer Groove | 1 397 | 27 / 38 / 51 % |
 | schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends | 1 648 | 32 / 44 / 61 % |
 | dazu alle Verknüpfungen (ACCENT, RESTART, ENV auf Pegel/Klang, Bedingungen) | 1 638 | 32 / 44 / 60 % |
+| suom1saundi, schlimmster Fall | 1 704 | 33 / 46 / 63 % |
+| suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 199 | 43 / 59 / 81 % |
 
+SLICE: GATE kostet fast nichts, STUTTER wenig, GRAIN etwa 170 Instruktionen pro Sample und Spur. Deshalb höchstens
+zwei Spuren mit GRAIN, und GRAIN ist nach suom1saundi das Erste, was rausfliegt, wenn es am Gerät eng wird.
 Die Verknüpfungen kosten fast nichts: ACCENT und Bedingungen werden einmal pro Step entschieden, RESTART ist eine
 Zahl pro Step, ENV liest die Hüllkurve, die die Stimme ohnehin hat; nur ein ENV auf Pegel, Pan oder Sends rampt
 seine vier Mixwerte pro Sample (höchstens etwa 25 Instruktionen).
@@ -230,7 +235,7 @@ Der echte Wert kommt am Gerät aus `plat_cpu_pct`.
 ### Speicher
 
 Gespeichert werden im LAZY-Modus zwei Objekte: die Einstellungen (32 Bytes, darin die Würfel für B bis D, MODE
-und PLAY) und Pattern A (628 Bytes, mit 32 Locks 724 Bytes); im HARD-Modus dazu B, C und D. Ein Step belegt 4 Bytes
+und PLAY) und Pattern A (652 Bytes, mit 32 Locks 748 Bytes); im HARD-Modus dazu B, C und D. Ein Step belegt 4 Bytes
 (Chance und Trig-Bedingung), Slide, Glide und die Verknüpfungen 8 Bytes pro Spur. Patterns der Versionen 13 und 14 werden weiter
 geladen (ohne Slide, die Chance in vier Stufen übernommen). Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
 32 Locks pro Pattern (sonst „LOCKS FULL“), Verschiebung eines Steps ±7/16, Noten −32 bis +31 Halbtöne um den Grundton.

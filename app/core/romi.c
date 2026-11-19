@@ -295,6 +295,8 @@ static void bus_update(int t)
 #include "suomi_voices.inc"
 #endif
 
+static void slice_hit(int t);
+
 /* lock: the step's own values for the four sound parameters (0: the track's), or NULL */
 static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
 {
@@ -332,6 +334,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
         sh->levels = q[3] ? fexp2(12.0f - (float)q[3] * (10.0f / 127.0f)) : 0.0f;
     }
     bus_update(t);
+    slice_hit(t);
     R.flash[t] = 1;
     R.last_note[t] = (int8_t)note;
     if (t == (int)R.prj.sc_src)
@@ -723,9 +726,158 @@ static void tq_push(int t, int note, int vel)   /* main loop */
 }
 
 /* ---------------------------------------------------------------- render --- */
+/* ---- SLICE: hat, percussion, stab and click cut up after their sound (FX three times) ----
+ * GATE     the track's sound opened and shut on a grid from its hit: 1/32 to 1/128; RANDOM 0 alternates, more
+ *          shuts slices at random. No memory.
+ * STUTTER  the hit's first slice (1/16 to 1/128) recorded, then played again and again until the next hit, each
+ *          time fainter; RANDOM turns some round, an octave up, or silent.
+ * GRAIN    granular light: the track's last 186 ms always recorded; two grains, half a grain apart, play pieces of
+ *          it (10 to 90 ms, a soft window), each from somewhere else; RANDOM spreads where, an octave up or down,
+ *          backwards.
+ * MIX dry to sliced. Kick and sub are never sliced (the grid and the pump). GRAIN is the first to go should the
+ * FM-1 run short of time (about 40 instructions a sample a track). */
+#define SL_FIRST ROMI_HAT
+#define SL_N (ROMI_TRACKS - SL_FIRST)
+#define SL_LEN 8192u                    /* 186 ms a track, int16 */
+#define SL_GRAINS_MAX 2                 /* GRAIN on two tracks at most (each about 170 instructions a sample) */
+static int16_t sl_buf[SL_N][SL_LEN] POOL;
+static struct {
+    uint32_t w, cnt, start, gc, sc, sn, sp;   /* gc: the grains' clock (grain 1 half a grain after grain 0);
+                                         * sc: samples to GATE's next slice, sn: its number; sp: STUTTER's place */
+    uint32_t L;                         /* this block's slice or grain length */
+    float invL;
+    float g, gt, gain;
+    int dir, oct, mute;
+    struct { uint32_t pos; int32_t inc; } gr[2];   /* (16.16 fixed point: the buffer's place, the step) */
+    uint32_t quiet;                     /* samples the track has been silent: a silent buffer is not read */
+} SL[SL_N];
+static const uint8_t SL_GATE_DIV[5] = {2, 3, 4, 6, 8};      /* slices a step: 1/32, 1/48, 1/64, 1/96, 1/128 */
+static const uint8_t SL_STUT_DIV[6] = {1, 2, 3, 4, 6, 8};   /* 1/16 .. 1/128 */
+static uint32_t sl_len(const romi_track_t *tr, float slen)   /* a slice's or a grain's length, samples */
+{
+    float l;
+    if (tr->sl_mode == 1)
+        l = slen / (float)SL_GATE_DIV[tr->sl_rate * 5 / 128];
+    else if (tr->sl_mode == 2)
+        l = slen / (float)SL_STUT_DIV[tr->sl_rate * 6 / 128];
+    else
+        l = 4000.0f * fexp2(-(float)tr->sl_rate * (3.32f / 127.0f));   /* 90 ms .. 9 ms */
+    return l < 64.0f ? 64u : l > (float)(SL_LEN / 2u - 8u) ? SL_LEN / 2u - 8u : (uint32_t)l;
+}
+static void slice_hit(int t)            /* the track hit: its slices start over */
+{
+    if (t >= SL_FIRST) {
+        int k = t - SL_FIRST;
+        SL[k].cnt = 0;
+        SL[k].start = SL[k].w;
+        SL[k].gt = 1.0f;
+        SL[k].gain = 1.0f;
+        SL[k].sc = SL[k].L;
+        SL[k].sn = 0;
+        SL[k].sp = 0;
+    }
+}
+static inline float sl_read(int k, uint32_t pos)   /* the buffer at a place in 16.16 fixed point */
+{
+    uint32_t i = pos >> 16 & (SL_LEN - 1u), j = (i + 1u) & (SL_LEN - 1u);
+    int32_t a = sl_buf[k][i], d = (int32_t)sl_buf[k][j] - a;
+    return ((float)a + (float)d * (float)(pos & 0xFFFFu) * (1.0f / 65536.0f)) * (1.0f / 16384.0f);
+}
+static void slice_block(float slen)    /* a block's lengths: no divisions sample by sample */
+{
+    int k;
+    for (k = 0; k < SL_N; k++) {
+        const romi_track_t *tr = &PAT->tr[SL_FIRST + k];
+        if (tr->sl_mode) {
+            SL[k].L = sl_len(tr, slen);
+            SL[k].invL = 1.0f / (float)SL[k].L;
+            if (SL[k].gc >= SL[k].L)
+                SL[k].gc = 0;
+            if (SL[k].sp >= SL[k].L)
+                SL[k].sp = 0;
+            if (SL[k].sc > SL[k].L)
+                SL[k].sc = SL[k].L;
+        }
+    }
+}
+static float slice_run(int t, float x)
+{
+    const romi_track_t *tr = &PAT->tr[t];
+    int k = t - SL_FIRST;
+    float r = (float)tr->sl_rand * (1.0f / 127.0f), mix = (float)tr->sl_mix * (1.0f / 127.0f), y = 0.0f;
+    uint32_t L = SL[k].L;
+    SL[k].quiet = x > 1e-5f || x < -1e-5f ? 0u : SL[k].quiet + (SL[k].quiet < SL_LEN);
+    if (tr->sl_mode >= 2 && (tr->sl_mode == 3 || SL[k].cnt < L)) {   /* (STUTTER: only its first slice) */
+        float c = x * 16384.0f;
+        sl_buf[k][SL[k].w] = (int16_t)(c > 32767.0f ? 32767.0f : c < -32768.0f ? -32768.0f : c);
+        SL[k].w = (SL[k].w + 1u) & (SL_LEN - 1u);
+    }
+    if (tr->sl_mode == 1) {             /* GATE */
+        if (SL[k].sc-- <= 1u) {         /* the next slice: open or shut */
+            SL[k].sc = L;
+            SL[k].sn++;
+            if (r <= 0.0f)
+                SL[k].gt = SL[k].sn & 1u ? 0.0f : 1.0f;
+            else
+                SL[k].gt = frand(&R.rng) < r * 0.8f ? 0.0f : 1.0f;
+        }
+        SL[k].g += (SL[k].gt - SL[k].g) * 0.05f;   /* (half a millisecond: no click) */
+        y = x * SL[k].g;
+    } else if (tr->sl_mode == 2) {      /* STUTTER */
+        if (SL[k].cnt < L) {
+            y = x;
+        } else {
+            uint32_t p = SL[k].sp, q, e;
+            if (++SL[k].sp >= L)
+                SL[k].sp = 0;
+            if (p == 0u) {              /* a repeat begins */
+                SL[k].dir = frand(&R.rng) < r * 0.5f ? -1 : 1;
+                SL[k].oct = frand(&R.rng) < r * 0.3f ? 2 : 1;
+                SL[k].mute = frand(&R.rng) < r * 0.2f;
+                SL[k].gain *= 0.88f;
+            }
+            q = p * (uint32_t)SL[k].oct;
+            if (q >= L)
+                q -= L;
+            if (SL[k].dir < 0)
+                q = L - 1u - q;
+            e = p < 32u ? p : L - p < 32u ? L - p : 32u;   /* soft edges */
+            y = SL[k].mute ? 0.0f : sl_read(k, ((SL[k].start + q) & (SL_LEN - 1u)) << 16) * SL[k].gain * (float)e * (1.0f / 32.0f);
+        }
+    } else if (SL[k].quiet < SL_LEN) {  /* GRAIN (not while the whole buffer is silence) */
+        int gi;
+        for (gi = 0; gi < 2; gi++) {
+            uint32_t age = SL[k].gc + (gi ? L / 2u : 0u);
+            if (age >= L)
+                age -= L;
+            float tt;
+            if (age == 0u) {            /* a new grain: where, how fast, which way */
+                int32_t inc = 0x10000;
+                uint32_t off;
+                if (frand(&R.rng) < r * 0.5f)
+                    inc = frand(&R.rng) < 0.5f ? 0x20000 : 0x8000;
+                if (frand(&R.rng) < r * 0.3f)
+                    inc = -inc;
+                off = 2u * L + 4u + (uint32_t)(frand(&R.rng) * r * (float)(SL_LEN - 4u * L - 8u));
+                SL[k].gr[gi].pos = ((SL[k].w - off) & (SL_LEN - 1u)) << 16;
+                SL[k].gr[gi].inc = inc;
+            }
+            tt = (float)age * SL[k].invL;
+            y += sl_read(k, SL[k].gr[gi].pos) * 4.0f * tt * (1.0f - tt);
+            SL[k].gr[gi].pos = (SL[k].gr[gi].pos + (uint32_t)SL[k].gr[gi].inc) & ((SL_LEN << 16) - 1u);
+        }
+        if (++SL[k].gc >= L)
+            SL[k].gc = 0;
+        y *= 0.75f;
+    }
+    SL[k].cnt++;
+    return x * (1.0f - mix) + y * mix;
+}
+
 void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
 {
-    uint32_t i, k, ramp;
+    uint32_t i, k, ramp, sl_any = 0;
+    float sl_step = step_samples();
     float s16 = step_samples(), gain = (float)gain_q12 * (8388607.0f / 4096.0f);
     float duck_amt = (float)R.prj.duck * (0.9f / 127.0f), duck_c = decay_coef(pmap((float)R.prj.sc_rel, 0.03f, 3.7f));
     float sc[ROMI_TRACKS];
@@ -759,6 +911,10 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         R.songpos = 0.0f;
     }
     ramp = 0;
+    for (k = SL_FIRST; k < ROMI_TRACKS; k++)
+        sl_any |= PAT->tr[k].sl_mode;
+    if (sl_any)
+        slice_block(sl_step);
     for (k = 0; k < ROMI_TRACKS; k++) {
         bus_update((int)k);
         if (env_mix((int)k)) {          /* an ENV on the mix: from where it is to the target, across the block */
@@ -930,6 +1086,12 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
                 y = R.shape[k].held;
             }
             v[k] = y;
+        }
+        if (sl_any) {                   /* SLICE (GRAIN on the first two tracks that have it, no more) */
+            int ng = 0;
+            for (k = SL_FIRST; k < ROMI_TRACKS; k++)
+                if (PAT->tr[k].sl_mode && (PAT->tr[k].sl_mode != 3 || ng++ < SL_GRAINS_MAX))
+                    v[k] = slice_run((int)k, v[k]);
         }
 
         /* the mix: the sidechain's source ducks each track by that track's amount, and the effects */
@@ -1632,6 +1794,10 @@ static void pattern_defaults(romi_pattern_t *p)
         tr->acc_src = tr->lfo_rst = tr->env_src = 0;
         tr->env_depth = 0;
         tr->env_tgt = 4;                              /* (the level, once a source is chosen) */
+        tr->sl_mode = 0;                              /* SLICE off; when turned on: 1/64 or 1/48, some chance, most */
+        tr->sl_rate = 64;
+        tr->sl_rand = 40;
+        tr->sl_mix = 100;
         {   /* SOUND 2: as the sound was before it had the page (kick click 0.25, pitch 22 ms; sub FM 60 ms; perc
              * bend 12 ms; stab attack 2.3 ms); no pitch, drive or crush */
             static const uint8_t Q[ROMI_TRACKS][4] = {{24, 53, 79, 0}, {24, 82, 30, 0}, {24, 0, 0, 0},
@@ -1702,6 +1868,10 @@ static void prj_sanitize(romi_project_t *p)
             LIM(tr->lfo_rst, 0, ROMI_TRACKS);
             LIM(tr->env_src, 0, ROMI_TRACKS);
             LIM(tr->env_tgt, 0, 11);
+            LIM(tr->sl_mode, 0, t >= SL_FIRST ? 3 : 0);
+            LIM(tr->sl_rate, 0, 127);
+            LIM(tr->sl_rand, 0, 127);
+            LIM(tr->sl_mix, 0, 127);
             if (tr->env_depth < -64)
                 tr->env_depth = -64;
             for (i = 0; i < ROMI_STEPS; i++)
@@ -1756,7 +1926,7 @@ static int lock_count(const romi_pattern_t *p)
  *   settings bpm swing drift duck root scale dly_time dly_fb rev_size rev_damp clock_out cur_pat chain sc_src sc_rel
  *   pattern  per track: len mute p0..p3 level pan dly rev eu_hits eu_rot eu_prob eu_acc sc dep_src tshift dep_mode
  *            follow, its two LFOs (rate depth target shape each), q0..q3 (SOUND 2), slide (2 bytes, little-endian),
- *            glide (version 14 on; 13 had neither), acc_src lfo_rst env_src env_depth env_tgt (15 on), then its
+ *            glide (version 14 on; 13 had neither), acc_src lfo_rst env_src env_depth env_tgt (15 on), sl_mode sl_rate sl_rand sl_mix (18 on), then its
  *            16 steps, two
  *            bytes each:
  *              b0 = flags (on, accent, ratchet: bits 7, 6, 1..0) | shift's high bits << 2
@@ -1817,6 +1987,7 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
             d[n++] = (uint8_t)tr->slide; d[n++] = (uint8_t)(tr->slide >> 8); d[n++] = tr->glide;
             d[n++] = tr->acc_src; d[n++] = tr->lfo_rst; d[n++] = tr->env_src; d[n++] = (uint8_t)tr->env_depth;
             d[n++] = tr->env_tgt;
+            d[n++] = tr->sl_mode; d[n++] = tr->sl_rate; d[n++] = tr->sl_rand; d[n++] = tr->sl_mix;
             for (i = 0; i < ROMI_STEPS; i++) {
                 const romi_step_t *st = &tr->step[i];
                 uint32_t sh = (uint32_t)(st->shift + 8), nt = (uint32_t)(st->note - ROMI_NOTE_MIN);
@@ -1865,13 +2036,13 @@ int romi_store_set(int obj, const void *src, uint32_t len)
     /* older versions load: 13 without slide and glide, steps of 2 bytes; 14 without the links of 15 (accent,
      * restart, ENV) and the trig conditions, steps of 3 bytes */
     uint32_t ver = len > 3u ? b[3] : 0u, old = ver == 13u, v14 = ver == 14u, v15 = ver == 15u;
-    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) +
+    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) + (ver >= 18u ? 4u : 0u) +
                                               (old ? 2u : v14 ? 3u : 4u) * ROMI_STEPS) + 1u
                         : 5u + (ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the settings with the style) */
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
-    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u) ||
+    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u) ||
         b[4] != (obj ? obj - 1 : 0))
         return -2;
     if (obj)
@@ -1923,6 +2094,15 @@ int romi_store_set(int obj, const void *src, uint32_t len)
                 tr->acc_src = b[n]; tr->lfo_rst = b[n + 1]; tr->env_src = b[n + 2];
                 tr->env_depth = (int8_t)b[n + 3]; tr->env_tgt = b[n + 4];
                 n += 5;
+            }
+            if (ver >= 18u) {               /* SLICE (18 on) */
+                tr->sl_mode = b[n]; tr->sl_rate = b[n + 1]; tr->sl_rand = b[n + 2]; tr->sl_mix = b[n + 3];
+                n += 4;
+            } else {
+                tr->sl_mode = 0;
+                tr->sl_rate = 64;
+                tr->sl_rand = 40;
+                tr->sl_mix = 100;
             }
             for (i = 0; i < ROMI_STEPS; i++) {
                 romi_step_t *st = &tr->step[i];
@@ -2161,14 +2341,14 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
                                                         {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "KLIKKI"}};
 #define TRACK_NAME (TRACK_NAMES[STYLE ? 1 : 0])
 static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
-                                                    "GLOBAL 2", "MOD"};
+                                                    "GLOBAL 2", "MOD", "SLICE"};
 static const char *const SOUND_NAMES[2][ROMI_TRACKS][4] = {{
     {"TUNE", "DECAY", "PUNCH", "DRIVE"}, {"DECAY", "FM", "RATIO", "GLIDE"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
@@ -2280,6 +2460,14 @@ static int page_params(param_t p[4])
         P(2, "FOLLOW", &tr->follow, 0, ROMI_TRACKS, F_DEPSRC, 0);
         P(3, "ACCENT", &tr->acc_src, 0, ROMI_TRACKS, F_DEPSRC, 0);   /* its accents accent this track too */
         break;
+    case ROMI_PG_SLICE:                 /* FX a third time: hat, perc, stab, click cut up (not kick and sub) */
+        if (R.track >= SL_FIRST) {
+            P(0, "MODE", &tr->sl_mode, 0, 3, F_SLMODE, 0);
+            P(1, "RATE", &tr->sl_rate, 0, 127, F_SLRATE, 1);
+            P(2, "RANDOM", &tr->sl_rand, 0, 127, F_NUM, 1);
+            P(3, "MIX", &tr->sl_mix, 0, 127, F_NUM, 1);
+        }
+        break;
     case ROMI_PG_MOD:                   /* LFO a third time: what restarts the LFOs; the ENV follower */
         P(0, "RESTART", &tr->lfo_rst, 0, ROMI_TRACKS, F_RST, 0);
         P(1, "ENV SRC", &tr->env_src, 0, ROMI_TRACKS, F_DEPSRC, 0);
@@ -2358,6 +2546,25 @@ static void param_text(const param_t *p, char *t)
     case F_ORDER: cat(t, v == 1 ? "A-D" : v == 2 ? "RANDOM" : "LOOP"); break;
     case F_RST: cat(t, v && v <= ROMI_TRACKS ? TRACK_NAME[v - 1] : "FREE"); break;
     case F_STYLE: cat(t, v ? "SUOM1" : "ROMI"); break;
+    case F_SLMODE: {
+        static const char *const M[4] = {"OFF", "GATE", "STUTTER", "GRAIN"};
+        cat(t, M[v & 3]);
+        break;
+    }
+    case F_SLRATE: {                    /* the slice: a note value, or a grain in milliseconds */
+        static const char *const G[5] = {"1/32", "1/48", "1/64", "1/96", "1/128"};
+        static const char *const S[6] = {"1/16", "1/32", "1/48", "1/64", "1/96", "1/128"};
+        uint8_t m = EDT->tr[R.track].sl_mode;
+        if (m == 1)
+            cat(t, G[v * 5 / 128]);
+        else if (m == 2)
+            cat(t, S[v * 6 / 128]);
+        else {
+            cat_int(t, (int)(4000.0f * fexp2(-(float)v * (3.32f / 127.0f)) * (1000.0f / (float)ROMI_SR) + 0.5f));
+            cat(t, "MS");
+        }
+        break;
+    }
     case F_PWAVE: {
         static const char *const W[6] = {"P12", "P25", "P50", "TRI", "SAW", "NOISE"};
         cat(t, W[v * 6 / 128]);
@@ -2878,7 +3085,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     {
         static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
-                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO};
+                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX};
         uint8_t was = R.page;
         for (i = 0; i < ROMI_PG_EUCLID; i++)
             if (pressed & 1u << PAGE_BTN[i]) {
@@ -2887,6 +3094,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             }
         if ((pressed & 1u << ROMI_B_FX) && was == ROMI_PG_FX)
             R.page = ROMI_PG_SC;        /* FX again: the sidechain */
+        if ((pressed & 1u << ROMI_B_FX) && was == ROMI_PG_SC)
+            R.page = ROMI_PG_SLICE;     /* and again: SLICE */
         if ((pressed & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND)
             R.page = ROMI_PG_SOUND2;    /* EDIT again: SOUND 2 */
         if ((pressed & 1u << ROMI_B_GLO) && was == ROMI_PG_GLOBAL)
@@ -3107,6 +3316,15 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 apply_euclid(R.track);
             changed();
         }
+        if (R.page == ROMI_PG_SLICE && tr->sl_mode == 3) {   /* GRAIN: two tracks at most */
+            int t2, ng = 0;
+            for (t2 = SL_FIRST; t2 < ROMI_TRACKS; t2++)
+                ng += t2 != R.track && EDT->tr[t2].sl_mode == 3;
+            if (ng >= SL_GRAINS_MAX) {
+                tr->sl_mode = 2;
+                romi_message("GRAIN", "TWO TRACKS AT MOST");
+            }
+        }
         if (R.prj.mode != mode_was)
             set_mode(R.prj.mode);
         if (R.prj.style != style_was)
@@ -3252,7 +3470,7 @@ void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint3
     static const uint8_t BK[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
     static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
-                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO};
+                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX};
     const romi_track_t *tr = &PAT->tr[R.track];
     uint32_t b = 1u << PAGE_BTN[R.page], k = 0, dk = 0;
     int i;

@@ -1131,7 +1131,7 @@ int main(int argc, char **argv)
         /* the same object as version 13: drop each track's three bytes, new sum */
         memcpy(o13, obj, 5); o13[3] = 13;
         for (m = 5, k = 5, t = 0; t < ROMI_TRACKS; t++) {
-            memcpy(o13 + m, obj + k, 19 + 4 * ROMI_LFOS + 4); m += 19 + 4 * ROMI_LFOS + 4; k += 19 + 4 * ROMI_LFOS + 4 + 3 + 5;
+            memcpy(o13 + m, obj + k, 19 + 4 * ROMI_LFOS + 4); m += 19 + 4 * ROMI_LFOS + 4; k += 19 + 4 * ROMI_LFOS + 4 + 3 + 5 + 4;
             {
                 uint32_t q;
                 for (q = 0; q < ROMI_STEPS; q++, k += 4) {   /* (chance 0: sure, the old bits 0) */
@@ -1340,7 +1340,7 @@ int main(int argc, char **argv)
             memcpy(o14, obj, 5); o14[3] = 14;
             for (m = 5, kk = 5, t = 0; t < ROMI_TRACKS; t++) {
                 uint32_t q, hd = 19 + 4 * ROMI_LFOS + 4 + 3;
-                memcpy(o14 + m, obj + kk, hd); m += hd; kk += hd + 5;
+                memcpy(o14 + m, obj + kk, hd); m += hd; kk += hd + 5 + 4;
                 for (q = 0; q < ROMI_STEPS; q++, kk += 4) {
                     o14[m++] = obj[kk]; o14[m++] = obj[kk + 1]; o14[m++] = obj[kk + 2];
                 }
@@ -1410,6 +1410,66 @@ int main(int argc, char **argv)
         turn(ROMI_E_K3, -1);
         CHECK(romi_project()->style == 0 && romi_project()->bpm == 126, "back to ro:MINImal: style %d bpm %d",
               romi_project()->style, romi_project()->bpm);
+    }
+
+    /* SLICE (FX three times): GATE, STUTTER and GRAIN on the stab; never on kick or sub; stored; a version 17
+     * pattern still loads without it */
+    {
+        static int16_t pc[4][2 * 44100];
+        static uint8_t obj[ROMI_OBJ_MAX], o17[ROMI_OBJ_MAX];
+        double rms[4];
+        int m, k, t;
+        romi_init(101);
+        tap_button(ROMI_B_FX); tap_button(ROMI_B_FX); tap_button(ROMI_B_FX);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SLICE, "FX x3: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_K1, 1);                         /* on the kick: nothing */
+        CHECK(romi_project()->pat[0].tr[ROMI_KICK].sl_mode == 0, "SLICE on the kick");
+        tap_key(10);                                /* STAB */
+        turn(ROMI_E_K1, 2);
+        CHECK(romi_project()->pat[0].tr[ROMI_STAB].sl_mode == 2, "SLICE on the stab: %d", romi_project()->pat[0].tr[ROMI_STAB].sl_mode);
+        for (m = 0; m < 4; m++) {                   /* the stab alone, long, sliced each way */
+            romi_init(102);
+            romi_project()->drift = 0;
+            for (t = 0; t < ROMI_TRACKS; t++) romi_project()->pat[0].tr[t].mute = t != ROMI_STAB;
+            {
+                romi_track_t *st = &romi_project()->pat[0].tr[ROMI_STAB];
+                for (k = 0; k < 16; k++) { st->step[k].flags = k % 8 == 0 ? ROMI_ST_ON : 0; st->step[k].chance = 0; st->step[k].cond = 0; }
+                st->len = 16; st->p[0] = 110; st->sl_mode = (uint8_t)m; st->sl_mix = 127; st->sl_rand = 60;
+                st->dly = st->rev = 0;
+            }
+            romi_project()->rev_size = 0; romi_project()->dly_fb = 0;
+            tap_button(ROMI_B_PLAY);
+            run(1.0, pc[m], 0, &rms[m]);
+        }
+        printf("slice: stab rms dry %.4f gate %.4f stutter %.4f grain %.4f\n", rms[0], rms[1], rms[2], rms[3]);
+        CHECK(rms[1] < rms[0] * 0.95 && rms[1] > 0.0, "GATE: %f against %f", rms[1], rms[0]);   /* (the first slice is always open: the loudest) */
+        for (m = 2; m < 4; m++) {
+            int diff = 0;
+            for (k = 0; k < 2 * 44100; k++) diff += pc[m][k] != pc[0][k];
+            CHECK(rms[m] > rms[0] * 0.1 && diff > 20000, "%s: rms %f, %d samples differ", m == 2 ? "STUTTER" : "GRAIN", rms[m], diff);
+        }
+        /* stored; version 17 */
+        romi_init(103);
+        romi_project()->pat[0].tr[ROMI_PERC].sl_mode = 3; romi_project()->pat[0].tr[ROMI_PERC].sl_rate = 99;
+        {
+            uint32_t n = romi_store_get(1, obj, sizeof obj), mm, kk, q, a1, c1;
+            romi_init(104);
+            CHECK(romi_store_set(1, obj, n) == 0 && romi_project()->pat[0].tr[ROMI_PERC].sl_mode == 3 &&
+                  romi_project()->pat[0].tr[ROMI_PERC].sl_rate == 99, "SLICE not stored");
+            memcpy(o17, obj, 5); o17[3] = 17;
+            for (mm = 5, kk = 5, t = 0; t < ROMI_TRACKS; t++) {
+                uint32_t hd = 19 + 4 * ROMI_LFOS + 4 + 3 + 5;
+                memcpy(o17 + mm, obj + kk, hd); mm += hd; kk += hd + 4;
+                for (q = 0; q < 4 * ROMI_STEPS; q++) o17[mm++] = obj[kk++];
+            }
+            memcpy(o17 + mm, obj + kk, n - 4 - kk); mm += n - 4 - kk;
+            for (a1 = 1, c1 = 0, kk = 0; kk < mm; kk++) { a1 = (a1 + o17[kk]) % 65521u; c1 = (c1 + a1) % 65521u; }
+            a1 = c1 << 16 | a1;
+            o17[mm++] = (uint8_t)a1; o17[mm++] = (uint8_t)(a1 >> 8); o17[mm++] = (uint8_t)(a1 >> 16); o17[mm++] = (uint8_t)(a1 >> 24);
+            romi_init(105);
+            CHECK(romi_store_set(1, o17, mm) == 0 && romi_project()->pat[0].tr[ROMI_PERC].sl_mode == 0,
+                  "version 17 did not load (%d)", romi_store_set(1, o17, mm));
+        }
     }
 
     /* MIDI: channel 1 plays the kick */

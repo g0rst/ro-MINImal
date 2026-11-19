@@ -116,8 +116,8 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[EDIT]]", T("page SOUND of the track; pressed again: SOUND 2", "Seite SOUND der Spur; nochmal: SOUND 2",
                      "pagina SOUND a pistei; apăsat din nou: SOUND 2")),
       ("[[ENV]]", T("page MIX of the track", "Seite MIX der Spur", "pagina MIX a pistei")),
-      ("[[FX]]", T("page FX; pressed again: SIDECHAIN", "Seite FX; nochmal gedrückt: SIDECHAIN",
-                   "pagina FX; apăsat din nou: SIDECHAIN")),
+      ("[[FX]]", T("page FX; again: SIDECHAIN; a third time: SLICE", "Seite FX; nochmal: SIDECHAIN; ein drittes Mal: SLICE",
+                   "pagina FX; din nou: SIDECHAIN; a treia oară: SLICE")),
       ("[[GLO]]", T("page GLOBAL; pressed again: GLOBAL 2 (MODE LAZY/HARD)", "Seite GLOBAL; nochmal gedrückt: GLOBAL 2 (MODE LAZY/HARD)",
                     "pagina GLOBAL; apăsat din nou: GLOBAL 2 (MODE LAZY/HARD)")),
       ("[[SEQ]]", T("back to the steps; pages EUCLID, LINK, TIMING in turn",
@@ -323,6 +323,7 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[ENV]]", "MIX", "LEVEL", "PAN", "DELAY", "REVERB"),
       ("[[FX]]", "FX", "D.TIME<br>1/16, 1/8, 3/16", "D.FDBK", "R.SIZE", "R.DAMP"),
       ("[[FX]] ×2", "SIDECHAIN", "SOURCE", "DEPTH", "RELEASE", "AMOUNT"),
+      ("[[FX]] ×3", "SLICE", "MODE<br>OFF, GATE, STUTTER, GRAIN", "RATE", "RANDOM", "MIX"),
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN, PDOM, HMIN", "CLOCK", "CHAIN"),
       ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "STYLE<br>ROMI, SUOM1", ""),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
@@ -331,6 +332,27 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[LFO]]", "LFO 1", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×3", "MOD", "RESTART", "ENV SRC", "ENV DEPTH", "ENV TGT"))
+p(T("SLICE ([[FX]] three times) cuts up the sound of hat, percussion, stab and click; never the kick and the sub. "
+    "GATE opens and shuts it on a grid from the hit (1/32 to 1/128; RANDOM 0 alternates, more shuts slices at "
+    "random). STUTTER records the hit's first slice (1/16 to 1/128) and plays it again and again, fainter each time; "
+    "RANDOM turns some round, up an octave or silent. GRAIN, a granular light: the track's last 186 ms are always "
+    "recorded, and two grains (9 to 90 ms) play pieces of it from elsewhere, RANDOM spreading where, an octave up or "
+    "down, backwards. MIX goes from dry to all sliced. GRAIN on two tracks at most: it is the first to go should "
+    "the FM-1 run short of time.",
+    "SLICE ([[FX]] dreimal) zerschneidet den Klang von Hat, Percussion, Stab und Click; nie Kick und Sub. GATE "
+    "öffnet und schließt ihn in einem Raster ab dem Schlag (1/32 bis 1/128; RANDOM 0 abwechselnd, mehr schließt "
+    "Stücke zufällig). STUTTER nimmt das erste Stück des Schlags auf (1/16 bis 1/128) und spielt es immer wieder, "
+    "jedes Mal leiser; RANDOM dreht manche um, eine Oktave höher oder stumm. GRAIN, Granular light: Die letzten "
+    "186 ms der Spur werden immer aufgenommen, zwei Körner (9 bis 90 ms) spielen Stücke daraus von anderswo, RANDOM "
+    "streut wo, eine Oktave hoch oder runter, rückwärts. MIX geht von trocken bis ganz zerschnitten. GRAIN auf "
+    "höchstens zwei Spuren: Es fliegt als Erstes raus, wenn der FM-1 zu wenig Rechenzeit hat.",
+    "SLICE ([[FX]] de trei ori) taie sunetul hat-ului, al percuției, al stab-ului și al click-ului; niciodată kick-ul "
+    "și sub-ul. GATE îl deschide și îl închide pe o grilă de la lovitură (1/32–1/128; RANDOM 0 alternează, mai mult "
+    "închide bucăți la întâmplare). STUTTER înregistrează prima bucată a loviturii (1/16–1/128) și o cântă iar și "
+    "iar, tot mai încet; RANDOM întoarce unele, o octavă mai sus sau mute. GRAIN, granular light: ultimele 186 ms "
+    "ale pistei se înregistrează mereu, iar două boabe (9–90 ms) cântă bucăți din ele de altundeva, RANDOM "
+    "împrăștie unde, o octavă sus sau jos, invers. MIX merge de la sec la complet tăiat. GRAIN pe cel mult două "
+    "piste: pleacă primul dacă FM-1 nu mai are timp de calcul."))
 p(T("Chains between tracks. ACCENT (LINK, fourth knob): the source's accented hits accent this track's hits on "
     "the same step. RESTART (MOD, first knob): each hit of the chosen track starts this track's two LFOs again, "
     "so the movement sits in the groove. ENV (MOD, knobs two to four): how loud the source sounds right now moves "
