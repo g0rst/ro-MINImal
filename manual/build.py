@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Builds the ro:MINImal manual: one self-contained page in English, German and Romanian.
+"""Builds the ro:MINImal manual: one self-contained page in English, German and Romanian, and in Finnish and Klingon
+dressed as suom1saundi (its acid green on black, its name on the cover, its package in the emulator).
 
     python3 manual/build.py        ->  docs/manual.html
 
@@ -9,19 +10,38 @@ The text lives here, once per language, block by block, so the three versions ca
 them; manual/screen-*.png are copies).
 """
 import base64
+import hashlib
 import html
+import json
 import pathlib
 import re
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-LANGS = ("en", "de", "ro")
+sys.path.insert(0, str(ROOT / "manual"))
+from lang_fi import FI  # noqa: E402
+from lang_tlh import TLH  # noqa: E402
+
+LANGS = ("en", "de", "ro", "fi", "tlh")
+SUOMI = ("fi", "tlh")                   # dressed as suom1saundi
+MISSING = {"fi": 0, "tlh": 0}
+
+
+def _more(en, table, lang):
+    """Finnish and Klingon are kept apart (lang_*.py), keyed by a hash of the English: changed English shows as
+    English there until translated again (the build counts it)."""
+    v = table.get(hashlib.sha1(json.dumps(en, ensure_ascii=False).encode()).hexdigest()[:8])
+    if v is None:
+        MISSING[lang] += 1
+        return en
+    return v
 
 
 def T(en, de, ro):
-    return {"en": en, "de": de, "ro": ro}
+    return {"en": en, "de": de, "ro": ro, "fi": _more(en, FI, "fi"), "tlh": _more(en, TLH, "tlh")}
 
 
-SAME = lambda s: {"en": s, "de": s, "ro": s}  # noqa: E731
+SAME = lambda s: {l: s for l in LANGS}  # noqa: E731
 
 TITLE = T("manual", "handbuch", "manual")
 SUB = T("firmware for the m-vave fm-1 · rominimal and microhouse",
@@ -483,13 +503,13 @@ p(T("Trig conditions (hold a step, turn [[ALGORITHM]]): 1:2 plays in the first o
     "treia din fiecare patru, până la 8:8. FILL cântă doar cât e ținut [[ARP]], !FILL doar când nu. PRE cântă când "
     "ultima condiție a pistei a fost adevărată, !PRE când nu. 1ST doar în prima măsură după PLAY. Generatorul dă "
     "din când în când unor hat-uri încete un 1:2 sau 3:4: groove-ul respiră peste patru măsuri."))
-p(T("Fifty-nine seconds untouched and the screen dreams: only the name, grey. Every kick pumps it up like a ball from "
+p(T("Two minutes untouched and the screen dreams: only the name, grey. Every kick pumps it up like a ball from "
     "its middle; on every step the next letter glows orange, one at a time. Behind it, dimmed, the sixteen by six "
     "dots light with what plays. The name drifts and bounces. Any touch wakes it, and still does what it does.",
-    "Neunundfünfzig Sekunden unberührt, und der Bildschirm träumt: nur der Name, grau. Jede Kick pumpt ihn kugelförmig aus "
+    "Zwei Minuten unberührt, und der Bildschirm träumt: nur der Name, grau. Jede Kick pumpt ihn kugelförmig aus "
     "seiner Mitte auf; bei jedem Step leuchtet der nächste Buchstabe orange, immer nur einer. Dahinter, gedimmt, "
     "leuchten die sechzehn mal sechs Punkte mit, was spielt. Der Name treibt und prallt ab. Jede Berührung weckt ihn und tut trotzdem, was sie tut.",
-    "Cincizeci și nouă de secunde neatins și ecranul visează: doar numele, gri. Fiecare kick îl umflă ca pe o minge din "
+    "Două minute neatins și ecranul visează: doar numele, gri. Fiecare kick îl umflă ca pe o minge din "
     "mijloc; la fiecare pas următoarea literă se aprinde portocaliu, câte una. În spate, estompate, cele "
     "șaisprezece pe șase puncte se aprind cu ce cântă. Numele plutește și ricoșează. Orice atingere îl trezește și își face totuși treaba."))
 p(T("DRIFT moves timbre, decay, level and timing slowly and at random. At zero the machine is exact. "
@@ -901,7 +921,7 @@ PAGE = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ro:MINImal Manual</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Silkscreen&display=swap">
 <style>
 /* A white-label sleeve: paper, black type set small and lowercase, hairlines, much air; sections numbered like
    the sides of a double 12-inch (a1 .. d4). The only colour is the orange of the device's screen, kept for what
@@ -927,6 +947,16 @@ PAGE = r"""<!DOCTYPE html>
   color-scheme: dark;
   --paper: #0e0e0d; --ink: #e9e8e2; --soft: #8f8e87; --hair: #2c2c29; --cell: #2a2a27; --signal: #ff6a33;
 }
+/* suom1saundi (Finnish, Klingon): the device's other face, acid green on black, the name in its blocky capitals */
+:root[data-style="suomi"] {
+  color-scheme: dark;
+  --paper: #0a0c09; --ink: #e6efdc; --soft: #8a9a80; --hair: #233020; --cell: #1c2618; --signal: #aaff3c;
+  --sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+:root[data-style="suomi"] .cover h1 { font: 400 clamp(30px, 8.6vw, 60px)/1 "Silkscreen", var(--mono); letter-spacing: .02em;
+  text-transform: uppercase; }
+:root[data-style="suomi"] .cover h1 .one { color: var(--signal); }
+:root[data-style="suomi"] kbd { border-color: var(--signal); }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.55 var(--sans); }
@@ -1008,7 +1038,7 @@ article[hidden] { display: none; }
   <div class="top">
     <span>ro:MINImal · @@DATE@@ · <a class="out" href="https://g0rst.github.io/ro-MINImal/">emulator, test page, download</a></span>
     <nav class="langs" aria-label="language">
-      <a href="#en" data-l="en">english</a><a href="#de" data-l="de">deutsch</a><a href="#ro" data-l="ro">română</a>
+      <a href="#en" data-l="en">english</a><a href="#de" data-l="de">deutsch</a><a href="#ro" data-l="ro">română</a><a href="#fi" data-l="fi">suomi</a><a href="#tlh" data-l="tlh">tlhIngan Hol</a>
     </nav>
   </div>
 @@ARTICLES@@
@@ -1016,7 +1046,7 @@ article[hidden] { display: none; }
 </div>
 <script>
 (function () {
-  var langs = ["en", "de", "ro"];
+  var langs = ["en", "de", "ro", "fi", "tlh"];
   function pick() {
     var h = location.hash.replace("#", "");
     if (langs.indexOf(h) >= 0) return h;
@@ -1027,6 +1057,7 @@ article[hidden] { display: none; }
     var l = pick();
     langs.forEach(function (k) { document.getElementById("m-" + k).hidden = k !== l; });
     document.documentElement.lang = l;
+    document.documentElement.setAttribute("data-style", l === "fi" || l === "tlh" ? "suomi" : "romi");
     Array.prototype.forEach.call(document.querySelectorAll(".langs a"), function (a) {
       a.setAttribute("aria-current", a.getAttribute("data-l") === l ? "true" : "false");
     });
@@ -1041,10 +1072,10 @@ article[hidden] { display: none; }
 
 COVER = """<article id="m-{lang}" lang="{lang}"{hidden}>
   <header class="cover">
-    <h1><span>ro:</span>MINI<span>mal</span></h1>
+    <h1>{name}</h1>
     <p class="what"><b>{title}</b> · {sub}</p>
     <div class="disc" aria-hidden="true">{disc}</div>
-    <p class="what try"><a href="https://joakimeriksson.github.io/fm1-emu/?package=https%3A%2F%2Fg0rst.github.io%2Fro-MINImal%2Frominimal.fwsc&amp;name=ro%3AMINImal">▶ {emu}</a></p>
+    <p class="what try"><a href="https://joakimeriksson.github.io/fm1-emu/?package=https%3A%2F%2Fg0rst.github.io%2Fro-MINImal%2F{pkg}.fwsc&amp;name={pname}">▶ {emu}</a></p>
   </header>
 {body}
 </article>"""
@@ -1052,14 +1083,19 @@ COVER = """<article id="m-{lang}" lang="{lang}"{hidden}>
 
 def main():
     disc = "".join(f'<i class="{c}"></i>' for c in ["k", "", "", "", "k", "", "", "s", "k", "", "", "", "k", "", "", ""])
-    arts = "\n".join(COVER.format(lang=l, hidden="" if l == "en" else " hidden", title=TITLE[l], sub=SUB[l], disc=disc, emu=EMU[l],
-                                  body=render(l)) for l in LANGS)
+    def cover(l):
+        su = l in SUOMI
+        return COVER.format(lang=l, hidden="" if l == "en" else " hidden", title=TITLE[l], sub=SUB[l], disc=disc, emu=EMU[l],
+                            name='SUOM<span class="one">1</span>SAUNDI' if su else "<span>ro:</span>MINI<span>mal</span>",
+                            pkg="suom1saundi" if su else "rominimal", pname="suom1saundi" if su else "ro%3AMINImal",
+                            body=render(l))
+    arts = "\n".join(cover(l) for l in LANGS)
     import datetime
     page = PAGE.replace("@@ARTICLES@@", arts).replace("@@DATE@@", datetime.date.today().strftime("%Y-%m"))
     dest = ROOT / "docs" / "manual.html"
     dest.write_text(page, encoding="utf-8")
     words = {l: len(re.sub(r"<[^>]+>", " ", render(l)).split()) for l in LANGS}
-    print(f"{dest}: {len(page)} bytes; words {words}")
+    print(f"{dest}: {len(page)} bytes; words {words}; not translated yet: {MISSING}")
 
 
 if __name__ == "__main__":
