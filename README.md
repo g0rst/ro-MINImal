@@ -139,6 +139,31 @@ MIDI: Kanäle 1 bis 6 spielen die Spuren (Note 60 ist der Grundton), Kanal 10 ei
 Start und Stopp werden empfangen; Clock, Start und Stopp werden über USB gesendet. USB ist nur MIDI: Die Firmware
 meldet sich nicht als Audio-Interface.
 
+### Speicher und Last (berechnet, nicht am Gerät gemessen)
+
+| | belegt | verfügbar | Anteil |
+|---|---|---|---|
+| Firmware-Image (Flash) | 120 336 B | 581 564 B (App-Slot) | 21 % |
+| RAM .data + .bss | 34 312 B | 98 304 B | 35 % |
+| RAM-Pool (Delay, Reverb, fm1-base) | 118 980 B | 344 064 B | 35 % |
+| RAM-Code (.ram_text) | 5 100 B | 32 768 B | 16 % |
+| Speicherfenster 0xB1000–0xBAFFF | höchstens 2 426 B (Einstellungen 32 B, A–D je bis 598 B) | 40 960 B | 6 % |
+
+Last des Renderers: Instruktionen pro Sample mit callgrind gezählt (x86-64, -O2, wie der Core gebaut wird), auf
+den AC79 (Kern r3, 360 MHz, Single-Precision-FPU) umgerechnet mit Faktor 1,6 bis 3,0 (mehr Instruktionen auf
+einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Flash). Budget: 8 163 Takte pro Sample.
+
+| Fall | Instr./Sample | Last (1,6 / 2,2 / 3,0) |
+|---|---|---|
+| alle Spuren stumm (Delay, Reverb, Mix, Sequencer, LFOs) | 995 | 20 / 27 / 37 % |
+| typischer Groove | 1 397 | 27 / 38 / 51 % |
+| schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends | 1 648 | 32 / 44 / 61 % |
+
+Anteile der Stimmen im schlimmsten Fall: Stab 207, Hat 173, Sub 93, Perc 87, Kick 58, Click 40 Instr./Sample. Die
+Oberfläche (Zeichnen, Byte-Tausch der Streifen) kostet geschätzt 2 bis 4 %. Reserven, falls es eng wird: der zweite
+Kern (fm1-base `cpu2`, z. B. Reverb oder die Hälfte der Stimmen), `cpu_clock = 396`, mehr Render-Code im RAM.
+Der echte Wert kommt am Gerät aus `plat_cpu_pct`.
+
 ### Speicher
 
 Gespeichert werden im LAZY-Modus zwei Objekte: die Einstellungen (32 Bytes, darin die Würfel für B bis D, MODE
