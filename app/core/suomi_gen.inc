@@ -28,8 +28,8 @@ static void su_gen(romi_track_t *tr, int t, uint32_t d)
         if (k == 0) {
             set_step(tr, 14, 0, 2, key);        /* a ghost before the bar, half the time */
         } else if (k == 1) {
-            tr->step[12].flags |= 1u;           /* a double on the last beat, three times in four */
-            tr->step[12].chance = 75;
+            tr->step[12].flags |= 1u;           /* a double on the last beat, half the time */
+            tr->step[12].chance = 50;
         }
         break;
     }
@@ -72,8 +72,8 @@ static void su_gen(romi_track_t *tr, int t, uint32_t d)
         for (i = 0; i < 16; i++)
             if (!(tr->step[i].flags & ROMI_ST_ON) && urand(100) < FILL[d]) {
                 set_step(tr, i, 0, (int)urand(3), 0);
-                if (urand(7) == 0)
-                    tr->step[i].flags |= 1u;    /* now and then a double */
+                if (urand(16) == 0)
+                    tr->step[i].flags |= 1u;    /* seldom a double (few rolls) */
             }
         break;
     }

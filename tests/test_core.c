@@ -1429,6 +1429,47 @@ int main(int argc, char **argv)
               romi_state(ROMI_Q_UFO), romi_project()->style);
     }
 
+    /* power-on: the style's own show without the collapse (ro:MINImal: the name flies in), then the fade; a touch
+     * ends it and still acts. SAVE held 2 s: saved, good night (collapse, smack, the words), then asleep: black,
+     * silent, the lights off; a touch wakes (and does nothing else) */
+    {
+        int k, f;
+        uint32_t lb, lk, db, dk;
+        double e;
+        romi_init(93);
+        frame(0);
+        CHECK(romi_state(ROMI_Q_UFO) == (ROMI_START_STYLE ? 1 : 2), "power-on: show %d", romi_state(ROMI_Q_UFO));
+        for (f = 0; f < 300 && romi_state(ROMI_Q_UFO); f++) frame(0);
+        CHECK(!romi_state(ROMI_Q_UFO) && f > 70 && f < (ROMI_START_STYLE ? 230 : 100), "power-on show: %d frames", f);
+        CHECK(romi_project()->style == ROMI_START_STYLE, "power-on show changed the style");
+        romi_init(94);
+        frame(0);
+        tap_button(ROMI_B_PLAY);                /* a touch: the intro ends and PLAY plays */
+        CHECK(!romi_state(ROMI_Q_UFO) && romi_state(ROMI_Q_PLAYING), "intro: %d, playing %d", romi_state(ROMI_Q_UFO),
+              romi_state(ROMI_Q_PLAYING));
+        for (k = 0; k < 30; k++) frame(0);
+        held_b |= 1u << ROMI_B_SAVE;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_SAVE);
+        CHECK(romi_state(ROMI_Q_NIGHT) == 1 && romi_save_wanted(), "SAVE held: night %d", romi_state(ROMI_Q_NIGHT));
+        for (k = 0; k < 60; k++) frame(0);
+        snprintf(path, sizeof path, "%s/screen-night.ppm", out);
+        write_screen(path);
+        for (f = 0; f < 400 && romi_state(ROMI_Q_NIGHT) == 1; f++) frame(0);
+        CHECK(romi_state(ROMI_Q_NIGHT) == 2 && !romi_state(ROMI_Q_PLAYING), "asleep: %d, playing %d", romi_state(ROMI_Q_NIGHT),
+              romi_state(ROMI_Q_PLAYING));
+        romi_lights(&lb, &lk, &db, &dk);
+        CHECK(!lb && !lk && !db && !dk, "asleep: lights on");
+        for (e = 0.0, k = 0; k < 60; k++) {
+            int i;
+            romi_render(blk, 128, 4096);
+            for (i = 0; i < 256; i++) e += (double)blk[i] * blk[i];
+        }
+        CHECK(e < 1e9, "asleep: sound (%g)", e);
+        tap_key(3);
+        CHECK(!romi_state(ROMI_Q_NIGHT) && !romi_state(ROMI_Q_PLAYING), "woken: night %d", romi_state(ROMI_Q_NIGHT));
+    }
+
     /* the style SUOMI (GLO held 2 s): suom1saundi's voices and rules; the bass pumps, three sixteenths after the
      * kick or two, never on it; it plays clean; B..D from A; stored; back to ro:MINImal */
     {

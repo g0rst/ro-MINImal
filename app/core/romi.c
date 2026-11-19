@@ -172,7 +172,12 @@ static struct {
      * an UFO lands in the forest, the screen zooms, it explodes into the name; to ro:MINImal the name flies in */
     uint32_t glo_t, ufo_t, ufo_ms;      /* GLO pressed: when; the animation's start; its last frame */
     uint8_t glo_held, ufo;
-    uint8_t fade;                       /* after the show: its last picture fades into the pages (which show) */
+    uint8_t fade;                       /* after the show: its last picture fades into the pages (which show;
+                                         * 3: none, from black) */
+    uint8_t intro, boot;                /* the show at power-on (the style's own, no collapse): it does not change
+                                         * the style, and a touch ends it and still acts; boot: not begun yet */
+    uint8_t night, save_held;           /* SAVE held 2 s: good night (1), then asleep (2) */
+    uint32_t save_t, night_t, night_ms;
     uint32_t fade_t, fade_ms;
     volatile uint8_t jg_want;           /* the jingle: asked for by the UI (1 UFO, 2 the beep alone, 3 stop) */
     uint8_t jg_mode;
@@ -1077,9 +1082,9 @@ static float jingle(void)
     static const float ARP[4] = {659.3f, 784.0f, 1046.5f, 1318.5f};
     float t, f, a, o;
     uint32_t n;
-    if (R.jg_want) {
-        R.jg_n = R.jg_want == 3u ? 0u : 1u;
-        R.jg_mode = R.jg_want;
+    if (R.jg_want) {                    /* (4: the UFO at power-on, without the tube) */
+        R.jg_n = R.jg_want == 3u ? 0u : R.jg_want == 4u ? JG_S(JG_UFO) + 1u : 1u;
+        R.jg_mode = R.jg_want == 4u ? 1u : R.jg_want;
         R.jg_want = 0;
         R.jg_ph = 0.0f;
     }
@@ -1906,15 +1911,20 @@ static void vary(romi_pattern_t *d)
 
 static void rolls(romi_pattern_t *d)
 {
-    static const uint8_t RATCH[4] = {1, 1, 2, 3};   /* x2 x2 x3 x4 */
+    static const uint8_t RATCH[2][4] = {{1, 1, 2, 3},    /* x2 x2 x3 x4 */
+                                        {0, 0, 1, 1}};   /* suom1saundi: lighter, x2 on the last two */
     romi_track_t *h = &d->tr[ROMI_HAT], *pc = &d->tr[ROMI_PERC], *cl = &d->tr[ROMI_CLICK];
     romi_track_t *kk = &d->tr[ROMI_KICK], *sb = &d->tr[ROMI_SUB];
     uint32_t i, last;
     for (i = 12; i < 16 && i < h->len; i++) {       /* the hats roll up to the bar */
-        h->step[i].flags = (uint8_t)(ROMI_ST_ON | RATCH[i - 12] | (i == 15 ? ROMI_ST_ACC : 0u));
+        h->step[i].flags = (uint8_t)(ROMI_ST_ON | RATCH[STYLE ? 1 : 0][i - 12] | (i == 15 ? ROMI_ST_ACC : 0u));
         h->step[i].note = (int8_t)(i - 12);
     }
-    if (pc->len == 16) {                            /* the percussion with them, rising */
+    if (STYLE) {
+        /* suom1saundi: fewer rolls; the acid line keeps its own phrase, the clicks one double at the end */
+        if (cl->len == 16)
+            cl->step[15].flags = (uint8_t)(ROMI_ST_ON | 1u);
+    } else if (pc->len == 16) {                            /* the percussion with them, rising */
         for (i = 13; i < 16; i++) {
             pc->step[i].flags = (uint8_t)(ROMI_ST_ON | (i == 15 ? 2u | ROMI_ST_ACC : 1u));
             pc->step[i].note = (int8_t)scale_note((int)(i - 13) * 2);
@@ -1926,10 +1936,10 @@ static void rolls(romi_pattern_t *d)
                 break;
             }
     }
-    if (cl->len == 16) {                            /* the clicks too */
+    if (!STYLE && cl->len == 16) {                  /* the clicks too */
         for (i = 14; i < 16; i++)
             cl->step[i].flags = (uint8_t)(ROMI_ST_ON | 2u);
-    } else {
+    } else if (!STYLE) {
         for (i = 0; i < cl->len; i++)
             if (cl->step[i].flags & ROMI_ST_ON)
                 cl->step[i].chance = 0;                             /* every one sure */
@@ -2087,7 +2097,8 @@ static void pattern_defaults(romi_pattern_t *p)
         {  44,  62,  70,  30,  92,  64,   0,   0},   /* kick: tune decay punch drive (level 92: 72 %) */
         {  70,  52,   0,  45, 112,  64,   0,   0},   /* sub: decay fm ratio glide */
         {  42,  70,  80,  64,  90,  74,  18,  20},   /* hat: decay tone metal open */
-        {  48,  52,  40,  30,  88,  46,  50,  34},   /* perc: decay fm ratio bend */
+        {  40,  34,  40,  16,  70,  46,  50,  40},   /* perc: decay fm ratio bend (in the back: shorter, softer
+                                                       * FM, less bend, level 70: 55 %) */
         {  66,  60,  30,  40,  78,  64,  70,  60},   /* stab: decay bright chord detune */
         {  40,  78,  84,  90,  86,  64,  40,  30},   /* click: decay freq reso scatter */
     };
@@ -2568,6 +2579,7 @@ void romi_init(uint32_t seed)
     R.jg_rng = 22222u;
     R.mus_on = 1;
     R.mus_g = 1.0f;
+    R.boot = 1;
     R.pending_pat = 0xFFu;
     R.solo = -1;
     R.prj.style = ROMI_SUOMI ? ROMI_START_STYLE : 0;   /* the firmware ro:MINImal or suom1saundi */
@@ -3383,9 +3395,65 @@ static void draw_flyin(int f)
 }
 
 #define FADE_FRAMES 9
+#define NIGHT_IN 10                     /* good night: after the collapse, the words fade in, stay, fade out */
+#define NIGHT_HOLD 50
+#define NIGHT_OUT 15
+#define NIGHT_FRAMES (CRT_FRAMES + NIGHT_IN + NIGHT_HOLD + NIGHT_OUT)
+/* text with the few letters the font has not: \1 Ä, \2 Ö, \3 Ă (A, O and their marks above) */
+static int text_dia(int x, int y, const char *s, uint16_t c, int sc)
+{
+    char one[2] = {0, 0};
+    for (; *s; s++) {
+        int ch = (uint8_t)*s;
+        one[0] = (char)(ch == 1 || ch == 3 ? 'A' : ch == 2 ? 'O' : ch);
+        if (ch == 1 || ch == 2) {       /* two dots */
+            rect(x + sc, y - 2 * sc, sc, sc, c);
+            rect(x + 3 * sc, y - 2 * sc, sc, sc, c);
+        } else if (ch == 3) {           /* the breve: a small cup */
+            rect(x + sc, y - 3 * sc, sc, sc, c);
+            rect(x + 3 * sc, y - 3 * sc, sc, sc, c);
+            rect(x + 2 * sc, y - 2 * sc, sc, sc, c);
+        }
+        x = text(x, y, one, c, sc);
+    }
+    return x;
+}
+static void draw_night(uint16_t *px, int strip)
+{
+    int f = (int)((R.now - R.night_t) / 33u), lv;
+    const char *w = STYLE ? "HYV\1\1 Y\2T\1" : "NOAPTE BUN\3";
+    if (R.night == 1u && f < CRT_FRAMES) {
+        draw_crt(px, strip, f);
+        return;
+    }
+    cv = px;
+    cv_y0 = strip * ROMI_STRIP_H;
+    rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, C_BG);
+    if (R.night != 1u)
+        return;
+    f -= CRT_FRAMES;
+    lv = f < NIGHT_IN ? (f + 1) * 256 / NIGHT_IN : f < NIGHT_IN + NIGHT_HOLD ? 256
+         : (NIGHT_IN + NIGHT_HOLD + NIGHT_OUT - f) * 256 / NIGHT_OUT;
+    if (lv <= 0)
+        return;
+    if (lv > 256)
+        lv = 256;
+    {
+        int n = 0, v = 228 * lv / 256;
+        const char *p;
+        for (p = w; *p; p++)
+            n++;
+        text_dia(120 - (6 * n - 1) * 3 / 2, 112, w, STYLE ? mix565(0u, RGB(170, 255, 60), (uint32_t)lv) : RGB(v, v, v * 15 / 16), 3);
+    }
+}
+
 void romi_draw(uint16_t *px, int strip)
 {
     int f;
+    if (R.night) {
+        draw_night(px, strip);
+        return;
+    }
     if (R.fade && !R.saver) {           /* the show's last picture (black, the name) fades into the pages */
         uint32_t al = (uint32_t)((R.now - R.fade_t) / 33u + 1u) * 256u / (FADE_FRAMES + 1u), i;
         draw_main(px, strip);
@@ -3398,7 +3466,7 @@ void romi_draw(uint16_t *px, int strip)
         cv_alpha = 256u - al;           /* and the name goes */
         if (R.fade == 1u)
             draw_suomi_name();
-        else
+        else if (R.fade == 2u)
             draw_flyin(FLY_FRAMES);
         cv_alpha = 256u;
         return;
@@ -3416,7 +3484,7 @@ void romi_draw(uint16_t *px, int strip)
     cv_y0 = strip * ROMI_STRIP_H;
     rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, C_BG);
     if (R.ufo == 1u)
-        draw_ufo(f - CRT_FRAMES);
+        draw_ufo(f - CRT_FRAMES);   /* (at power-on, ufo_t was set back by the collapse: it starts here) */
     else
         draw_flyin(f - CRT_FRAMES);
 }
@@ -3872,6 +3940,66 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.fx_t = 0;
         R.fx_held = 0;
     }
+    if (R.night) {                      /* good night, asleep: a touch wakes (and does nothing else) */
+        int any = (int)(pressed | kdown);
+        for (i = 0; i < ROMI_NE && !any; i++)
+            any = enc[i] != 0;
+        R.btn = buttons;
+        R.keys = keys;
+        R.now = now_ms;
+        R.dirty = 0;
+        if (any) {
+            R.night = 0;
+            R.fade = 3;                 /* the pages come up out of black */
+            R.fade_t = R.fade_ms = now_ms;
+            R.mus_on = 1;
+            R.touch_ms = now_ms ? now_ms : 1u;
+            R.dirty = STRIP_ALL;
+        } else if (R.night == 1u) {
+            uint32_t f = (now_ms - R.night_t) / 33u;
+            if (f >= (uint32_t)CRT_FRAMES && R.playing)
+                R.want_stop = 1;        /* the music is out by now: stop */
+            if (f >= (uint32_t)NIGHT_FRAMES) {
+                R.night = 2;            /* asleep: black, silent, dark, until a touch or the switch */
+                R.dirty = STRIP_ALL;
+            } else if (now_ms - R.night_ms >= 33u) {
+                R.night_ms = now_ms;
+                R.dirty = STRIP_ALL;
+            }
+        }
+        return;
+    }
+    if (pressed & 1u << ROMI_B_SAVE)    /* SAVE: a press saves; held 2 s, good night */
+        R.save_t = now_ms ? now_ms : 1u;
+    if (R.save_t && (buttons & 1u << ROMI_B_SAVE) && now_ms - R.save_t >= 2000u) {
+        R.save_t = 0;
+        R.save_wanted = 1;
+        R.night = 1;
+        R.night_t = R.night_ms = now_ms;
+        R.ufo = 0;
+        R.fade = 0;
+        R.saver = 0;
+        R.mus_on = 0;                   /* the music goes with the picture, a smack */
+        R.jg_want = 2;
+        R.btn = buttons;
+        R.keys = keys;
+        R.now = now_ms;
+        R.dirty = STRIP_ALL;
+        return;
+    }
+    if (!(buttons & 1u << ROMI_B_SAVE))
+        R.save_t = 0;
+    if (R.boot) {                       /* power-on: the style's own show, without the tube's collapse */
+        R.boot = 0;
+        if (ROMI_SUOMI || !STYLE) {
+            R.ufo = STYLE ? 1u : 2u;
+            R.intro = 1;
+            R.ufo_t = now_ms - (uint32_t)CRT_FRAMES * 33u;
+            R.ufo_ms = now_ms;
+            R.jg_want = STYLE ? 4u : 0u;
+            R.dirty |= STRIP_ALL;
+        }
+    }
     if (pressed & 1u << ROMI_B_GLO)     /* GLO the same: a tap turns its pages, a hold changes the style */
         R.glo_t = now_ms ? now_ms : 1u;
     if (R.glo_t && (buttons & 1u << ROMI_B_GLO) && now_ms - R.glo_t >= 2000u) {   /* (2 s: not by chance) */
@@ -3891,6 +4019,30 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.glo_held = 0;
     }
     R.now = now_ms;
+    if (R.ufo && R.intro) {             /* power-on: a touch ends the intro and still acts */
+        int any = buttons || keys;
+        for (i = 0; i < ROMI_NE && !any; i++)
+            any = enc[i] != 0;
+        if (any || now_ms - R.ufo_t >= CHANGE_MS(R.ufo)) {
+            if (any)
+                R.jg_want = 3;
+            R.fade = any ? 0u : R.ufo;
+            R.fade_t = R.fade_ms = now_ms;
+            R.ufo = 0;
+            R.intro = 0;
+            R.dirty = STRIP_ALL;
+        } else {
+            R.btn = buttons;
+            R.keys = keys;
+            R.touch_ms = now_ms ? now_ms : 1u;
+            R.dirty = 0;
+            if (now_ms - R.ufo_ms >= 33u) {
+                R.ufo_ms = now_ms;
+                R.dirty = STRIP_ALL;
+            }
+            return;
+        }
+    }
     if (R.ufo) {                        /* the show runs; a touch skips to its end (and does nothing else) */
         int any = (pressed & ~(1u << ROMI_B_GLO)) || kdown;
         for (i = 0; i < ROMI_NE && !any; i++)
@@ -4379,6 +4531,10 @@ uint32_t romi_dirty(void)
 
 void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint32_t *dim_keys)
 {
+    if (R.night) {                      /* good night: all dark */
+        *buttons = *keys = *dim_buttons = *dim_keys = 0;
+        return;
+    }
     static const uint8_t WK[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
     static const uint8_t BK[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
     static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
@@ -4449,6 +4605,7 @@ int romi_state(int what)
     case ROMI_Q_KEY_STEP: return key_step();
     case ROMI_Q_SAVER: return R.saver;
     case ROMI_Q_UFO: return R.ufo;
+    case ROMI_Q_NIGHT: return R.night;
     case ROMI_Q_FILL: return R.fill;
     case ROMI_Q_LFO_PAGE: return R.page == ROMI_PG_LFO1 ? 1 : R.page == ROMI_PG_LFO2 ? 2 : 0;
     case ROMI_Q_HITS + 0: case ROMI_Q_HITS + 1: case ROMI_Q_HITS + 2: case ROMI_Q_HITS + 3: case ROMI_Q_HITS + 4:

@@ -206,6 +206,8 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | SEQ | zurück zu den Steps und Seite EUCLID: Schläge, Rotation, Chance (stufenlos, 1 bis 100 %), Akzent auf jedem n-ten Schlag |
 | SEQ ein zweites Mal | Seite LINK: die Steps der Spur hängen von einer anderen Spur ab. Quelle und Modus: WITH (nur mit ihren Schlägen), GAPS (nur in ihren Lücken), AFTER (einen Step danach). K3 FOLLOW: die Töne der Spur folgen den Akkorden einer anderen Spur (ab Werk: SUB folgt STAB; OFF schaltet es ab). K4 ACCENT: akzentuierte Schläge einer anderen Spur akzentuieren diese Spur auf demselben Step |
 | SAVE | Projekt im Flash sichern (Einstellungen und Pattern A; B bis D entstehen daraus) |
+| SAVE 2 s gehalten | speichern und gute Nacht: Bild zieht sich zusammen (Röhre), Musik blendet mit aus, Schmatzer, „noapte bună“ (bei suom1saundi „hyvää yötä“); dann Bildschirm, Ton und Lichter aus, bis zum Ausschalten. Eine Berührung weckt (und tut sonst nichts). Die Firmware kann das FM-1 nicht selbst ausschalten |
+| Einschalten | die Start-Show des Stils: ro:MINImal fliegt herein (rominimal.fwsc), bei suom1saundi.fwsc landet das UFO; danach Überblendung. Eine Berührung beendet sie und wirkt sofort |
 | PRESETS | Pattern A bis D, im Lauf zum nächsten Takt. Bearbeitet wird immer A, auch wenn B, C oder D läuft |
 | NEW auf B, C oder D | diese Spielart neu würfeln; A bleibt |
 | MASTER | Lautstärke |

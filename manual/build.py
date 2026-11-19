@@ -145,7 +145,8 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
                     "început (sunet, mix, LFO-uri, MOD, SLICE; pașii rămân; undo îl aduce înapoi)")),
       ("[[REC]]", T("keys mode: the keys play the track", "Tastenmodus: die Tasten spielen die Spur",
                     "modul clape: clapele cântă pista")),
-      ("[[SAVE]]", T("save", "speichern", "salvează")),
+      ("[[SAVE]]", T("save; held 2 s: save and good night", "speichern; 2 s gehalten: speichern und gute Nacht",
+                    "salvează; ținut 2 s: salvează și noapte bună")),
       ("[[PLAY STOP]]", T("start and stop", "Start und Stopp", "pornire și oprire")),
       (T("16 white keys", "16 weiße Tasten", "16 clape albe"),
        T("the steps of the selected track", "die Steps der gewählten Spur", "pașii pistei selectate")),
@@ -654,9 +655,18 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "PLAY, al doilea buton de pe GLOBAL 2, merge în ambele moduri. LOOP rămâne pe pattern (sau urmează CHAIN). "
      "A-D cântă A, B, C și D, câte patru măsuri, și o ia de la capăt cu A. RANDOM sare la alt pattern la fiecare "
      "patru măsuri. Cu CHAIN pe EVOLVE, LAZY face B, C și D noi la fiecare șaisprezece măsuri."),
-   T("A tap on [[SAVE]] writes the changes to the device. The sound stops for a moment. Nothing is saved on its own.",
-     "Ein kurzer Druck auf [[SAVE]] schreibt das Projekt ins Gerät. Der Ton setzt kurz aus. Nichts wird von selbst gespeichert.",
-     "O apăsare scurtă pe [[SAVE]] scrie proiectul în aparat. Sunetul se oprește o clipă. Nimic nu se salvează singur."),
+   T("A tap on [[SAVE]] writes the changes to the device. The sound stops for a moment. Nothing is saved on its own. "
+     "Held for 2 seconds, [[SAVE]] saves and says good night: the picture collapses like an old tube's, the music "
+     "fades with it and ends in a smack, \u201cnoapte bun\u0103\u201d appears; then the screen, the sound and the lights "
+     "stay off until you switch the FM-1 off, or a touch wakes it.",
+     "Ein kurzer Druck auf [[SAVE]] schreibt das Projekt ins Gerät. Der Ton setzt kurz aus. Nichts wird von selbst gespeichert. "
+     "2 Sekunden gehalten speichert [[SAVE]] und sagt gute Nacht: Das Bild zieht sich zusammen wie bei einer alten "
+     "Röhre, die Musik blendet mit aus und endet in einem Schmatzer, \u201enoapte bun\u0103\u201c erscheint; danach bleiben "
+     "Bildschirm, Ton und Lichter aus, bis du das FM-1 ausschaltest oder eine Berührung es weckt.",
+     "O apăsare scurtă pe [[SAVE]] scrie proiectul în aparat. Sunetul se oprește o clipă. Nimic nu se salvează singur. "
+     "Ținut 2 secunde, [[SAVE]] salvează și spune noapte bună: imaginea se strânge ca la un tub vechi, muzica se "
+     "stinge odată cu ea și se termină cu un plescăit, apare \u201enoapte bun\u0103\u201d; apoi ecranul, sunetul și "
+     "luminile rămân stinse până închizi FM-1 sau o atingere îl trezește."),
    T("UNDO, the last black key, takes back the last change to A. Pressed again, it brings the change back.",
      "UNDO, die letzte schwarze Taste, nimmt die letzte Änderung an A zurück. Nochmal gedrückt, holt es sie wieder.",
      "UNDO, ultima clapă neagră, anulează ultima schimbare a lui A. Apăsat din nou, o readuce."))
