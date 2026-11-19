@@ -378,15 +378,15 @@ p(T("NOISE (SUHINA in suom1saundi) hisses, rises and falls: white noise through 
     "(dreapta) sau să urce și să coboare. Generatorul lui pune un riser în măsura patru din patru (o condiție de "
     "trig), un downlifter în măsura unu sau șuierat pe contratimpi."))
 p(T("The master, on GROOVE 2 ([[HOME]] twice): FILTER, one knob, low-pass to the left, high-pass to the right, off "
-    "in the middle; BASS adds the lows below 100 Hz once more, up to about +9 dB. BEAT REPEAT: hold [[SEL]] and a "
+    "in the middle; BASS adds the lows below 100 Hz once more, up to about +9 dB; its partner for the top is AIR on [[GLO]] twice, knob 3: what lies over about 2.5 kHz once more, up to +6 dB (31 % at the start: presence and air). BEAT REPEAT: hold [[SEL]] and a "
     "white key 1 to 4, and the master repeats the beat, eighth, sixteenth or thirty-second from that moment until "
     "you let go.",
     "Die Summe, auf GROOVE 2 ([[HOME]] zweimal): FILTER, ein Regler, links Tiefpass, rechts Hochpass, in der Mitte "
-    "aus; BASS legt die Tiefen unter 100 Hz noch einmal drauf, bis etwa +9 dB. BEAT REPEAT: [[SEL]] halten und eine "
+    "aus; BASS legt die Tiefen unter 100 Hz noch einmal drauf, bis etwa +9 dB; das Gegenstück für oben ist AIR auf [[GLO]] zweimal, Regler 3: alles über etwa 2,5 kHz noch einmal, bis +6 dB (ab Werk 31 %: Präsenz und Luft). BEAT REPEAT: [[SEL]] halten und eine "
     "weiße Taste 1 bis 4, und die Summe wiederholt ab diesem Moment eine Viertel, Achtel, Sechzehntel oder "
     "Zweiunddreißigstel, bis du loslässt.",
     "Suma, pe GROOVE 2 ([[HOME]] de două ori): FILTER, un buton, low-pass la stânga, high-pass la dreapta, oprit la "
-    "mijloc; BASS adaugă încă o dată joasele sub 100 Hz, până la circa +9 dB. BEAT REPEAT: ține [[SEL]] și o clapă "
+    "mijloc; BASS adaugă încă o dată joasele sub 100 Hz, până la circa +9 dB; perechea lui pentru sus e AIR pe [[GLO]] de două ori, butonul 3: tot ce e peste circa 2,5 kHz încă o dată, până la +6 dB (31 % la pornire: prezență și aer). BEAT REPEAT: ține [[SEL]] și o clapă "
     "albă 1–4, iar suma repetă din acel moment o pătrime, optime, șaisprezecime sau treizecidoime până dai drumul."))
 p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each plays STAB (ro:MINImal's FM chords), CLICK "
     "(its noise grains; KLIKKI in suom1saundi) or PIIP (suom1saundi's sound chip), in either style, two of the same "
