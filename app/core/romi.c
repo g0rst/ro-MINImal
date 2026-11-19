@@ -1752,10 +1752,10 @@ static void gen_track(int t)
                 int note = tr->follow ? CHORD_TONE[urand(5)] : scale_note(TONE[urand(6)]);
                 set_step(tr, i, urand(4) == 0, (int)urand(3), note);
             }
-        tr->p[0] = near(48, 18);                        /* decay */
-        tr->p[1] = near(52, 24);                        /* fm */
+        tr->p[0] = near(0, 10);                         /* decay: short, in the back (0 half the time) */
+        tr->p[1] = near(12, 10);                        /* fm: little */
         tr->p[2] = (uint8_t)(urand(8) * 16u + 4u);      /* ratio: rim, wood, tom, blip */
-        tr->p[3] = near(30, 28);                        /* bend */
+        tr->p[3] = near(16, 14);                        /* bend */
         break;
     }
     case ROMI_STAB:
@@ -2116,8 +2116,8 @@ static void pattern_defaults(romi_pattern_t *p)
         {  44,  62,  70,  30,  92,  64,   0,   0},   /* kick: tune decay punch drive (level 92: 72 %) */
         {  70,  52,   0,  45, 112,  64,   0,   0},   /* sub: decay fm ratio glide */
         {  42,  70,  80,  64,  90,  74,  18,  20},   /* hat: decay tone metal open */
-        {  40,  34,  40,  16,  70,  46,  50,  40},   /* perc: decay fm ratio bend (in the back: shorter, softer
-                                                       * FM, less bend, level 70: 55 %) */
+        {   0,  12,  40,  16,  78,  46,  50,  40},   /* perc: decay fm ratio bend (in the back: the shortest, little
+                                                       * FM, less bend, level 78: 61 %) */
         {  66,  60,  30,  40,  78,  64,  70,  60},   /* stab: decay bright chord detune */
         {  40,  78,  84,  90,  86,  64,  40,  30},   /* click: decay freq reso scatter */
     };
@@ -2610,6 +2610,10 @@ void romi_init(uint32_t seed)
     R.prj.cur_pat = 0;                  /* A, and B..D made from it */
     pattern_defaults(BASE);
     gen_all();
+    if (!STYLE) {                       /* the first groove's percussion: the shortest, little FM (the defaults) */
+        BASE->tr[ROMI_PERC].p[0] = 0;
+        BASE->tr[ROMI_PERC].p[1] = 12;
+    }
     new_seeds();
     derive_all();
     R.dirty = ~0u;
