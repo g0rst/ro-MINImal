@@ -144,9 +144,9 @@ static struct {
     /* the screensaver: after ROMI_SAVER_MS without a touch, until the next one */
     uint32_t touch_ms, saver_ms;        /* the last touch; the last frame of the animation */
     uint8_t saver;
-    uint32_t sv_hits[ROMI_TRACKS];      /* hits seen (the kick's swells the name) */
+    uint32_t sv_hits[ROMI_TRACKS];      /* hits seen: they light the dots, the kick's swell the name */
+    uint8_t sv_glow[ROMI_TRACKS][16];   /* each dot's light, fading */
     uint8_t sv_env;                     /* the swell, 255 on a kick, settling */
-    int16_t sv_ring[3];                 /* rings from the name's middle, a kick each: radius, -1 none */
     int16_t sv_x, sv_y, sv_dx, sv_dy;   /* the name's middle, drifting (in 1/16 px) */
     uint8_t density;                    /* the generator's: 0 sparse, 1 medium, 2 busy (set by a whole NEW) */
     uint8_t eu_armed;                   /* the next turn on the EUCLID page keeps an undo first */
@@ -2152,8 +2152,8 @@ static int glyph(int ch)
 }
 
 /* the screensaver: black, the name alone. It swells on every kick like a ball from its middle (the middle more
- * than the edges) and settles; grey, and on every step the next letter orange, one at a time. A thin ring leaves
- * its middle with each kick. The name drifts and bounces off the edges. Drawn in the main loop, 30 frames a
+ * than the edges) and settles; grey, and on every step the next letter orange, one at a time. Behind it, dimmed,
+ * the sequencer's dots light with what plays. The name drifts and bounces off the edges. Drawn in the main loop, 30 frames a
  * second; nothing of the audio path. */
 #define SV_NAME "ro:MINImal"
 #define SV_PX 2.6f                      /* a font pixel, at rest */
@@ -2164,18 +2164,26 @@ static void draw_saver(void)
     static const char *const name = SV_NAME;
     int k, n, lit = R.playing ? (int)(R.gstep_ui % 9u) : -1;   /* the step's letter (not the colon) */
     float cx = (float)R.sv_x * (1.0f / 16.0f), cy = (float)R.sv_y * (1.0f / 16.0f), env = (float)R.sv_env * (1.0f / 255.0f);
-    for (k = 0; k < 3; k++)             /* rings from the name's middle: 64 points each, dimmer as they grow */
-        if (R.sv_ring[k] >= 0) {
-            int rr = R.sv_ring[k], v = 200 - rr * 2, i;
-            uint16_t c;
-            if (v < 24 || cv_y0 > (int)cy + rr + 2 || cv_y0 + ROMI_STRIP_H < (int)cy - rr - 2)
+    {                                   /* behind it, dimmed: the sequencer's 16 x 6 dots, lit by what plays */
+        static const uint16_t TC[ROMI_TRACKS] = {C_ACC, C_FG, RGB(176, 173, 163), RGB(200, 160, 120), C_FG, C_MID};
+        int t, i;
+        for (t = 0; t < ROMI_TRACKS; t++) {
+            int y = 72 + t * 18;
+            if (cv_y0 > y + 12 || cv_y0 + ROMI_STRIP_H < y - 4)
                 continue;
-            c = (uint16_t)(((31 * v / 255) << 11) | ((24 * v / 255) << 5) | (11 * v / 255));
-            for (i = 0; i < 64; i++) {
-                float a = (float)i * (1.0f / 64.0f);
-                rect((int)(cx + fsin(a + 0.25f) * (float)rr), (int)(cy + fsin(a) * (float)rr), 2, 2, c);
+            for (i = 0; i < 16; i++) {
+                int g = R.sv_glow[t][i] * 3 / 5, x = 32 + i * 11, sz;   /* (at most 60 %: the name in front) */
+                uint16_t c = TC[t];
+                if (g < 8) {
+                    rect(x + 3, y + 3, 2, 2, C_LINE);
+                    continue;
+                }
+                c = (uint16_t)(((c >> 11) * g / 255) << 11 | (((c >> 5) & 63) * g / 255) << 5 | (c & 31) * g / 255);
+                sz = g > 100 ? 8 : g > 45 ? 6 : 4;
+                rect(x + 4 - sz / 2, y + 4 - sz / 2, sz, sz, c);
             }
         }
+    }
     if (cv_y0 > (int)cy + 24 || cv_y0 + ROMI_STRIP_H < (int)cy - 24)
         return;
     for (n = 0, k = 0; name[k]; k++) {
@@ -2201,20 +2209,20 @@ static void draw_saver(void)
 static void saver_frame(void)
 {
     int k, w = (int)(30.0f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2, h = (int)(4.0f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2;
-    uint32_t hk = R.hits[ROMI_KICK];
     R.sv_env = (uint8_t)(R.sv_env * 3 / 4);   /* settles in about 150 ms */
-    if (hk != R.sv_hits[ROMI_KICK]) {
-        R.sv_hits[ROMI_KICK] = hk;
-        R.sv_env = 255;
-        for (k = 0; k < 3; k++)
-            if (R.sv_ring[k] < 0 || R.sv_ring[k] > 70) {
-                R.sv_ring[k] = 30;
-                break;
-            }
+    for (k = 0; k < ROMI_TRACKS; k++) {
+        uint32_t h = R.hits[k], i;
+        for (i = 0; i < 16; i++)
+            R.sv_glow[k][i] = (uint8_t)(R.sv_glow[k][i] * 7 / 8);
+        if (h != R.sv_hits[k]) {
+            R.sv_hits[k] = h;
+            R.sv_glow[k][R.pos[k] & 15u] = 255;
+            if (k == ROMI_KICK)
+                R.sv_env = 255;
+        }
     }
-    for (k = 0; k < 3; k++)
-        if (R.sv_ring[k] >= 0 && (R.sv_ring[k] += 4) > 100)
-            R.sv_ring[k] = -1;
+    if (!R.playing && urand(4) == 0)    /* stopped: the dots twinkle */
+        R.sv_glow[urand(ROMI_TRACKS)][urand(16)] = (uint8_t)(120 + urand(100));
     R.sv_x += R.sv_dx;
     R.sv_y += R.sv_dy;
     if (R.sv_x < w << 4 || R.sv_x > (ROMI_W - w) << 4)
@@ -2882,10 +2890,11 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         int t, k;
         R.saver = 1;
         R.saver_ms = now_ms;
-        for (t = 0; t < ROMI_TRACKS; t++)
+        for (t = 0; t < ROMI_TRACKS; t++) {
             R.sv_hits[t] = R.hits[t];
-        for (k = 0; k < 3; k++)
-            R.sv_ring[k] = -1;
+            for (k = 0; k < 16; k++)
+                R.sv_glow[t][k] = 0;
+        }
         R.sv_env = 0;
         R.sv_x = (int16_t)((110 + urand(20)) << 4);
         R.sv_y = (int16_t)((60 + urand(120)) << 4);
