@@ -1693,6 +1693,9 @@ int main(int argc, char **argv)
         turn(ROMI_E_K2, 3);                         /* track 6: CLICK -> NOISE */
         nz = &romi_project()->pat[0].tr[ROMI_CLICK];
         CHECK(nz->engine == ROMI_ENG_NOISE && nz->mute, "NOISE on track 6: engine %d mute %d", nz->engine, nz->mute);
+        CHECK((nz->step[4].flags & ROMI_ST_ON) && (nz->step[12].flags & ROMI_ST_ACC) && !(nz->step[0].flags & ROMI_ST_ON) &&
+              nz->p[0] * 9 / 128 == 0, "NOISE loaded: a clap on 2 and 4 (%02x %02x %02x, LENGTH %d)", nz->step[0].flags,
+              nz->step[4].flags, nz->step[12].flags, nz->p[0]);
         for (t = 0; t < ROMI_TRACKS; t++) romi_project()->pat[0].tr[t].mute = t != ROMI_CLICK;
         for (k = 0; k < 16; k++) { nz->step[k].flags = 0; nz->step[k].cond = 0; nz->step[k].chance = 0; }
         nz->step[0].flags = ROMI_ST_ON; nz->len = 16; nz->p[0] = 72; nz->q[1] = 127;   /* a bar */ nz->dly = nz->rev = 0;

@@ -1645,14 +1645,26 @@ static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const
 
 /* NOISE's rules: a riser into the next four bars (bar four of four, a bar long, rising and swelling), a downlifter
  * out of them (bar one of four, falling and fading), or hiss on the off-beats */
+/* the clap where it belongs: 2 and 4 (steps 5 and 13), the 4 accented, now and then a flam before it */
+static void clap_steps(romi_track_t *tr, int flam)
+{
+    uint32_t i;
+    for (i = 0; i < ROMI_STEPS; i++) {
+        tr->step[i].flags = 0;
+        step_plain(&tr->step[i]);
+    }
+    tr->len = 16;
+    tr->slide = 0;
+    set_step(tr, 4, 0, 0, 0);
+    set_step(tr, 12, 1, 0, 0);
+    if (flam)
+        set_step(tr, 11, 0, 2, 0);      /* (at 50 %) */
+}
 static void noise_gen(romi_track_t *tr)
 {
     uint32_t k = urand(5), i;
-    if (k <= 1) {                       /* the clap on 2 and 4 (half the time), now and then a flam before the 4 */
-        set_step(tr, 4, 0, 0, 0);
-        set_step(tr, 12, 1, 0, 0);
-        if (urand(4) == 0)
-            set_step(tr, 11, 0, 2, 0);
+    if (k <= 1) {                       /* the clap (half the time) */
+        clap_steps(tr, urand(4) == 0);
         tr->p[0] = NLEN_V(0);
         tr->p[1] = near(56, 14);        /* the tail, 150 ms or so */
         tr->p[2] = near(77, 6);         /* about 1.3 kHz */
@@ -2134,10 +2146,10 @@ static void engine_sound(romi_track_t *tr, int en)
 {
     static const uint8_t D[ROMI_NENG][13] = {
         /* p0   p1   p2   p3 level pan  dly  rev  q0  q1  q2  q3 glide */
-        {  66,  60,  30,  40,  78,  64,  70,  60, 24, 38,  0,  0,  24},   /* STAB: decay bright chord detune */
+        {  66,  80,  30,  40,  78,  64,  70,  60, 24, 38,  0,  0,  24},   /* STAB: decay bright chord detune */
         {  40,  78,  84,  90,  86,  64,  40,  30, 24,  0,  0,  0,   0},   /* CLICK: decay freq reso scatter */
         {  30,  46,  40,  30,  76,  80,  70,  40, 24, 64,  0,  0,   0},   /* PIIP: wave decay arp vibrato | SPEED */
-        {  64, 110,  50,  60,  70,  64,  40,  70, 24,127,  0,  0,   0},   /* NOISE: a bar, rising, swelling */
+        {   1,  56,  77,  40,  80,  64,  20,  50, 24,  0,  0,  0,   0},   /* NOISE: CLAP, tail 150 ms, 1.3 kHz */
     };
     const uint8_t *d = D[en % ROMI_NENG];
     int i;
@@ -3920,6 +3932,11 @@ static void set_engine(int t, uint8_t was)
     keep_undo();
     engine_sound(tr, en);
     gen_track(t);
+    if (en == ROMI_ENG_NOISE) {         /* loaded, NOISE is a clap on 2 and 4 with its sound; risers and hiss by NEW */
+        clap_steps(tr, 0);
+        engine_sound(tr, en);
+        tr->eu_hits = 2;
+    }
     tr->mute = 1;                       /* it comes in muted: brought in live when wanted (SEL) */
     if (R.prj.mode && !R.prj.work) {    /* HARD, LIVE: the track changes in all four patterns, as in this one
                                          * (PROD: only here, a track can play another engine in each pattern) */
@@ -4402,6 +4419,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         param_t pp[4];
         uint8_t mode_was = R.prj.mode, style_was = R.prj.style;
         uint8_t eng_was[2] = {EDT->tr[ROMI_STAB].engine, EDT->tr[ROMI_CLICK].engine};
+        int clap_was = R.track >= ROMI_STAB && tr->engine == ROMI_ENG_NOISE && tr->p[0] * 9 / 128 == 0;
         page_params(pp);
         for (i = 0; i < 4; i++) {
             int d = (int)enc[ROMI_E_K1 + i];
@@ -4430,6 +4448,17 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 tr->sl_mode = 2;
                 romi_message("GRAIN", "TWO TRACKS AT MOST");
             }
+        }
+        if (R.page == ROMI_PG_SOUND && !clap_was && R.track >= ROMI_STAB && tr->engine == ROMI_ENG_NOISE &&
+            tr->p[0] * 9 / 128 == 0) {  /* LENGTH turned to CLAP: the clap where it belongs, with a clap's sound */
+            uint8_t len_now = tr->p[0];
+            keep_undo();
+            clap_steps(tr, 0);
+            tr->p[0] = len_now;
+            tr->p[1] = 56;
+            tr->p[2] = 77;
+            tr->q[1] = 0;
+            tr->eu_hits = 2;
         }
         if (R.prj.mode != mode_was)
             set_mode(R.prj.mode);
