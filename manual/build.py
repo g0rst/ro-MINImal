@@ -210,8 +210,12 @@ table(T(["track", "sound", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["spur", "klang"
       ("PERC", T("one FM pair with a pitch bend: rim, wood, tom, blip",
                  "ein FM-Paar mit Pitch-Bend: Rim, Holz, Tom, Blip",
                  "o pereche FM cu pitch bend: rim, lemn, tom, blip"), "DECAY", "FM", "RATIO", "BEND"),
-      ("STAB", T("a three-note chord through a closing filter", "ein Dreiklang durch ein schließendes Filter",
-                 "un acord de trei note printr-un filtru care se închide"), "DECAY", "BRIGHT", "CHORD", "DETUNE"),
+      ("STAB", T("a three-note chord through a closing filter; CHORD: TRIAD, 7TH, 9TH, SUS, 5TH, built in the key (on III or VI "
+                   "major, as the scale has it)",
+                 "ein Dreiklang durch ein schließendes Filter; CHORD: TRIAD, 7TH, 9TH, SUS, 5TH, in der Tonart gebaut (auf III "
+                   "oder VI Dur, wie die Skala es hat)",
+                 "un acord de trei note printr-un filtru care se închide; CHORD: TRIAD, 7TH, 9TH, SUS, 5TH, construit în "
+                   "tonalitate (pe III sau VI major, cum o are gama)"), "DECAY", "BRIGHT", "CHORD", "DETUNE"),
       ("CLICK", T("a grain of noise through a resonant filter, somewhere in the stereo field",
                   "ein Rauschkorn durch ein Resonanzfilter, irgendwo im Stereofeld",
                   "un grăunte de zgomot printr-un filtru rezonant, undeva în câmpul stereo"),

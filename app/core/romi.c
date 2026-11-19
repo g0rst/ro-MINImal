@@ -223,6 +223,21 @@ static const uint8_t SCALES[NSCALES][7] = {
     {0, 2, 3, 5, 7, 8, 11},             /* harmonic minor */
 };
 static const int8_t CHORDS[5][3] = {{0, 3, 7}, {0, 3, 10}, {3, 10, 14}, {0, 5, 10}, {0, 7, 12}};
+/* the stab's chords in the key: scale degrees stacked on the note's own (triad, seventh, ninth, sus in fourths, the
+ * fifth and octave), so a chord on III or VI is major, on ii diminished, as the key has it; CHORDS (fixed minor
+ * shapes) only for a note outside the scale */
+static const int8_t DCHORDS[5][3] = {{0, 2, 4}, {0, 2, 6}, {2, 6, 8}, {0, 3, 6}, {0, 4, 7}};
+static int scale_note(int degree);
+static int note_degree(int note, int *deg)   /* the scale degree of a note (semitones over the root), if it has one */
+{
+    int d;
+    for (d = -14; d <= 28; d++)
+        if (scale_note(d) == note) {
+            *deg = d;
+            return 1;
+        }
+    return 0;
+}
 static const float PERC_RATIO[8] = {1.0f, 1.41f, 1.73f, 2.0f, 2.76f, 3.5f, 4.07f, 5.33f};
 
 #define PAT (&R.prj.pat[R.prj.cur_pat])   /* the pattern playing */
@@ -392,9 +407,15 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
             R.slot_pan[s] = 0.5f;
         } else if (tr->engine == ROMI_ENG_STAB) {
             stab_v *ST = &R.stab[s];
-            const int8_t *ch = CHORDS[p[2] * 5 / 128];
+            int ct = p[2] * 5 / 128, deg, ch[3];
             float det = (float)p[3] * (0.008f / 127.0f);
             int i, slide = R.slide_now && ST->amp > 0.01f, glide = tr->glide && ST->amp > 0.05f;
+            if (note_degree(note, &deg))    /* in the key: the chord the key builds on this degree */
+                for (i = 0; i < 3; i++)
+                    ch[i] = scale_note(deg + DCHORDS[ct][i]) - note;
+            else
+                for (i = 0; i < 3; i++)
+                    ch[i] = CHORDS[ct][i];
             for (i = 0; i < 3; i++) {       /* GLIDE: an overlapping chord glides there; SLIDE: always, no new attack */
                 ST->ft[i] = note_hz(root + 24.0f + (float)note + (float)ch[i]) * (1.0f + det * (float)(i - 1));
                 if (!glide && !slide)
@@ -2969,7 +2990,7 @@ static void param_text(const param_t *p, char *t)
 {
     static const char *const SCALE[NSCALES] = {"MIN", "DOR", "PHR", "PEN", "PDOM", "HMIN"};
     static const char *const DTIME[3] = {"1/16", "1/8", "3/16"};
-    static const char *const CHORD[5] = {"MIN", "MIN7", "MIN9", "SUS", "5TH"};
+    static const char *const CHORD[5] = {"TRIAD", "7TH", "9TH", "SUS", "5TH"};   /* (in the key) */
     static const char *const CHAIN[5] = {"OFF", "A-B", "A-C", "A-D", "EVOLVE"};
     static const char *const EACC[6] = {"OFF", "ALL", "2ND", "3RD", "4TH", "RANDOM"};
     static const char *const DEPMODE[3] = {"WITH", "GAPS", "AFTER"};

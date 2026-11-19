@@ -73,7 +73,10 @@ Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
 | KLIKKI (Engine CLICK, Spur 6 ab Start) | DECAY, FREQ, RESO, SCATTER | PITCH, ATTACK, DRIVE, CRUSH |
 
 Die Spuren 5 und 6 wählen ihre Engine in beiden Stilen frei (HOME zweimal, Seite GROOVE 2): STAB, CLICK oder PIIP.
-In ro:MINImal heißt PIIP **8-BIT**, der Click bei suom1saundi KLIKKI. Vierte Engine: **NOISE** (bei suom1saundi
+Der Generator für PIIP/8-BIT schreibt Melodien nach Lehrbuch: ein Takt als Frage und Antwort auf demselben Rhythmus,
+die Antwort wiederholt das Motiv; meist Sekundschritte, auf den Schwerpunkten ein Ton des Akkords, den der Stab dort
+spielt (ohne Stab i – VI – VII – i); die Frage endet offen auf der Quinte (oder Sekunde), die Antwort zu Hause auf dem
+Grundton (oder der Terz). In ro:MINImal heißt PIIP **8-BIT**, der Click bei suom1saundi KLIKKI. Vierte Engine: **NOISE** (bei suom1saundi
 SUHINA): Rauschen durch ein resonantes Filter, dessen Cutoff über eine Sechzehntel bis acht Takte nach oben oder unten
 läuft (Riser, Downlifter, Zischen); SOUND LENGTH, SWEEP, TONE, RESO, SOUND 2 PITCH, SWELL, DRIVE, CRUSH.
 
@@ -159,7 +162,7 @@ Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bew
 | SUB | Sinus mit kurzem FM-Anschlag, Legato-Glide; eine Oktave über dem Grundton (F2, gut hörbar auch auf kleinen Boxen), SOUND 2 PITCH -12 für den tiefen Sub; ohne eigenen Bass-Boost (kein Drive, duckt voll): das Fundament regelt GROOVE 2 K4 BASS. Ohne Knackser: Legato-Noten setzen bei der laufenden Lautstärke an, der FM-Anschlag wird weich eingeblendet, ein sanfter Tiefpass (1,2 kHz) nimmt die Kanten, und der Sidechain greift in 2 ms statt sprunghaft | DECAY, FM, RATIO, GLIDE |
 | HAT | zwei unharmonische FM-Paare gegen Rauschen, Hochpass; Akzent öffnet | DECAY, TONE, METAL, OPEN |
 | PERC | ein FM-Paar mit Pitch-Bend: Rim, Holz, Tom, Blip | DECAY, FM, RATIO, BEND |
-| STAB | Dreiklang aus FM-Paaren, Tiefpass folgt der Hüllkurve | DECAY, BRIGHT, CHORD, DETUNE |
+| STAB | Dreiklang aus FM-Paaren, Tiefpass folgt der Hüllkurve; CHORD (TRIAD, 7TH, 9TH, SUS, 5TH) wird in der Tonart aus Skalenstufen geschichtet: auf III, VI, VII Dur, auf II vermindert, wie die Skala es hat (nur Töne außerhalb der Skala bekommen feste Moll-Formen) | DECAY, BRIGHT, CHORD, DETUNE |
 | CLICK | Rauschkorn durch resonanten Bandpass, zufällig im Stereofeld | DECAY, FREQ, RESO, SCATTER |
 
 Effekte: Delay (1/16, 1/8, 3/16; links volle Zeit, rechts zwei Drittel), Reverb (vier Kämme, Allpässe),
