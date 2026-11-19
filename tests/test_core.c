@@ -1182,7 +1182,7 @@ int main(int argc, char **argv)
         for (k = 0; k < 2000 / 17; k++) frame(0), run(0.017, 0, 0, 0);
         CHECK(romi_state(ROMI_Q_SAVER), "no screensaver after 21 s");
         for (k = 0; k < 60; k++) { frame(0); run(0.017, 0, 0, 0); frames += romi_dirty() != 0; }
-        CHECK(frames >= 20 && frames <= 32, "screensaver: %d frames drawn in a second", frames);
+        CHECK(frames >= 25 && frames <= 36, "screensaver: %d frames drawn in a second", frames);
         snprintf(path, sizeof path, "%s/screen-saver.ppm", out);
         write_screen(path);
         bpm = romi_state(ROMI_Q_BPM);
