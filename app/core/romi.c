@@ -141,6 +141,14 @@ static struct {
     volatile uint8_t kick_roll;         /* C paused its kick before the bar: the main loop throws for a new kick */
     uint8_t kick_rolled;                /* thrown once in this visit of C */
     uint8_t slide_now;                  /* the note being triggered slides (sub, stab: its step's SLIDE) */
+    /* the screensaver: after ROMI_SAVER_MS without a touch, until the next one */
+    uint32_t touch_ms, saver_ms;        /* the last touch; the last frame of the animation */
+    uint8_t saver;
+    uint32_t sv_hits[ROMI_TRACKS];      /* hits seen, to light what the music plays */
+    uint8_t sv_glow[ROMI_TRACKS][16];   /* each dot's light, fading */
+    int16_t sv_ring[3];                 /* rings from the middle, a kick each: radius, -1 none */
+    int16_t sv_x, sv_y, sv_dx, sv_dy;   /* the name, drifting (in 1/16 px) */
+    uint8_t sv_tw;                      /* stopped: a dot twinkling now and then */
     uint8_t density;                    /* the generator's: 0 sparse, 1 medium, 2 busy (set by a whole NEW) */
     uint8_t eu_armed;                   /* the next turn on the EUCLID page keeps an undo first */
     uint32_t btn, keys, now;
@@ -2131,6 +2139,82 @@ static int held_step(void)              /* the lowest held white key in step mod
     return -1;
 }
 
+/* the screensaver: black; the sequencer's 16 x 6 dots, lit by what plays and fading; a ring from the middle on every
+ * kick; the name drifting and bouncing off the edges. Drawn in the main loop, 25 frames a second; nothing of the
+ * audio path. */
+static void draw_saver(void)
+{
+    static const uint16_t TC[ROMI_TRACKS] = {C_ACC, C_FG, RGB(176, 173, 163), RGB(200, 160, 120), C_FG, C_MID};
+    int t, i, k, x0 = 32, y0 = 72;
+    for (t = 0; t < ROMI_TRACKS; t++)
+        for (i = 0; i < 16; i++) {
+            int g = R.sv_glow[t][i], x = x0 + i * 11, y = y0 + t * 18, r, gg, b;
+            uint16_t c = TC[t];
+            if (!g) {
+                rect(x + 3, y + 3, 2, 2, C_LINE);
+                continue;
+            }
+            r = (c >> 11) * g / 255; gg = ((c >> 5) & 63) * g / 255; b = (c & 31) * g / 255;
+            c = (uint16_t)(r << 11 | gg << 5 | b);
+            k = g > 160 ? 8 : g > 70 ? 6 : 4;
+            rect(x + 4 - k / 2, y + 4 - k / 2, k, k, c);
+        }
+    for (k = 0; k < 3; k++)              /* rings: 64 points each, dimmer as they grow */
+        if (R.sv_ring[k] >= 0) {
+            int rr = R.sv_ring[k], v = 255 - rr * 2;
+            uint16_t c;
+            if (v < 30)
+                continue;
+            c = (uint16_t)(((31 * v / 255) << 11) | ((24 * v / 255) << 5) | (11 * v / 255));
+            if (cv_y0 > 120 + rr + 2 || cv_y0 + ROMI_STRIP_H < 120 - rr - 2)
+                continue;
+            for (i = 0; i < 64; i++) {
+                float a = (float)i * (1.0f / 64.0f);
+                rect(120 + (int)(fsin(a + 0.25f) * (float)rr), 120 + (int)(fsin(a) * (float)rr), 2, 2, c);
+            }
+        }
+    {
+        int x = R.sv_x >> 4, y = R.sv_y >> 4;
+        if (cv_y0 <= y + 16 && cv_y0 + ROMI_STRIP_H >= y) {
+            i = text(x, y, "ro:", C_MID, 2);
+            i = text(i, y, "MINI", C_FG, 2);
+            text(i, y, "mal", C_MID, 2);
+        }
+    }
+}
+
+/* the animation, a frame: lights from the hits, rings from the kick, the name moving; stopped, a twinkle */
+static void saver_frame(void)
+{
+    int t, i, k;
+    for (t = 0; t < ROMI_TRACKS; t++) {
+        uint32_t h = R.hits[t];
+        for (i = 0; i < 16; i++)
+            R.sv_glow[t][i] = (uint8_t)(R.sv_glow[t][i] * 7 / 8);
+        if (h != R.sv_hits[t]) {
+            R.sv_hits[t] = h;
+            R.sv_glow[t][R.pos[t] & 15u] = 255;
+            if (t == ROMI_KICK)
+                for (k = 0; k < 3; k++)
+                    if (R.sv_ring[k] < 0 || R.sv_ring[k] > 110) {
+                        R.sv_ring[k] = 6;
+                        break;
+                    }
+        }
+    }
+    for (k = 0; k < 3; k++)
+        if (R.sv_ring[k] >= 0 && (R.sv_ring[k] += 5) > 130)
+            R.sv_ring[k] = -1;
+    if (!R.playing && urand(4) == 0)    /* stopped: the dots twinkle */
+        R.sv_glow[urand(ROMI_TRACKS)][urand(16)] = (uint8_t)(120 + urand(100));
+    R.sv_x += R.sv_dx;
+    R.sv_y += R.sv_dy;
+    if (R.sv_x < 0 || R.sv_x > (ROMI_W - 4 - text_w("ro:MINImal", 2)) << 4)
+        R.sv_dx = (int16_t)-R.sv_dx, R.sv_x += R.sv_dx;
+    if (R.sv_y < 0 || R.sv_y > (ROMI_H - 16) << 4)
+        R.sv_dy = (int16_t)-R.sv_dy, R.sv_y += R.sv_dy;
+}
+
 void romi_draw(uint16_t *px, int strip)
 {
     char t[32];
@@ -2139,6 +2223,10 @@ void romi_draw(uint16_t *px, int strip)
     cv = px;
     cv_y0 = strip * ROMI_STRIP_H;
     rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, C_BG);
+    if (R.saver) {
+        draw_saver();
+        return;
+    }
 
     /* header: the name, the pattern, the tempo, the transport */
     i = text(4, 5, "ro:", C_MID, 2);
@@ -2430,6 +2518,18 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     romi_track_t *tr;
     int i, hs, e_sel = (int)enc[ROMI_E_SELECT], e_pre = (int)enc[ROMI_E_PRESET];
     R.now = now_ms;
+    {                                   /* a touch: a button, a key, a knob; it wakes the screen and still acts */
+        int any = buttons || keys;
+        for (i = 0; i < ROMI_NE && !any; i++)
+            any = enc[i] != 0;
+        if (any || !R.touch_ms) {
+            R.touch_ms = now_ms ? now_ms : 1u;
+            if (R.saver) {
+                R.saver = 0;
+                R.dirty |= STRIP_ALL;
+            }
+        }
+    }
     hs = held_step();                   /* from the keys as they were: a step held since before this call */
     R.btn = buttons;
     R.keys = keys;
@@ -2770,6 +2870,30 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.base_changed = 0;
         R.dirty |= STRIP_ALL;
     }
+    if (!R.saver && (int32_t)(now_ms - R.touch_ms) >= (int32_t)ROMI_SAVER_MS) {   /* the screensaver begins */
+        int t, k;
+        R.saver = 1;
+        R.saver_ms = now_ms;
+        for (t = 0; t < ROMI_TRACKS; t++) {
+            R.sv_hits[t] = R.hits[t];
+            for (k = 0; k < 16; k++)
+                R.sv_glow[t][k] = 0;
+        }
+        for (k = 0; k < 3; k++)
+            R.sv_ring[k] = -1;
+        R.sv_x = (int16_t)((40 + urand(80)) << 4);
+        R.sv_y = (int16_t)((20 + urand(180)) << 4);
+        R.sv_dx = (int16_t)(urand(2) ? 9 : -9);
+        R.sv_dy = (int16_t)(urand(2) ? 6 : -6);
+    }
+    if (R.saver) {                      /* 25 frames a second, the whole screen; nothing else is drawn */
+        R.dirty = 0;
+        if ((int32_t)(now_ms - R.saver_ms) >= 40) {
+            R.saver_ms = now_ms;
+            saver_frame();
+            R.dirty = STRIP_ALL;
+        }
+    }
 }
 
 uint32_t romi_dirty(void)
@@ -2848,6 +2972,7 @@ int romi_state(int what)
     case ROMI_Q_CURSOR: return R.cursor;
     case ROMI_Q_DENSITY: return R.density;
     case ROMI_Q_KEY_STEP: return key_step();
+    case ROMI_Q_SAVER: return R.saver;
     case ROMI_Q_LFO_PAGE: return R.page == ROMI_PG_LFO1 ? 1 : R.page == ROMI_PG_LFO2 ? 2 : 0;
     case ROMI_Q_HITS + 0: case ROMI_Q_HITS + 1: case ROMI_Q_HITS + 2: case ROMI_Q_HITS + 3: case ROMI_Q_HITS + 4:
     case ROMI_Q_HITS + 5: return (int)R.hits[what - ROMI_Q_HITS];

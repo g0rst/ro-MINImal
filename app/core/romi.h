@@ -108,6 +108,7 @@ typedef struct {
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
 #define ROMI_VERSION 14u
+#define ROMI_SAVER_MS 20000u             /* the screensaver: after 20 s without a touch */
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
                                          * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects
                                          * 2..4 load aside: the HARD patterns, back when HARD is chosen again */
@@ -144,7 +145,7 @@ void romi_store_saved(int obj);
 /* ---- for tests and the simulator ---- */
 int romi_state(int what);
 enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI_Q_PATTERN, ROMI_Q_KEYS_MODE,
-       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY, ROMI_Q_LFO_PAGE, ROMI_Q_KEY_STEP,
+       ROMI_Q_LEN, ROMI_Q_STEPS_ON, ROMI_Q_MUTE, ROMI_Q_UNSAVED, ROMI_Q_POS, ROMI_Q_SOLO, ROMI_Q_CURSOR, ROMI_Q_DENSITY, ROMI_Q_LFO_PAGE, ROMI_Q_KEY_STEP, ROMI_Q_SAVER,
        ROMI_Q_HITS = 100,              /* + track: hits sounded since PLAY */
        ROMI_Q_NOTE = 110 };            /* + track: the note of its last hit, as played (semitones from its base) */
 romi_project_t *romi_project(void);

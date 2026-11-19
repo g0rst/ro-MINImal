@@ -1171,6 +1171,26 @@ int main(int argc, char **argv)
         CHECK(hits > 600 * 25 / 100 && hits < 600 * 41 / 100, "chance 33 %%: %d hits in 600 steps", hits);
     }
 
+    /* the screensaver: after 20 s without a touch, drawn 25 times a second, lit by the music; a touch wakes it and
+     * still acts (a knob still turns) */
+    {
+        int k, frames = 0, bpm;
+        romi_init(71);
+        tap_button(ROMI_B_PLAY);
+        for (k = 0; k < 19000 / 17; k++) frame(0), run(0.017, 0, 0, 0);
+        CHECK(!romi_state(ROMI_Q_SAVER), "screensaver before 20 s");
+        for (k = 0; k < 2000 / 17; k++) frame(0), run(0.017, 0, 0, 0);
+        CHECK(romi_state(ROMI_Q_SAVER), "no screensaver after 21 s");
+        for (k = 0; k < 60; k++) { frame(0); run(0.017, 0, 0, 0); frames += romi_dirty() != 0; }
+        CHECK(frames >= 20 && frames <= 32, "screensaver: %d frames drawn in a second", frames);
+        snprintf(path, sizeof path, "%s/screen-saver.ppm", out);
+        write_screen(path);
+        bpm = romi_state(ROMI_Q_BPM);
+        turn(ROMI_E_K1, 1);                         /* HOME: tempo */
+        CHECK(!romi_state(ROMI_Q_SAVER) && romi_state(ROMI_Q_BPM) != bpm, "a knob: saver %d, bpm %d", romi_state(ROMI_Q_SAVER), romi_state(ROMI_Q_BPM));
+        CHECK(romi_dirty() != 0, "woken: nothing redrawn");
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

@@ -321,6 +321,14 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", "", ""),
       ("[[LFO]]", "LFO 1", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"))
+p(T("Twenty seconds untouched and the screen dreams: the sixteen by six dots light with what plays, a ring leaves "
+    "the middle on every kick, the name drifts and bounces. Any touch wakes it, and still does what it does.",
+    "Zwanzig Sekunden unberührt, und der Bildschirm träumt: Die sechzehn mal sechs Punkte leuchten mit, was spielt, "
+    "bei jeder Kick verlässt ein Ring die Mitte, der Name treibt und prallt ab. Jede Berührung weckt ihn und tut "
+    "trotzdem, was sie tut.",
+    "Douăzeci de secunde neatins și ecranul visează: cele șaisprezece pe șase puncte se aprind cu ce cântă, la fiecare "
+    "kick un inel pleacă din mijloc, numele plutește și ricoșează. Orice atingere îl trezește și își face totuși "
+    "treaba."))
 p(T("DRIFT moves timbre, decay, level and timing slowly and at random. At zero the machine is exact. "
     "The kick's timing never drifts.",
     "DRIFT bewegt Klangfarbe, Ausklang, Lautstärke und Timing langsam und zufällig. Bei null ist die Maschine exakt. "
