@@ -1486,10 +1486,10 @@ int main(int argc, char **argv)
         tap_button(ROMI_B_HOME);                    /* (on GROOVE already) GROOVE 2: K1 track 5, K2 track 6 */
         CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE, "HOME x2: page %d", romi_state(ROMI_Q_PAGE));
         turn(ROMI_E_K2, 1);
-        CHECK(t6->engine == ROMI_ENG_PIIP && t6->p[1] == 46 && t6->q[1] == 64, "CLICK -> PIIP: engine %d, sound %d %d",
-              t6->engine, t6->p[1], t6->q[1]);
+        CHECK(t6->engine == ROMI_ENG_PIIP && t6->p[1] == 46 && t6->q[1] == 64 && t6->mute, "CLICK -> PIIP: engine %d, "
+              "sound %d %d, muted %d", t6->engine, t6->p[1], t6->q[1], t6->mute);
         tap_key(25);                                /* UNDO */
-        CHECK(t6->engine == ROMI_ENG_CLICK, "undo: engine %d", t6->engine);
+        CHECK(t6->engine == ROMI_ENG_CLICK && !t6->mute, "undo: engine %d, muted %d", t6->engine, t6->mute);
         turn(ROMI_E_K2, 1);
         turn(ROMI_E_K1, 2);                         /* track 5, STAB -> PIIP too: two PIIPs */
         CHECK(t5->engine == ROMI_ENG_PIIP && t6->engine == ROMI_ENG_PIIP, "two PIIPs: %d %d", t5->engine, t6->engine);

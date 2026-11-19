@@ -341,16 +341,18 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[LFO]] ×3", "MOD", "RESTART", "ENV SRC", "ENV DEPTH", "ENV TGT"))
 p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each plays STAB (ro:MINImal's FM chords), CLICK "
     "(its noise grains; KLIKKI in suom1saundi) or PIIP (suom1saundi's sound chip), in either style, two of the same "
-    "too. A new engine brings its sound and a pattern in its rules; undo brings the old one back. Live, that is a "
-    "third voice to swap without leaving the groove.",
+    "too. A new engine brings its sound and a pattern in its rules and comes in muted: [[SEL]] brings it in when the "
+    "moment is right; undo brings the old one back. Live, that is a voice to swap without leaving the groove.",
     "Die Spuren 5 und 6 sind frei: [[HOME]] zweimal, GROOVE 2, Regler 1 und 2, und jede spielt STAB (die FM-Akkorde von ro:MINImal), "
     "CLICK (seine Rauschkörner; bei suom1saundi KLIKKI) oder PIIP (der Soundchip von suom1saundi), in beiden "
-    "Stilen, auch zweimal dasselbe. Eine neue Engine bringt ihren Klang und ein Pattern nach ihren Regeln mit; "
-    "Undo holt das alte zurück. Live ist das eine Stimme zum Tauschen, ohne den Groove zu verlassen.",
+    "Stilen, auch zweimal dasselbe. Eine neue Engine bringt ihren Klang und ein Pattern nach ihren Regeln mit und "
+    "kommt stumm dazu: [[SEL]] holt sie rein, wenn der Moment passt; Undo holt das alte zurück. Live ist das eine "
+    "Stimme zum Tauschen, ohne den Groove zu verlassen.",
     "Pistele 5 și 6 sunt libere: [[HOME]] de două ori, GROOVE 2, butoanele 1 și 2, și fiecare cântă STAB (acordurile FM ale lui "
     "ro:MINImal), CLICK (boabele lui de zgomot; KLIKKI în suom1saundi) sau PIIP (cipul de sunet al lui suom1saundi), "
-    "în ambele stiluri, chiar de două ori același. Un engine nou își aduce sunetul și un pattern după regulile lui; "
-    "undo îl aduce înapoi pe cel vechi. Live e o voce de schimbat fără să ieși din groove."))
+    "în ambele stiluri, chiar de două ori același. Un engine nou își aduce sunetul și un pattern după regulile lui și "
+    "vine pe mut: [[SEL]] îl aduce când e momentul; undo îl aduce înapoi pe cel vechi. Live e o voce de schimbat "
+    "fără să ieși din groove."))
 p(T("SLICE ([[FX]] three times) cuts up the sound of hat, percussion, stab and click; never the kick and the sub. "
     "GATE opens and shuts it on a grid from the hit (1/32 to 1/128; RANDOM 0 alternates, more shuts slices at "
     "random). STUTTER records the hit's first slice (1/16 to 1/128) and plays it again and again, fainter each time; "

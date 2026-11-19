@@ -3137,8 +3137,8 @@ static void set_style(void)
     R.dirty |= STRIP_ALL;
 }
 
-/* An engine turned (GROOVE 2, HOME twice): track 5 or 6 plays another engine. Its sound comes from the engine's defaults,
- * its pattern from the engine's rules (undo brings the old one back). A sub that followed a stab that is now a
+/* An engine turned (GROOVE 2, HOME twice): track 5 or 6 plays another engine, muted until SEL brings it in. Its sound
+ * comes from the engine's defaults, its pattern from the engine's rules (undo brings the old one back). A sub that followed a stab that is now a
  * click follows nothing. */
 static void set_engine(int t, uint8_t was)
 {
@@ -3148,9 +3148,10 @@ static void set_engine(int t, uint8_t was)
     keep_undo();
     engine_sound(tr, en);
     gen_track(t);
+    tr->mute = 1;                       /* it comes in muted: brought in live when wanted (SEL) */
     if (en == ROMI_ENG_CLICK && EDT->tr[ROMI_SUB].follow == t + 1)
         EDT->tr[ROMI_SUB].follow = 0;
-    romi_message(t == ROMI_STAB ? "TRACK 5" : "TRACK 6", track_name(t));
+    romi_message(t == ROMI_STAB ? "TRACK 5 MUTED" : "TRACK 6 MUTED", track_name(t));
 }
 
 /* LAZY <-> HARD. Into HARD: B..D are the HARD patterns kept aside (if there are), else copies of A ("all the same,

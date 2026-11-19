@@ -171,7 +171,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | ALGO | Looplänge der Spur |
 | PRESET | Pattern A bis D (wechselt zum nächsten Takt) |
 | HOME | Seite GROOVE: Tempo (90 bis 160), Swing, Drift, Duck |
-| HOME ein zweites Mal | Seite GROOVE 2: K1 Engine von Spur 5, K2 Engine von Spur 6 (beide Stile): STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI) oder PIIP (Soundchip); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, UNDO holt das alte zurück |
+| HOME ein zweites Mal | Seite GROOVE 2: K1 Engine von Spur 5, K2 Engine von Spur 6 (beide Stile): STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI) oder PIIP (Soundchip); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, sie kommt **stumm** dazu (SEL holt sie rein), UNDO holt das alte zurück |
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
 | EDIT ein zweites Mal | Seite SOUND 2: PITCH (±24 Halbtöne), dann je Spur CLICK (Kick), FM.TIME (Sub), B.TIME (Perc) oder ATTACK (Hat, Stab, Click), DRIVE (Kick: P.TIME), CRUSH. Lockbar pro Step, Ziel für LFOs |
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
