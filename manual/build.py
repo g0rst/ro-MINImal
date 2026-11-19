@@ -366,17 +366,20 @@ p(T("Amounts read in per cent: levels, sends, drift, duck, depths (LFO and ENV f
 p(T("NOISE (SUHINA in suom1saundi) hisses, rises and falls: white noise through a resonant filter whose cutoff "
     "SWEEPs up or down over the note's LENGTH, a sixteenth to eight bars; TONE where it starts, RESO how narrow; "
     "SWELL on SOUND 2 lets it fall from the start (left), swell to the end (right) or rise and fall. Its generator "
-    "puts a riser on bar four of four (a trig condition), a downlifter on bar one, or hiss on the off-beats.",
+    "puts a riser on bar four of four (a trig condition), a downlifter on bar one, or hiss on the off-beats. "
+    "TONE, SWEEP, RESO and SWELL are heard at once, while a sweep runs; LENGTH from the next note on.",
     "NOISE (bei suom1saundi SUHINA) zischt, steigt und fällt: weißes Rauschen durch ein resonantes Filter, dessen "
     "Cutoff über die LENGTH der Note (eine Sechzehntel bis acht Takte) nach oben oder unten SWEEPt; TONE wo es "
     "beginnt, RESO wie eng; SWELL auf SOUND 2 lässt es ab dem Anfang fallen (links), bis zum Ende anschwellen "
     "(rechts) oder steigen und fallen. Sein Generator setzt einen Riser in Takt vier von vier (eine Trig-Bedingung), "
-    "einen Downlifter in Takt eins oder Zischen auf die Offbeats.",
+    "einen Downlifter in Takt eins oder Zischen auf die Offbeats. TONE, SWEEP, RESO und SWELL hört man sofort, "
+    "während ein Sweep läuft; LENGTH ab der nächsten Note.",
     "NOISE (SUHINA în suom1saundi) șuieră, urcă și coboară: zgomot alb printr-un filtru rezonant al cărui cutoff "
     "face SWEEP în sus sau în jos pe LENGTH-ul notei, de la o șaisprezecime la opt măsuri; TONE de unde pornește, "
     "RESO cât de îngust; SWELL pe SOUND 2 îl face să scadă de la început (stânga), să crească până la sfârșit "
     "(dreapta) sau să urce și să coboare. Generatorul lui pune un riser în măsura patru din patru (o condiție de "
-    "trig), un downlifter în măsura unu sau șuierat pe contratimpi."))
+    "trig), un downlifter în măsura unu sau șuierat pe contratimpi. TONE, SWEEP, RESO și SWELL se aud imediat, "
+    "cât timp merge un sweep; LENGTH de la nota următoare."))
 p(T("The master, on GROOVE 2 ([[HOME]] twice): FILTER, one knob, low-pass to the left, high-pass to the right, off "
     "in the middle; BASS adds the lows below 100 Hz once more, up to about +9 dB; its partner for the top is AIR on [[GLO]] twice, knob 3: what lies over about 2.5 kHz once more, up to +6 dB (31 % at the start: presence and air). BEAT REPEAT: hold [[SEL]] and a "
     "white key 1 to 4, and the master repeats the beat, eighth, sixteenth or thirty-second from that moment until "

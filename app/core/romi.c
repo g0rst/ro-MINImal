@@ -1218,6 +1218,9 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
     if (sl_any)
         slice_block(sl_step);
     master_block(sl_step, &mf, &mq, &mmode);
+    for (i = 0; i < 2u; i++)            /* NOISE: its knobs heard while it sweeps */
+        if (PAT->tr[ROMI_STAB + i].engine == ROMI_ENG_NOISE && NZ[i].amp > 0.0f)
+            noise_live((int)i, PAT->tr[ROMI_STAB + i].p, PAT->tr[ROMI_STAB + i].q);
     for (k = 0; k < ROMI_TRACKS; k++) {
         bus_update((int)k);
         if (env_mix((int)k)) {          /* an ENV on the mix: from where it is to the target, across the block */

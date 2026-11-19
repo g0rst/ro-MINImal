@@ -79,6 +79,7 @@ spielt (ohne Stab i – VI – VII – i); die Frage endet offen auf der Quinte 
 Grundton (oder der Terz). In ro:MINImal heißt PIIP **8-BIT**, der Click bei suom1saundi KLIKKI. Vierte Engine: **NOISE** (bei suom1saundi
 SUHINA): Rauschen durch ein resonantes Filter, dessen Cutoff über eine Sechzehntel bis acht Takte nach oben oder unten
 läuft (Riser, Downlifter, Zischen); SOUND LENGTH, SWEEP, TONE, RESO, SOUND 2 PITCH, SWELL, DRIVE, CRUSH.
+TONE, SWEEP, RESO und SWELL wirken sofort auf den laufenden Sweep, LENGTH ab der nächsten Note.
 
 Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
 HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30). GLIDE von BASSO, HAPPO und PIIP
