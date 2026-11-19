@@ -28,7 +28,7 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
 enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK,
-       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_PG_GLOBAL2, ROMI_PG_MOD, ROMI_PG_SLICE, ROMI_PG_ENGINE, ROMI_PG_SLFO, ROMI_NPAGES };
+       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_PG_GLOBAL2, ROMI_PG_MOD, ROMI_PG_SLICE, ROMI_PG_ENGINE, ROMI_PG_SLFO, ROMI_PG_SECRET, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -178,7 +178,8 @@ enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI
        ROMI_Q_HITS = 100,              /* + track: hits sounded since PLAY */
        ROMI_Q_NOTE = 110,              /* + track: the note of its last hit, as played (semitones from its base) */
        ROMI_Q_ACC = 120,               /* + track: its last hit accented (its own or its accent source's) */
-       ROMI_Q_LFOPH = 130 };           /* + track: its first LFO's phase, 0..999 */
+       ROMI_Q_LFOPH = 130,
+       ROMI_Q_UFO = 140 };             /* the secret menu's animation running (GLO held) */           /* + track: its first LFO's phase, 0..999 */
 romi_project_t *romi_project(void);
 
 #endif

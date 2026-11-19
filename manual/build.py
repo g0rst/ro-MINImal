@@ -342,7 +342,8 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[FX]] ×3", "SLICE", "MODE<br>OFF, GATE, STUTTER, GRAIN", "RATE", "RANDOM", "MIX"),
       ("[[FX]] ×4", "SLICE LFO", "RATE", "DEPTH", "TARGET<br>RATE, RANDOM, MIX", "SHAPE"),
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN, PDOM, HMIN", "CLOCK", "CHAIN"),
-      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "STYLE<br>ROMI, SUOM1", "WORK<br>LIVE, PROD"),
+      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "", "WORK<br>LIVE, PROD"),
+      (T("[[GLO]] held", "[[GLO]] gehalten", "[[GLO]] ținut"), "SECRET", "STYLE<br>ROMI, SUOM1", "", "", ""),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
       ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", "ACCENT"),
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", T("GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)"), ""),
@@ -663,17 +664,22 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
 
 h("d", 2, T("the second style: suom1saundi", "der zweite stil: suom1saundi", "al doilea stil: suom1saundi"))
 p(T("The same machine can play suomisaundi, Finnish freestyle psytrance: the voices and rules of suom1saundi. "
-    "GLOBAL 2 ([[GLO]] twice), STYLE: the project takes the style's tempo, key, scale and sounds, and a new groove "
+    "The switch is hidden: hold [[GLO]] for 0.6 s and a green 8-bit UFO lands in a forest in greys, the screen "
+    "zooms onto it, it explodes with a short jingle (2.8 s; any touch skips it) and the page SECRET opens. Knob 1, STYLE: the project takes the style's tempo, key, scale and sounds, and a new groove "
     "in it. Turn it back for ro:MINImal. There are two packages of the same firmware: rominimal.fwsc starts as "
     "ro:MINImal, suom1saundi.fwsc as suom1saundi; each has the other as a bonus. Everything else stays: pages, "
     "LAZY and HARD, B to D, conditions, slides, links, the screensaver. The colour turns acid green.",
     "Dieselbe Maschine kann Suomisaundi, finnischen Freestyle-Psytrance: die Stimmen und Regeln von suom1saundi. "
-    "GLOBAL 2 ([[GLO]] zweimal), STYLE: Das Projekt übernimmt Tempo, Tonart, Skala und Klänge des Stils und einen "
+    "Der Schalter ist versteckt: [[GLO]] 0,6 s halten, ein grünes 8-Bit-UFO landet in einem Wald in Graustufen, der "
+    "Bildschirm zoomt darauf, es explodiert mit kurzem Jingle (2,8 s; jeder Druck überspringt) und die Seite SECRET "
+    "öffnet sich. Regler 1, STYLE: Das Projekt übernimmt Tempo, Tonart, Skala und Klänge des Stils und einen "
     "neuen Groove darin. Zurückdrehen für ro:MINImal. Es gibt zwei Pakete derselben Firmware: rominimal.fwsc startet "
     "als ro:MINImal, suom1saundi.fwsc als suom1saundi; jedes hat das andere als Bonus. Alles andere bleibt: Seiten, "
     "LAZY und HARD, B bis D, Bedingungen, Slides, Verknüpfungen, der Bildschirmschoner. Die Farbe wird säuregrün.",
     "Aceeași mașină poate cânta suomisaundi, psytrance freestyle finlandez: vocile și regulile lui suom1saundi. "
-    "GLOBAL 2 ([[GLO]] de două ori), STYLE: proiectul ia tempo-ul, tonalitatea, gama și sunetele stilului și un "
+    "Comutatorul e ascuns: ține [[GLO]] 0,6 s și un OZN verde pe 8 biți aterizează într-o pădure în tonuri de gri, "
+    "ecranul face zoom pe el, explodează cu un jingle scurt (2,8 s; orice apăsare îl sare) și se deschide pagina "
+    "SECRET. Butonul 1, STYLE: proiectul ia tempo-ul, tonalitatea, gama și sunetele stilului și un "
     "groove nou în el. Rotește înapoi pentru ro:MINImal. Există două pachete ale aceluiași firmware: rominimal.fwsc "
     "pornește ca ro:MINImal, suom1saundi.fwsc ca suom1saundi; fiecare îl are pe celălalt ca bonus. Restul rămâne: "
     "paginile, LAZY și HARD, B–D, condițiile, slide-urile, legăturile, screensaver-ul. Culoarea devine verde acid."))
