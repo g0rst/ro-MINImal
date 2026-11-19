@@ -182,7 +182,7 @@ enum { ROMI_Q_PLAYING, ROMI_Q_TRACK, ROMI_Q_PAGE, ROMI_Q_BPM, ROMI_Q_GSTEP, ROMI
        ROMI_Q_ACC = 120,               /* + track: its last hit accented (its own or its accent source's) */
        ROMI_Q_LFOPH = 130,
        ROMI_Q_UFO = 140,               /* (the boot's intro too) */
-       ROMI_Q_NIGHT = 141 };           /* SAVE held 2 s: 1 good night shown, 2 asleep (dark, silent) */             /* GLO held, the style changes: 1 the UFO (to suom1saundi), 2 the fly-in (to ro:MINImal) */           /* + track: its first LFO's phase, 0..999 */
+       ROMI_Q_NIGHT = 141, ROMI_Q_MIXER = 142 };   /* MIXER: ENV held, the mixer open */           /* SAVE held 2 s: 1 good night shown, 2 asleep (dark, silent) */             /* GLO held, the style changes: 1 the UFO (to suom1saundi), 2 the fly-in (to ro:MINImal) */           /* + track: its first LFO's phase, 0..999 */
 romi_project_t *romi_project(void);
 
 #endif

@@ -169,6 +169,14 @@ static struct {
     uint32_t arp_t;                     /* ARP pressed: when (a tap mutates, a hold fills) */
     uint32_t lfo_t;                     /* LFO pressed: when (a tap turns the pages, a hold resets the track) */
     uint8_t lfo_held;
+    uint32_t env_t;                     /* ENV pressed: when (a tap: the page MIX; held 0.6 s: the mixer) */
+    uint8_t env_held, mixer;            /* the mixer open: six faders, mutes at a touch, a group on one knob */
+    uint8_t mx_grp;                     /* the group: the tracks on the master (white keys 1..6 in the mixer) */
+    uint8_t mx_mom;                     /* black keys held past a tap: what they flipped, back at the release */
+    uint32_t mx_t[7];                   /* black keys 1..7 pressed in the mixer: when */
+    uint8_t mx_was[7];                  /* and the mutes of their tracks before the press */
+    uint32_t mx_ms;                     /* the mixer's meters: 30 frames a second */
+    float mx_g[ROMI_TRACKS];            /* each track's mute, smoothed (5 ms): a mute cuts at once, the tails too */
     romi_track_t eng_keep[ROMI_PATTERNS];   /* HARD, an engine changed: the track as it was in each pattern (undo) */
     uint8_t eng_keep_ok, eng_keep_t;
     uint32_t fx_t;                      /* FX pressed: when (a tap turns the pages, a hold resets the effects) */
@@ -196,7 +204,8 @@ static struct {
     uint8_t jg_mode;
     volatile uint8_t mus_on;            /* the music: 0 fades out with the picture (the show), 1 back with the fade */
     float mus_g;                        /* where it is, 0..1 */
-    float cmp_env;                      /* FRE3tek's compressor: the level it follows */
+    float cmp_env, crush_l, crush_r;    /* FRE3tek's master: the level its compressor follows, the crusher's hold */
+    uint32_t crush_n;
     uint32_t jg_n, jg_rng;
     float jg_ph;
     uint32_t sv_hits[ROMI_TRACKS];      /* hits seen: they light the dots, the kick's swell the name */
@@ -262,6 +271,12 @@ static const float PERC_RATIO[8] = {1.0f, 1.41f, 1.73f, 2.0f, 2.76f, 3.5f, 4.07f
 #endif
 #define SUOMI (STYLE == 1)
 #define TEK (STYLE == 2)
+#ifndef TEK_IN
+#define TEK_IN 0.2f                     /* FRE3tek: the sum into memetek's drive, and out of its compressor */
+#endif
+#ifndef TEK_MASTER
+#define TEK_MASTER 1.15f
+#endif
 #define BASE (&R.prj.pat[0])                /* pattern A: in LAZY the one edited, B..D are made from it */
 #define EDT (R.prj.mode ? PAT : BASE)       /* the pattern the panel edits: A (LAZY), the one playing (HARD) */
 
@@ -559,6 +574,8 @@ void romi_panic(void)
 #if ROMI_SUOMI
     su_panic();
 #endif
+    for (k = 0; k < ROMI_TRACKS; k++)
+        R.mx_g[k] = 1.0f;
     R.duck_env = 0.0f;
     for (i = 0; i < ROMI_TRACKS; i++)
         R.pend[i][0].on = R.pend[i][1].on = R.early[i] = 0;
@@ -1238,7 +1255,7 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
     int mmode;
     float s16 = step_samples(), gain = (float)gain_q12 * (8388607.0f / 4096.0f);
     float duck_amt = (float)R.prj.duck * (0.9f / 127.0f), duck_c = decay_coef(pmap((float)R.prj.sc_rel, 0.03f, 3.7f));
-    float sc[ROMI_TRACKS];
+    float sc[ROMI_TRACKS], mx_to[ROMI_TRACKS];
     float fb = (float)R.prj.dly_fb * (0.85f / 127.0f);
     float rfb = 0.70f + (float)R.prj.rev_size * (0.27f / 127.0f), damp = 0.05f + (float)R.prj.rev_damp * (0.7f / 127.0f);
     static const float DMUL[3] = {1.0f, 2.0f, 3.0f};
@@ -1288,6 +1305,7 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
             ramp |= 1u << k;
         }
         sc[k] = k == R.prj.sc_src ? 0.0f : (float)PAT->tr[k].sc * (1.0f / 127.0f);
+        mx_to[k] = PAT->tr[k].mute || (R.solo >= 0 && R.solo != (int)k) ? 0.0f : 1.0f;
     }
 
     for (i = 0; i < n; i++) {
@@ -1437,7 +1455,9 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
                     R.bus[k].sr += R.bus_d[k].sr;
                 }
         for (k = 0; k < ROMI_TRACKS; k++) {
-            float y = v[k] * (1.0f - x * sc[k]);
+            float y;
+            R.mx_g[k] += (mx_to[k] - R.mx_g[k]) * 0.005f;   /* (a mute: 5 ms, no click) */
+            y = v[k] * (1.0f - x * sc[k]) * R.mx_g[k];
             if (k >= ROMI_STAB) {       /* tracks 5 and 6: a click scatters in the stereo field */
                 l += y * R.bus[k].gl * 2.0f * (1.0f - R.slot_pan[k - ROMI_STAB]);
                 r += y * R.bus[k].gr * 2.0f * R.slot_pan[k - ROMI_STAB];
@@ -1481,15 +1501,29 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         r += dly_r + rr * duck;
         if (mmode || R.prj.bass || R.prj.air || R.br_on >= 0 || R.br_x > 0.0f)
             master_run(&l, &r, mf, mq, mmode);
-        if (TEK) {                      /* FRE3tek: the sum glued as on a rig, a compressor: fast attack, 150 ms
-                                         * release, above the threshold 1:4, made up */
-            float pk = l > 0.0f ? l : -l, pr = r > 0.0f ? r : -r, g;
+#if ROMI_SUOMI
+        if (TEK) {                      /* FRE3tek: memetek's master: a tanh drive, a crusher (10 bits, a third of the
+                                         * rate), a compressor at -10 dB, 6:1, 3 ms attack, 250 ms release */
+            float pk, pr, g;
+            l *= TEK_IN;
+            r *= TEK_IN;
+            l = ttanh(3.65f * (l > 1.5f ? 1.5f : l < -1.5f ? -1.5f : l)) * 1.0014f;
+            r = ttanh(3.65f * (r > 1.5f ? 1.5f : r < -1.5f ? -1.5f : r)) * 1.0014f;
+            if (R.crush_n++ % 3u == 0u) {
+                R.crush_l = (float)(int)(l * 512.0f + (l < 0.0f ? -0.5f : 0.5f)) * (1.0f / 512.0f);
+                R.crush_r = (float)(int)(r * 512.0f + (r < 0.0f ? -0.5f : 0.5f)) * (1.0f / 512.0f);
+            }
+            l = R.crush_l;
+            r = R.crush_r;
+            pk = l > 0.0f ? l : -l;
+            pr = r > 0.0f ? r : -r;
             pk = pk > pr ? pk : pr;
-            R.cmp_env += (pk - R.cmp_env) * (pk > R.cmp_env ? 0.02f : 0.00015f);
-            g = R.cmp_env > 0.32f ? (0.32f + (R.cmp_env - 0.32f) * 0.2f) / R.cmp_env : 1.0f;
-            l *= g * 1.6f;
-            r *= g * 1.6f;
+            R.cmp_env = pk + (R.cmp_env - pk) * (pk > R.cmp_env ? 0.99247f : 0.99991f);
+            g = R.cmp_env > 0.316f ? (0.316f + (R.cmp_env - 0.316f) * (1.0f / 6.0f)) / R.cmp_env : 1.0f;
+            l *= g * TEK_MASTER;
+            r *= g * TEK_MASTER;
         }
+#endif
         if (R.mus_on ? R.mus_g < 1.0f : R.mus_g > 0.0f) {   /* the show: the music out with the picture (0.3 s),
                                                                  * back with the fade (0.3 s) */
             R.mus_g += R.mus_on ? 1.0f / (0.3f * (float)ROMI_SR) : -1.0f / (0.3f * (float)ROMI_SR);
@@ -2761,8 +2795,8 @@ static void prj_style_defaults(void)
         p->bpm = 180;
         p->swing = 50;
         p->drift = 30;
-        p->duck = 90;
-        p->sc_rel = 40;
+        p->duck = 56;                   /* (memetek's bass rolls between the kicks: ducked a little, quickly back) */
+        p->sc_rel = 30;
         p->root = 29;                   /* F1 */
         p->scale = 2;                   /* phrygian */
         p->dly_fb = 50;
@@ -3781,6 +3815,52 @@ void romi_draw(uint16_t *px, int strip)
         draw_flyin(f - CRT_FRAMES);
 }
 
+/* the mixer (ENV held): six channels, each a fader (its level), a meter (its voice now), its knob; muted ones grey,
+ * the group's marked G */
+static void draw_mixer(void)
+{
+    static const char *const KN[ROMI_TRACKS] = {"K1", "K2", "K3", "K4", "ALG", "SEL"};
+    char t[16];
+    int i;
+    for (i = 0; i < ROMI_TRACKS; i++) {
+        const romi_track_t *tr = &PAT->tr[i];
+        int x = i * 40, quiet = tr->mute || (R.solo >= 0 && R.solo != i), lv = tr->level * 120 / 127, e;
+        uint16_t c = quiet ? C_DIM : C_FG;
+        float en = voice_env(i);
+        const char *nm = track_name(i);
+        if (i)
+            rect(x, 27, 1, 180, C_LINE);
+        text(x + 20 - text_w(nm, 1) / 2, 29, nm, R.mx_mom >> i & 1u ? C_ACC : quiet ? C_DIM : C_FG, 1);
+        if (tr->mute)
+            rect(x + 19 - text_w(nm, 1) / 2, 32, text_w(nm, 1) + 2, 1, C_DIM);
+        if (R.mx_grp >> i & 1u) {
+            rect(x + 15, 40, 11, 11, C_ACC);
+            text(x + 18, 42, "G", C_BG, 1);
+        }
+        rect(x + 13, 56, 4, 120, C_LINE);                   /* the fader */
+        rect(x + 13, 176 - lv, 4, lv, c);
+        rect(x + 8, 174 - lv, 14, 4, quiet ? C_MID : C_ACC);
+        e = (int)(en * 120.0f);                             /* the meter */
+        e = e > 120 ? 120 : e;
+        rect(x + 25, 56, 3, 120, C_LINE);
+        if (e > 0)
+            rect(x + 25, 176 - e, 3, e, quiet ? C_DIM : C_ACC);
+        t[0] = 0;
+        cat_int(t, tr->level * 100 / 127);
+        text(x + 20 - text_w(t, 1) / 2, 182, t, c, 1);
+        text(x + 20 - text_w(KN[i], 1) / 2, 195, KN[i], C_DIM, 1);
+    }
+    rect(0, FOOT_Y - 4, ROMI_W, 1, C_LINE);
+    if (R.msg_until) {
+        i = text(4, FOOT_Y + 2, R.msg[0], C_ACC, 2);
+        text(i + 6, FOOT_Y + 2, R.msg[1], C_FG, 2);
+    } else {
+        text(4, FOOT_Y, "MIXER", C_ACC, 1);
+        text(40, FOOT_Y, "BLACK 1-6 IN/OUT  HELD: MOMENT", C_MID, 1);
+        text(4, FOOT_Y + 13, "WHITE 1-6 GROUP  BLACK 7 / SEL+KNOB: IT", C_DIM, 1);
+    }
+}
+
 static void draw_main(uint16_t *px, int strip)
 {
     char t[32];
@@ -3828,6 +3908,10 @@ static void draw_main(uint16_t *px, int strip)
         rect(220, 7, 10, 10, C_DIM);
     }
     rect(0, 23, ROMI_W, 1, C_LINE);
+    if (R.mixer) {
+        draw_mixer();
+        return;
+    }
 
     /* the grid: a lane a track, each as long as its own loop */
     for (lane = 0; lane < ROMI_TRACKS; lane++) {
@@ -4214,8 +4298,9 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
 {
     static const uint8_t WK[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
     static const uint8_t BK[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
-    uint32_t pressed = buttons & ~R.btn, kdown = keys & ~R.keys, kup = R.keys & ~keys, lfo_tap = 0, fx_tap = 0, glo_tap = 0, home_tap = 0;
-    romi_track_t *tr;
+    uint32_t pressed = buttons & ~R.btn, kdown = keys & ~R.keys, kup = R.keys & ~keys, lfo_tap = 0, fx_tap = 0, glo_tap = 0, home_tap = 0,
+             env_tap = 0;
+    romi_track_t *tr = 0;
     int i, hs, e_sel = (int)enc[ROMI_E_SELECT], e_pre = (int)enc[ROMI_E_PRESET];
     if (pressed & 1u << ROMI_B_LFO)     /* LFO: a tap turns the pages, a hold (600 ms) resets the track's sound */
         R.lfo_t = now_ms ? now_ms : 1u;
@@ -4228,6 +4313,20 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         lfo_tap = !R.lfo_held;
         R.lfo_t = 0;
         R.lfo_held = 0;
+    }
+    if (pressed & 1u << ROMI_B_ENV)     /* ENV: a tap the page MIX, a hold (600 ms) opens or closes the mixer */
+        R.env_t = now_ms ? now_ms : 1u;
+    if (R.env_t && (buttons & 1u << ROMI_B_ENV) && now_ms - R.env_t >= 600u && !R.night && !R.ufo) {
+        R.env_t = 0;
+        R.env_held = 1;
+        R.mixer ^= 1u;
+        R.mx_mom = 0;
+        R.dirty |= STRIP_ALL;
+    }
+    if (!(buttons & 1u << ROMI_B_ENV) && (R.btn & 1u << ROMI_B_ENV)) {
+        env_tap = !R.env_held;
+        R.env_t = 0;
+        R.env_held = 0;
     }
     if (pressed & 1u << ROMI_B_FX)      /* FX the same: a tap turns its pages, a hold resets the effects */
         R.fx_t = now_ms ? now_ms : 1u;
@@ -4435,9 +4534,16 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                                                   ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
                                                   ROMI_B_HOME, ROMI_B_FX};
         uint8_t was = R.page;
-        uint32_t pgp = (pressed & ~(1u << ROMI_B_FX | 1u << ROMI_B_GLO | 1u << ROMI_B_HOME)) |
+        uint32_t pgp = (pressed & ~(1u << ROMI_B_FX | 1u << ROMI_B_GLO | 1u << ROMI_B_HOME | 1u << ROMI_B_ENV)) |
                        (fx_tap ? 1u << ROMI_B_FX : 0u) | (glo_tap ? 1u << ROMI_B_GLO : 0u) |
-                       (home_tap ? 1u << ROMI_B_HOME : 0u);   /* (FX, GLO and HOME: at their release) */
+                       (home_tap ? 1u << ROMI_B_HOME : 0u) | (env_tap ? 1u << ROMI_B_ENV : 0u);
+                                        /* (FX, GLO, HOME and ENV: at their release) */
+        if ((pgp & (1u << ROMI_B_HOME | 1u << ROMI_B_EDIT | 1u << ROMI_B_ENV | 1u << ROMI_B_FX | 1u << ROMI_B_GLO |
+                    1u << ROMI_B_SEQ)) || lfo_tap) {
+            if (R.mixer)                /* a page: the mixer closes (ENV tapped: its page MIX) */
+                R.mx_mom = 0;
+            R.mixer = 0;
+        }
         for (i = 0; i < ROMI_PG_EUCLID; i++)
             if (pgp & 1u << PAGE_BTN[i]) {
                 R.page = (uint8_t)i;
@@ -4476,6 +4582,75 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         R.save_wanted = 1;
         romi_message("SAVED", "");
         R.dirty |= STRIP_ALL;
+    }
+
+    if (R.mixer) {                      /* the mixer: K1..K4, ALGO, SELECT the six levels; SEL held, any knob the group */
+        static const uint8_t MK[ROMI_TRACKS] = {ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_E_ALGO, ROMI_E_SELECT};
+        romi_pattern_t *e = EDT;
+        int any = 0, g = 0;
+        if (buttons & 1u << ROMI_B_SEL) {   /* SEL held: every knob moves the group, each track by the same */
+            for (i = 0; i < ROMI_TRACKS; i++)
+                g += (int)enc[MK[i]];
+            if (g && R.mx_grp) {
+                for (i = 0; i < ROMI_TRACKS; i++)
+                    if (R.mx_grp >> i & 1u)
+                        e->tr[i].level = (uint8_t)clampi((int)e->tr[i].level + g, 0, 127);
+                any = 1;
+            } else if (g) {
+                romi_message("GROUP", "EMPTY: WHITE KEYS");
+            }
+        } else {
+            for (i = 0; i < ROMI_TRACKS; i++)
+                if (enc[MK[i]]) {
+                    e->tr[i].level = (uint8_t)clampi((int)e->tr[i].level + (int)enc[MK[i]], 0, 127);
+                    any = 1;
+                }
+        }
+        for (i = 0; i < 6; i++)         /* white keys 1..6: a track onto the group or off it */
+            if (kdown >> WK[i] & 1u) {
+                R.mx_grp ^= (uint8_t)(1u << i);
+                romi_message(R.mx_grp >> i & 1u ? "GROUP +" : "GROUP -", track_name(i));
+                R.dirty |= STRIP_ALL;
+            }
+        for (i = 0; i < 7; i++) {       /* black keys 1..6 a track, 7 the group: a tap in or out (latched); held past
+                                         * a quarter second, only while held (back at the release) */
+            uint8_t m = i < 6 ? (uint8_t)(1u << i) : R.mx_grp;
+            if (kdown >> BK[i] & 1u) {
+                int k, on = 0;
+                R.mx_t[i] = now_ms ? now_ms : 1u;
+                R.mx_was[i] = 0;
+                if (!m)
+                    romi_message("GROUP", "EMPTY: WHITE KEYS");
+                for (k = 0; k < ROMI_TRACKS; k++)
+                    if (m >> k & 1u) {
+                        R.mx_was[i] |= (uint8_t)(e->tr[k].mute << k);
+                        on |= !e->tr[k].mute;
+                    }
+                for (k = 0; k < ROMI_TRACKS; k++)   /* at once, on the press: out if any of it plays, else in */
+                    if (m >> k & 1u)
+                        e->tr[k].mute = on ? 1u : 0u;
+                any = 1;
+            }
+            if (R.mx_t[i] && (keys >> BK[i] & 1u) && now_ms - R.mx_t[i] >= 250u)
+                R.mx_mom |= (uint8_t)(1u << i);   /* held: a momentary one */
+            if (R.mx_t[i] && !(keys >> BK[i] & 1u)) {
+                int k;
+                if (R.mx_mom >> i & 1u)     /* let go after a hold: back as it was */
+                    for (k = 0; k < ROMI_TRACKS; k++)
+                        if (m >> k & 1u)
+                            e->tr[k].mute = (uint8_t)(R.mx_was[i] >> k & 1u);
+                R.mx_mom &= (uint8_t)~(1u << i);
+                R.mx_t[i] = 0;
+                any = 1;
+            }
+        }
+        if (any)
+            changed();
+        if (now_ms - R.mx_ms >= 33u) {  /* the meters */
+            R.mx_ms = now_ms;
+            R.dirty |= STRIP_ALL;
+        }
+        goto mixer_pre;
     }
 
     if (hs >= 0 && e_sel) {             /* a step held: SELECT nudges it early or late */
@@ -4535,6 +4710,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             apply_euclid(R.track);
         changed();
     }
+mixer_pre:
     if (e_pre) {                        /* the pattern: at the next bar while playing */
         int cur = R.pending_pat != 0xFFu ? R.pending_pat : R.prj.cur_pat;
         int p = clampi(cur + e_pre, 0, ROMI_PATTERNS - 1);
@@ -4545,6 +4721,9 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             R.prj.cur_pat = (uint8_t)p;
         R.dirty |= STRIP_ALL;
     }
+
+    if (R.mixer)
+        goto mixer_end;
 
     /* the pattern's helpers */
     if (hs >= 0 && (pressed & 1u << ROMI_B_SEL)) {   /* a step held: SEL takes its shift and locks away */
@@ -4822,6 +5001,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             R.unsaved = 1;
         }
     }
+mixer_end:
     if (R.base_changed) {
         if (!R.prj.mode)
             derive_all();
@@ -4892,7 +5072,23 @@ void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint3
         b |= 1u << ROMI_B_SEL;
     if (R.unsaved)
         b |= 1u << ROMI_B_SAVE;
-    if (R.keys_mode) {
+    if (R.mixer) {                      /* the mixer: ENV lit; black keys lit while their track plays, the group's key
+                                         * (7) while it has tracks; white keys 1..6 lit for the group's tracks */
+        b = (b & ~(1u << PAGE_BTN[R.page])) | 1u << ROMI_B_ENV;
+        for (i = 0; i < ROMI_TRACKS; i++) {
+            if (!PAT->tr[i].mute && (R.solo < 0 || R.solo == i))
+                k |= 1u << BK[i];
+            else
+                dk |= 1u << BK[i];
+            if (R.mx_grp >> i & 1u)
+                k |= 1u << WK[i];
+            else
+                dk |= 1u << WK[i];
+            R.flash[i] = 0;
+        }
+        if (R.mx_grp)
+            k |= 1u << BK[6];
+    } else if (R.keys_mode) {
         k = R.keys;
     } else {
         for (i = 0; i < 16; i++) {
@@ -4946,6 +5142,7 @@ int romi_state(int what)
     case ROMI_Q_SAVER: return R.saver;
     case ROMI_Q_UFO: return R.ufo;
     case ROMI_Q_NIGHT: return R.night;
+    case ROMI_Q_MIXER: return R.mixer;
     case ROMI_Q_FILL: return R.fill;
     case ROMI_Q_LFO_PAGE: return R.page == ROMI_PG_LFO1 ? 1 : R.page == ROMI_PG_LFO2 ? 2 : 0;
     case ROMI_Q_HITS + 0: case ROMI_Q_HITS + 1: case ROMI_Q_HITS + 2: case ROMI_Q_HITS + 3: case ROMI_Q_HITS + 4:

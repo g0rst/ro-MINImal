@@ -163,7 +163,9 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
                      "pagina GROOVE; apăsat din nou: GROOVE 2 (engine-urile pistelor 5 și 6)")),
       ("[[EDIT]]", T("page SOUND of the track; pressed again: SOUND 2", "Seite SOUND der Spur; nochmal: SOUND 2",
                      "pagina SOUND a pistei; apăsat din nou: SOUND 2")),
-      ("[[ENV]]", T("page MIX of the track", "Seite MIX der Spur", "pagina MIX a pistei")),
+      ("[[ENV]]", T("page MIX of the track. Held 0.6 s: the mixer (see 'the mixer')",
+                    "Seite MIX der Spur. 0,6 s gehalten: der Mixer (siehe „der mixer“)",
+                    "pagina MIX a pistei. Ținut 0,6 s: mixerul (vezi „mixerul”)")),
       ("[[FX]]", T("page FX; again: SIDECHAIN; a third time: SLICE; a fourth: SLICE LFO. Held: the effects back to the "
                    "style's start (delay, reverb, sidechain; the track's sidechain amount, SLICE and its LFO)",
                    "Seite FX; nochmal: SIDECHAIN; ein drittes Mal: SLICE; ein viertes: SLICE LFO. Gehalten: die "
@@ -786,7 +788,40 @@ ul(T("[[PRESETS]] changes the pattern; while playing, at the next bar. Whatever 
      "UNDO, die letzte schwarze Taste, nimmt die letzte Änderung an A zurück. Nochmal gedrückt, holt es sie wieder.",
      "UNDO, ultima clapă neagră, anulează ultima schimbare a lui A. Apăsat din nou, o readuce."))
 
-h("d", 2, T("keys and midi", "tasten und midi", "clape și midi"))
+h("d", 2, T("the mixer", "der mixer", "mixerul"))
+p(T("Hold [[ENV]] for 0.6 s, in every style: the screen becomes a mixer. Six channels side by side, each a fader "
+    "(its level), a meter (how loud its voice is right now) and the knob that moves it: [[KNOB1]] to [[KNOB4]] the "
+    "tracks 1 to 4, [[ALGORITHM]] track 5, [[SELECT]] track 6. [[PRESETS]] still turns the pattern.",
+    "[[ENV]] 0,6 s halten, in jedem Stil: Das Display wird zum Mixer. Sechs Kanäle nebeneinander, jeder mit Fader "
+    "(sein Pegel), Meter (wie laut seine Stimme gerade klingt) und dem Regler, der ihn bewegt: [[KNOB1]] bis [[KNOB4]] "
+    "die Spuren 1 bis 4, [[ALGORITHM]] Spur 5, [[SELECT]] Spur 6. [[PRESETS]] wechselt weiter das Pattern.",
+    "Ține [[ENV]] 0,6 s, în orice stil: ecranul devine mixer. Șase canale alăturate, fiecare cu fader (nivelul lui), "
+    "indicator (cât de tare sună vocea acum) și butonul care îl mișcă: [[KNOB1]] – [[KNOB4]] pistele 1 – 4, "
+    "[[ALGORITHM]] pista 5, [[SELECT]] pista 6. [[PRESETS]] schimbă în continuare pattern-ul."))
+p(T("Slam in, take out: a black key 1 to 6 takes its track out at once, or brings it in, on the press; the sound "
+    "goes with it in 5 ms, tails too (so does every mute now). Hold the key past a quarter second and it only lasts "
+    "while you hold: let go, and the track is as it was. That is the kill switch and the punch-in.",
+    "Reinhauen, rausnehmen: Eine schwarze Taste 1 bis 6 nimmt ihre Spur sofort raus oder holt sie rein, schon beim "
+    "Drücken; der Klang geht in 5 ms mit, auch Ausklänge (das gilt jetzt für jedes Stummschalten). Länger als eine "
+    "Viertelsekunde gehalten, gilt es nur, solange du hältst: Loslassen, und die Spur ist wie vorher. Das ist der "
+    "Kill-Schalter und das Punch-in.",
+    "Intră, iese: o clapă neagră 1 – 6 scoate pista imediat sau o aduce înapoi, chiar la apăsare; sunetul pleacă în "
+    "5 ms, cu tot cu coadă (așa e acum orice mut). Ținută mai mult de un sfert de secundă, ține doar cât apeși: dai "
+    "drumul și pista e ca înainte. Asta e kill switch-ul și punch-in-ul."))
+p(T("A group on a master: white keys 1 to 6 put tracks on the group (marked G, their keys lit). Hold [[SEL]] and "
+    "turn any knob: every track of the group moves by the same amount, the balance between them kept. Black key 7 "
+    "takes the whole group out or in, held: only while held. A tap on [[ENV]] closes the mixer and opens the page "
+    "MIX, any other page closes it too.",
+    "Eine Gruppe an einem Master: Weiße Tasten 1 bis 6 hängen Spuren an die Gruppe (mit G markiert, ihre Tasten "
+    "leuchten). [[SEL]] halten und irgendeinen Regler drehen: Alle Spuren der Gruppe bewegen sich um denselben "
+    "Betrag, ihr Verhältnis bleibt. Die schwarze Taste 7 nimmt die ganze Gruppe raus oder rein, gehalten nur "
+    "solange. Ein Tipp auf [[ENV]] schließt den Mixer und öffnet die Seite MIX, jede andere Seite schließt ihn auch.",
+    "Un grup pe un master: clapele albe 1 – 6 pun piste în grup (marcate G, clapele lor aprinse). Ține [[SEL]] și "
+    "rotește orice buton: toate pistele grupului se mișcă la fel, raportul dintre ele rămâne. Clapa neagră 7 scoate "
+    "sau aduce tot grupul, ținută doar cât apeși. O atingere pe [[ENV]] închide mixerul și deschide pagina MIX; "
+    "orice altă pagină îl închide și ea."))
+
+h("d", 3, T("keys and midi", "tasten und midi", "clape și midi"))
 ul(T("[[REC]] turns the keys into a keyboard for the selected track. C4 is the track's base note. "
      "[[OCT−]] [[OCT+]] shift two octaves each way.",
      "[[REC]] macht die Tasten zum Keyboard für die gewählte Spur. C4 ist der Grundton der Spur. "
@@ -806,7 +841,7 @@ ul(T("[[REC]] turns the keys into a keyboard for the selected track. C4 is the t
      "Start und Stopp werden empfangen. Mit CLOCK an werden Clock, Start und Stopp über USB gesendet.",
      "Start și stop sunt primite. Cu CLOCK pornit, clock, start și stop sunt trimise prin USB."))
 
-h("d", 3, T("recipes", "rezepte", "rețete"))
+h("d", 4, T("recipes", "rezepte", "rețete"))
 table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
       (T("a sub that rolls between the kicks", "einen Sub, der zwischen den Kicks rollt",
          "un sub care se rostogolește între kick-uri"),
@@ -834,7 +869,7 @@ table(T(["for", "do this"], ["für", "so geht es"], ["pentru", "fă așa"]),
          "[[GLO]], CHAIN EVOLVE. DRIFT um 60. Laufen lassen; ab und zu an A drehen.",
          "[[GLO]], CHAIN EVOLVE. DRIFT în jur de 60. Lasă-l să meargă; atinge A din când în când.")))
 
-h("d", 4, T("small print", "kleingedrucktes", "litere mici"))
+h("d", 5, T("small print", "kleingedrucktes", "litere mici"))
 ul(T("Up to 32 locks per pattern; one more and the screen says LOCKS FULL. A step moves at most 7/16 of a step, "
      "the whole track 8/16 more, together half a sixteenth. Notes reach 32 semitones down and 31 up.",
      "Bis zu 32 Locks pro Pattern; ein weiterer und das Display zeigt LOCKS FULL. Ein Step verschiebt sich höchstens um "

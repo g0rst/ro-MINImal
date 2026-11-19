@@ -25,6 +25,8 @@ static struct {
     struct { float ph, mph, ph2, mph2, f, amp, ac, metal, lp, vel, chip, cph, nz, att, atc, pan, cut; uint32_t lfsr; } hat;
 } SU;
 
+#include "tek_voices.inc"
+
 /* suom1saundi's second page, the three that are not on SOUND 2 here: (the one in SOUND 2's second place is -1) */
 static const int16_t SU_EXTRA[ROMI_TRACKS][4] = {
     {-1, -1, 20, 10},                   /* POTKU: SNAP (SOUND 2 P.TIME), CLICK (SOUND 2), HOLD, BODY */
@@ -37,6 +39,7 @@ static const int16_t SU_EXTRA[ROMI_TRACKS][4] = {
 
 static void su_panic(void)
 {
+    tk_panic();
     SU.kick.amp = SU.basso.amp = SU.hat.amp = SU.happo.amp = 0.0f;
     if (!SU.hat.lfsr)
         SU.hat.lfsr = 0x4321u;
@@ -153,6 +156,10 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
     const romi_track_t *tr = &PAT->tr[t];
     uint8_t s[8];
     int i;
+    if (TEK && t < ROMI_PERC) {         /* FRE3tek: memetek's kick, bass and hats (tek_voices.inc) */
+        tk_trig(t, note, vel, acc, slide, p, q, root, tr->glide);
+        return;
+    }
     for (i = 0; i < 4; i++) {
         s[i] = p[i];
         s[4 + i] = SU_EXTRA[t][i] >= 0 ? (uint8_t)SU_EXTRA[t][i] : q[1];
@@ -211,6 +218,8 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
 /* how loud a voice sounds now, 0..1 (the ENV follower) */
 static float su_env(int t)
 {
+    if (TEK)
+        return tk_env(t);
     switch (t) {
     case ROMI_KICK: return SU.kick.amp * SU.kick.vel;
     case ROMI_SUB: return SU.basso.amp * SU.basso.vel;
@@ -223,6 +232,10 @@ static float su_env(int t)
 static inline void su_voices(float *v)
 {
     float x;
+    if (TEK) {
+        tk_voices(v);
+        return;
+    }
     /* POTKU: a sine falling fast from far above, a click, a soft clipper */
     x = 0.0f;
     if (SU.kick.amp > 1e-4f) {

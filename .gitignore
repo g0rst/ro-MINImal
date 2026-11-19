@@ -4,3 +4,4 @@ app/web/
 *.o
 app_suomi/build/
 app_suomi/web/
+__pycache__/

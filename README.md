@@ -48,24 +48,25 @@ wie immer (jetzt beim Loslassen). Akzentfarbe Dunkelrot, Gute Nacht „DOBROU NO
 
 | Spur | Stimme | Regeln |
 |---|---|---|
-| KICK | Kick von suom1saundi, lange tonale Fahne, viel Drive: die Kick ist der Bass | jede Viertel, gestimmt; manchmal ein Doppel vor dem Takt |
-| ACID | Acid-Stimme von suom1saundi, eine Oktave höher, ohne Sub | ein Motiv aus 3 oder 4 Tönen (Grundton, Oktave, Quinte) immer wieder, Akzent fest im Motiv, Slide in die Oktave |
-| HAT | HATTU | offen auf jedem Offbeat, Ride mit 25/50 % |
+| KICK | TEK-KICK von memetek: Tonhöhe fällt exponentiell (×5 in 60 ms) auf die Tonart, hält ein Drittel der Fahne, tanh-Drive, hochpassgefilterter Klick | jede Viertel, gestimmt; manchmal ein Doppel vor dem Takt |
+| ACID | 8-Bit-Bass von memetek: Rechteck, Puls, Säge, Dreieck oder Supersaw (SOUND 2 WAVE), TPT-Tiefpass mit schließender Hüllkurve, Dreieck eine Oktave tiefer, tanh | memeteks rollender Bass: Pause auf der Kick, Grundton auf den drei Sechzehnteln danach, Quinte und Oktave zum Taktende (beim Laden genau memeteks Muster, sonst eine von fünf Spielarten) |
+| HAT | 808-Hats von memetek: sechs verstimmte Rechtecke und Rauschen, Bandpass 10 kHz, Hochpass 7,5 kHz; zwei Stimmen, eine geschlossene würgt die offene ab | offen auf jedem Offbeat, Ride mit 25/50 % |
 | TRIBE | FM-Percussion von ro:MINImal als Toms, zwei Oktaven tiefer, wenig Bend | zwei Toms (Grundton tief, Quinte hoch), Euclid 5 oder 7 in 12/16 |
 | SCREAM | Engine 8-BIT als Säge mit Vibrato | Melodie-Regeln der Engine |
 | SIREN | Engine NOISE als Riser | Riser, Downlifter oder Zischen |
 
-Klang: Die Summe läuft in FRE3tek durch einen Kompressor (schneller Attack, 150 ms Release, 1:5, aufgeholt), alles
-liegt auf einem Akkord (die SCREAM-Melodie bleibt auf den Tönen des Grundakkords, der Drone von Kick und Acid), die
-Acid-Linie bleibt meist auf Grundton, Oktave und Quinte, AIR fast aus. SIREN kommt stumm (SEL holt sie rein).
+Klang: Kick, Bass und Hats sind von memetek portiert (`app/core/tek_voices.inc`, mit Erlaubnis des Autors), die Summe
+läuft durch memeteks Master: tanh-Drive, Crusher (10 Bit, ein Drittel der Rate), Kompressor −10 dB 6:1 (3 ms Attack,
+250 ms Release). Mischung wie bei memetek: der Bass trägt, die Hats stehen darüber. Alles liegt auf einem Akkord (die
+SCREAM-Melodie bleibt auf den Tönen des Grundakkords), AIR fast aus, Duck 56 (der Bass rollt zwischen den Kicks). SIREN kommt stumm (SEL holt sie rein).
 Ratchets auf den Hats: In C kommt ein echter Wirbel nur noch jedes vierte Mal (seine Ratchets mit 50 %), sonst nur ein
 Doppel auf der letzten Sechzehntel mit 40 %; B verdoppelt nur noch manchmal einen Offbeat (mit 50 %); der Generator
 setzt Doppelschläge auf Hats viel seltener. Gilt für alle Stile.
 In allen drei Stilen steht der TUNE der Kick jetzt auf Halbtonschritten: eine Kick in der Tonart sitzt auf den Cent
 genau (vorher bis zu einem Viertelton daneben, gemessen −18 Cent in FRE3tek).
 
-Last im Simulator (schlimmster Fall): 1 943 Instruktionen pro Sample, etwa wie suom1saundi (1 929); mit GRAIN auf zwei
-Spuren 2 478. Braucht die Stimmen von suom1saundi: ohne sie gebaut (ROMI_SUOMI=0) gibt es FRE3tek nicht. Eigenes
+Last im Simulator (schlimmster Fall): 2 057 Instruktionen pro Sample (ro:MINImal 1 914); mit GRAIN auf zwei
+Spuren 2 598. Braucht den Teil von suom1saundi: ohne sie gebaut (ROMI_SUOMI=0) gibt es FRE3tek nicht. Eigenes
 Handbuch im Flyer-Look, Deutsch und Englisch: https://g0rst.github.io/ro-MINImal/fre3tek.html (`manual/fre3tek.py`).
 
 ## Zwei Stile, zwei Firmwares: ro:MINImal und suom1saundi
@@ -236,6 +237,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
 | EDIT ein zweites Mal | Seite SOUND 2: PITCH (±24 Halbtöne), dann je Spur CLICK (Kick), FM.TIME (Sub), B.TIME (Perc) oder ATTACK (Hat, Stab, Click), DRIVE (Kick: P.TIME), CRUSH. Lockbar pro Step, Ziel für LFOs |
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
+| ENV gehalten (0,6 s) | **Mixer** (alle Stile): sechs Kanäle mit Fader, Meter und Regler (K1 bis K4 die Spuren 1 bis 4, ALGO Spur 5, SELECT Spur 6; PRESET wechselt weiter das Pattern). Schwarze Tasten 1 bis 6: Spur sofort raus oder rein (beim Drücken, Klang samt Ausklang in 5 ms weg); länger als 0,25 s gehalten nur solange gehalten (Kill, Punch-in). Weiße Tasten 1 bis 6: Spur an die Gruppe (G); SEL halten + beliebiger Regler: die ganze Gruppe gleichmäßig; schwarze Taste 7: Gruppe raus/rein (gehalten: nur solange). ENV tippen: zurück zur Seite MIX; jede andere Seite schließt ihn auch |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung. **FX gehalten** (0,6 s): die Effekte zurück auf den Start des Stils (Delay, Reverb, Sidechain-Quelle und Release; Sidechain-Anteil, SLICE und SLICE LFO der gewählten Spur), Tempo und Tonart bleiben |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
 | FX ein viertes Mal | Seite SLICE LFO: der eigene LFO des Slicers, K1 RATE, K2 DEPTH, K3 TARGET (RATE, RANDOM, MIX), K4 SHAPE |
@@ -284,10 +286,12 @@ einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Fla
 |---|---|---|
 | alle Spuren stumm (Delay, Reverb, Mix, Sequencer, LFOs) | 995 | 20 / 27 / 37 % |
 | typischer Groove (Stand Nov. 2026: Stab mit stehender FM, AIR an) | 1 567 | 31 / 42 / 58 % |
-| schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends, alle Verknüpfungen, FILTER, BASS, AIR | 1 834 | 36 / 49 / 67 % |
+| schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends, alle Verknüpfungen, FILTER, BASS, AIR (mit den geglätteten Mutes des Mixers) | 1 914 | 38 / 52 / 70 % |
 | dazu alle Verknüpfungen (ACCENT, RESTART, ENV auf Pegel/Klang, Bedingungen) | 1 638 | 32 / 44 / 60 % |
 | suom1saundi, schlimmster Fall | 1 750 | 34 / 47 / 64 % |
 | suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 230 (geschätzt heute ~2 420) | 44 / 60 / 82 % (heute ~47 / 65 / 89 %) |
+| FRE3tek (memeteks Stimmen und Master), schlimmster Fall | 2 057 | 40 / 55 / 76 % |
+| FRE3tek, schlimmster Fall, dazu GRAIN auf zwei Spuren | 2 598 | 51 / 70 / 95 % |
 
 SLICE: GATE kostet fast nichts, STUTTER wenig, GRAIN etwa 170 Instruktionen pro Sample und Spur. Deshalb höchstens
 zwei Spuren mit GRAIN, und GRAIN ist nach suom1saundi das Erste, was rausfliegt, wenn es am Gerät eng wird.

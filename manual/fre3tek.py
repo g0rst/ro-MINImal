@@ -88,10 +88,16 @@ sec("Warnung", "Warning",
 sec("Die sechs Spuren", "The six tracks", ("gen", "tracks"))
 
 sec("Klänge ab Werk", "Factory sounds",
-    ("p", L("Aus dem Code gelesen. <b>EDIT</b> öffnet SOUND, nochmal <b>EDIT</b> SOUND 2. Die Kick, die Säure und die Hats sind "
-            "die Stimmen von suom1saundi, TRIBE ist die FM-Percussion von ro:MINImal, gestimmt wie Toms.",
-            "Read from the code. <b>EDIT</b> opens SOUND, <b>EDIT</b> again SOUND 2. The kick, the acid and the hats are "
-            "suom1saundi's voices, TRIBE is ro:MINImal's FM percussion tuned as toms.")),
+    ("p", L("Aus dem Code gelesen. <b>EDIT</b> öffnet SOUND, nochmal <b>EDIT</b> SOUND 2. Die Kick, der Bass und die Hats sind "
+            "die Stimmen von memetek: die TEK-KICK (Tonhöhe fällt exponentiell auf die Tonart, hält, tanh-Drive, Klick), der "
+            "8-Bit-Bass (Rechteck durch ein Zustandsvariablen-Filter, das sich schließt, Dreieck eine Oktave tiefer) und die "
+            "808-Hats aus sechs verstimmten Rechtecken. Die Summe läuft durch memeteks Master: Drive, Crusher, Kompressor. "
+            "TRIBE ist die FM-Percussion von ro:MINImal, gestimmt wie Toms.",
+            "Read from the code. <b>EDIT</b> opens SOUND, <b>EDIT</b> again SOUND 2. The kick, the bass and the hats are "
+            "memetek's voices: the TEK-KICK (its pitch falls exponentially onto the key, holds, tanh drive, click), the 8-bit "
+            "bass (a square through a state-variable filter that closes, a triangle an octave under) and the 808 hats of six "
+            "detuned squares. The sum runs through memetek's master: drive, crusher, compressor. TRIBE is ro:MINImal's FM "
+            "percussion tuned as toms.")),
     ("gen", "knobs"), ("gen", "mix"),
     ("p", L("SCREAM ist die Engine 8-BIT als Säge (WAVE SAW) mit viel VIBRATO, SIREN die Engine NOISE als Riser über einen Takt. "
             "Auf GROOVE 2 lassen sich beide gegen STAB, CLICK oder die anderen tauschen.",
@@ -102,11 +108,12 @@ sec("Die Regeln", "The rules",
     ("ul", [L("<b>KICK</b>: jeder Viertel, auf die Tonart gestimmt; manchmal ein Doppel vor dem Takt. In C pausiert sie gern die "
               "letzten vier Steps: der Drop.", "<b>KICK</b>: every quarter, tuned to the key; now and then a double before the bar. In "
               "C it likes to pause for the last four steps: the drop."),
-            L("<b>ACID</b>: ein kurzes Motiv aus drei oder vier Tönen (Grundton, Oktave, Quinte), immer wieder: das ist Tekno. "
-              "Der Akzent sitzt fest an einer Stelle des Motivs; ist es drei lang, wandert er gegen die Kick. In die Oktave "
-              "wird geslidet.",
-              "<b>ACID</b>: a short motif of three or four notes (root, octave, fifth), again and again: that is tekno. The "
-              "accent sits on one place of the motif; three long, it walks against the kick. It slides up to the octave."),
+            L("<b>ACID</b>: memeteks rollender Bass: Pause auf der Kick, Grundton auf den drei Sechzehnteln danach, Quinte und "
+              "Oktave zum Taktende; beim Laden genau memeteks Muster, sonst eine von fünf Spielarten. Die Oktave manchmal betont "
+              "und geslidet. Das ist Tekno.",
+              "<b>ACID</b>: memetek's rolling bass: a rest on the kick, the root on the three sixteenths after it, fifth and "
+              "octave to end the bar; on loading exactly memetek's figure, else one of five variants. The octave now and then "
+              "accented and sliding. That is tekno."),
             L("<b>HAT</b>: offen auf jedem Offbeat, betont; dazwischen ein Ride mit 25 oder 50 %.", "<b>HAT</b>: open on every off-beat, accented; between them a ride at 25 or 50 %."),
             L("<b>TRIBE</b>: zwei Toms, tief auf dem Grundton, hoch auf der Quinte, Euclid fünf oder sieben in zwölf oder "
               "sechzehn. 12 gegen 16: das Muster trifft die Kick erst nach drei Takten wieder.",
@@ -120,6 +127,12 @@ sec("Live spielen", "Playing live",
               "<b>Drop</b>: SEL on KICK – the kick is gone, the pump stays. SEL again: the kick is back."),
             L("<b>Säure auf</b>: ACID, EDIT, CUTOFF langsam hoch; LFO 1 auf CUTOFF, RATE 4 BAR für die lange Spannung.",
               "<b>Acid up</b>: ACID, EDIT, CUTOFF slowly up; LFO 1 on CUTOFF, RATE 4 BAR for the long tension."),
+            L("<b>Mixer</b>: ENV 0,6 s halten. Sechs Fader (K1 bis K4, ALGO, SELECT), schwarze Taste 1 bis 6 haut eine Spur rein oder "
+              "nimmt sie raus, gehalten nur solange: der Kill auf der Kick. Weiße Tasten legen Spuren auf eine Gruppe, SEL + Regler "
+              "fährt sie zusammen, schwarze Taste 7 nimmt sie komplett raus. ENV tippen: zurück.",
+              "<b>Mixer</b>: hold ENV 0.6 s. Six faders (K1 to K4, ALGO, SELECT), black key 1 to 6 slams a track in or takes it out, "
+              "held only while held: the kill on the kick. White keys put tracks on a group, SEL + a knob rides them together, "
+              "black key 7 takes it all out. Tap ENV: back."),
             L("<b>Beat Repeat</b>: SEL halten und weiße Taste 1 bis 4 – Viertel bis Zweiunddreißigstel, solange du hältst.",
               "<b>Beat repeat</b>: hold SEL and white key 1 to 4 – a quarter down to a thirty-second, as long as you hold."),
             L("<b>Sirene</b>: SIREN mit SEL reinholen, SWEEP nach rechts, RESO hoch.", "<b>Siren</b>: bring SIREN in with SEL, SWEEP to the right, RESO up."),

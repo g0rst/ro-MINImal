@@ -1544,6 +1544,78 @@ int main(int argc, char **argv)
         CHECK(romi_project()->style == 0, "back from FRE3tek: style %d", romi_project()->style);
     }
 
+    /* the mixer (ENV held 0.6 s, in every style): the six levels on K1..K4, ALGO, SELECT; a black key a track in or
+     * out at once (and its sound with it, tails too), held: only while held; white keys the group, SEL + a knob moves
+     * it, black key 7 takes it in and out; ENV tapped: the page MIX, the mixer closed */
+    {
+        int k, st;
+        double peak, rms, peak2, rms2;
+        romi_init(33);
+        frame(0);
+        tap_key(3);
+        tap_button(ROMI_B_PLAY);
+        held_b |= 1u << ROMI_B_ENV;
+        for (k = 0; k < 40; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_ENV);
+        frame(0);
+        CHECK(romi_state(ROMI_Q_MIXER) == 1 && romi_state(ROMI_Q_PAGE) != ROMI_PG_MIX, "ENV held: no mixer (%d, page %d)",
+              romi_state(ROMI_Q_MIXER), romi_state(ROMI_Q_PAGE));
+        snprintf(path, sizeof path, "%s/screen-mixer.ppm", out);
+        for (k = 0; k < 20; k++) frame(0);
+        write_screen(path);
+        st = romi_project()->pat[0].tr[ROMI_SUB].level;
+        turn(ROMI_E_K2, -10);
+        CHECK(romi_project()->pat[0].tr[ROMI_SUB].level == st - 10, "mixer K2: sub level %d (was %d)",
+              romi_project()->pat[0].tr[ROMI_SUB].level, st);
+        st = romi_project()->pat[0].tr[ROMI_CLICK].level;
+        k = romi_state(ROMI_Q_TRACK);
+        turn(ROMI_E_SELECT, 5);
+        CHECK(romi_project()->pat[0].tr[ROMI_CLICK].level == (st + 5 > 127 ? 127 : st + 5), "mixer SELECT: track 6");
+        CHECK(romi_state(ROMI_Q_TRACK) == k, "mixer SELECT moved the track (%d)", romi_state(ROMI_Q_TRACK));
+        for (k = 0; k < 6; k++)                     /* all out but the kick, at once */
+            if (k)
+                tap_key((int[]){1, 3, 5, 8, 10, 13}[k]);
+        for (k = 1; k < 6; k++)
+            CHECK(romi_project()->pat[0].tr[k].mute != romi_project()->pat[1].tr[k].mute ||
+                  romi_project()->pat[0].tr[k].mute, "mixer: black key %d did not mute", k + 1);
+        run(1.0, 0, &peak, &rms);
+        held_k |= 1u << 1;                          /* the kick held: out while held */
+        for (k = 0; k < 20; k++) frame(0);
+        CHECK(romi_project()->pat[0].tr[ROMI_KICK].mute == 1, "mixer: kick not out while held");
+        run(0.5, 0, &peak2, &rms2);
+        CHECK(rms2 < rms * 0.05, "mixer: all out, still sound (rms %g of %g)", rms2, rms);
+        held_k &= ~(1u << 1);
+        frame(0);
+        CHECK(romi_project()->pat[0].tr[ROMI_KICK].mute == 0, "mixer: kick not back at the release");
+        tap_key(0);                                 /* the group: hat and perc */
+        tap_key(0);
+        tap_key(4);
+        tap_key(6);
+        tap_key(15);                                /* black key 7: the group in */
+        CHECK(!romi_project()->pat[0].tr[ROMI_HAT].mute && !romi_project()->pat[0].tr[ROMI_PERC].mute &&
+              romi_project()->pat[0].tr[ROMI_SUB].mute, "mixer: group key: hat %d perc %d sub %d",
+              romi_project()->pat[0].tr[ROMI_HAT].mute, romi_project()->pat[0].tr[ROMI_PERC].mute,
+              romi_project()->pat[0].tr[ROMI_SUB].mute);
+        {
+            int h = romi_project()->pat[0].tr[ROMI_HAT].level, pc = romi_project()->pat[0].tr[ROMI_PERC].level;
+            int s0 = romi_project()->pat[0].tr[ROMI_SUB].level, k1 = romi_project()->pat[0].tr[ROMI_KICK].level;
+            held_b |= 1u << ROMI_B_SEL;
+            frame(0);
+            turn(ROMI_E_K1, -8);
+            held_b &= ~(1u << ROMI_B_SEL);
+            frame(0);
+            CHECK(romi_project()->pat[0].tr[ROMI_HAT].level == h - 8 && romi_project()->pat[0].tr[ROMI_PERC].level == pc - 8 &&
+                  romi_project()->pat[0].tr[ROMI_SUB].level == s0 && romi_project()->pat[0].tr[ROMI_KICK].level == k1,
+                  "mixer group: hat %d perc %d (were %d %d)", romi_project()->pat[0].tr[ROMI_HAT].level,
+                  romi_project()->pat[0].tr[ROMI_PERC].level, h, pc);
+            CHECK(romi_project()->pat[0].tr[ROMI_HAT].mute == 0, "mixer: SEL let go muted a track");
+        }
+        tap_button(ROMI_B_ENV);
+        CHECK(romi_state(ROMI_Q_MIXER) == 0 && romi_state(ROMI_Q_PAGE) == ROMI_PG_MIX, "ENV tap: mixer %d page %d",
+              romi_state(ROMI_Q_MIXER), romi_state(ROMI_Q_PAGE));
+        printf("mixer: all out rms %.5f of %.4f\n", rms2, rms);
+    }
+
     /* the style SUOMI (GLO held 2 s): suom1saundi's voices and rules; the bass pumps, three sixteenths after the
      * kick or two, never on it; it plays clean; B..D from A; stored; back to ro:MINImal */
     {

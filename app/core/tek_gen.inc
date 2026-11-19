@@ -22,23 +22,26 @@ static void tek_gen(romi_track_t *tr, int t, uint32_t d)
             set_step(tr, 14, 0, 2, key);        /* the tekno double before the bar, half the time */
         break;
     }
-    case ROMI_SUB: {                            /* ACID: a short motif, repeated: the root on the beat, the octave and
-                                                 * the fifth around it, a slide into the octave; the accent on a fixed place
-                                                 * of the motif, so it walks against the four when the motif is three long */
-        static const int8_t MOT[6][4] = {
-            {0, 0, 7, 0}, {0, 7, 0, 4}, {0, 0, 0, 7}, {0, 4, 7, 4}, {0, -1, 0, 7}, {0, 0, 4, 2},
+    case ROMI_SUB: {                            /* ACID: memetek's rolling bass: off the kick, the root on the three
+                                                 * sixteenths after it, the fifth and the octave to end the bar; one of
+                                                 * five variants, the octave half the time an accent and sliding */
+        static const uint8_t BL[5][16] = {      /* 0 rest, 1 root, 2 fifth, 3 octave, 4 the third of the scale */
+            {0, 1, 1, 1, 0, 1, 1, 2, 0, 1, 1, 1, 0, 1, 3, 2},   /* memetek's own */
+            {0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 2},
+            {0, 1, 1, 1, 0, 1, 1, 3, 0, 1, 1, 1, 0, 2, 3, 2},
+            {0, 1, 1, 1, 0, 1, 1, 2, 0, 1, 1, 1, 0, 4, 2, 1},
+            {0, 1, 1, 0, 0, 1, 1, 2, 0, 1, 1, 0, 0, 1, 3, 1},
         };
-        const int8_t *m = MOT[urand(6)];
-        uint32_t ml = urand(3) == 0 ? 3u : 4u, ap = urand(ml), rest = 1u + urand(ml - 1u);
+        static const int8_t DEG[5] = {0, 0, 4, 7, 2};
+        const uint8_t *b = BL[d < 1 ? 0 : urand(5)];
+        int sl = urand(2) == 0;
         tr->len = 16;
-        for (i = 0; i < 16; i++) {
-            uint32_t k = i % ml;
-            if (k == rest && urand(2))
-                continue;                       /* the same rest in each turn, half the time */
-            set_step(tr, i, k == ap, 0, scale_note(m[k]));
-            if (m[k] == 7 && k && m[k - 1] != 7)
-                tr->slide |= (uint16_t)(1u << i);   /* up to the octave, sliding */
-        }
+        for (i = 0; i < 16; i++)
+            if (b[i]) {
+                set_step(tr, i, b[i] == 3 && sl, 0, scale_note(DEG[b[i]]));
+                if (b[i] == 3 && sl)
+                    tr->slide |= (uint16_t)(1u << i);
+            }
         break;
     }
     case ROMI_HAT:
@@ -81,9 +84,10 @@ static void tek_defaults(romi_pattern_t *p)
 {
     static const uint8_t DEF[4][9] = {
         /* p0   p1   p2   p3 level pan  dly  rev  q1 */
-        {  44,  84,  28,  70, 100,  64,   0,   0,  60},   /* KICK: TUNE DECAY (the tail) SWEEP DRIVE (q1 CLICK) */
-        {  60,  80,  64,  48,  90,  64,  34,   8,  30},   /* ACID: CUTOFF RESO ENVMOD DECAY (q1 WAVE): the mids */
-        {  28,  66,  58,  44,  54,  76,   8,  14,   0},   /* HAT: DECAY TONE METAL OPEN (q1 CHIP): less fizz */
+        {  44,  90,  46,  38, 110,  64,   0,   0,  76},   /* KICK: TUNE DECAY (0.45 s) SWEEP (x5) DRIVE (q1 CLICK):
+                                                         * memetek's TEK-KICK as it starts */
+        { 103,  36, 102,  52,  84,  64,  20,   6,   0},   /* ACID: CUTOFF (2.4 kHz) RESO ENVMOD DECAY (q1 WAVE: square) */
+        {  52,  59, 100,  76,  70,  76,   8,  14,   0},   /* HAT: DECAY (35 ms) TONE METAL OPEN (220 ms) (q1 CHIP) */
         {  54,  10,   4,  34,  78,  40,  16,  30,  64},   /* TRIBE: DECAY FM RATIO BEND (q1 B.TIME) */
     };
     static const uint8_t SC[4] = {0, 100, 60, 60};
@@ -98,9 +102,9 @@ static void tek_defaults(romi_pattern_t *p)
         tr->rev = DEF[t][7];
         tr->q[0] = 24;
         tr->q[1] = DEF[t][8];
-        tr->q[2] = t == ROMI_KICK ? 50 : 0;     /* KICK: SNAP */
+        tr->q[2] = t == ROMI_KICK ? 82 : 0;     /* KICK: SNAP (the drop in 60 ms) */
         tr->q[3] = 0;
-        tr->glide = t == ROMI_SUB ? 40 : 0;
+        tr->glide = 0;                          /* (the acid's slides glide without it) */
         tr->follow = 0;
         tr->sc = SC[t];
     }
