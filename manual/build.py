@@ -339,6 +339,15 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[LFO]]", "LFO 1", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×3", "MOD", "RESTART", "ENV SRC", "ENV DEPTH", "ENV TGT"))
+p(T("Amounts read in per cent: levels, sends, drift, duck, depths (LFO and ENV from -100 to +100 %), drive, "
+    "crush, resonance, mix, random and the like; times, pitches and counts keep their own units. The kick starts "
+    "at 72 %.",
+    "Mengen stehen in Prozent da: Pegel, Sends, Drift, Duck, Tiefen (LFO und ENV von -100 bis +100 %), Drive, "
+    "Crush, Resonanz, Mix, Random und Ähnliches; Zeiten, Tonhöhen und Zählwerte behalten ihre Einheiten. Die Kick "
+    "startet bei 72 %.",
+    "Cantitățile se citesc în procente: niveluri, send-uri, drift, duck, adâncimi (LFO și ENV de la -100 la +100 %), "
+    "drive, crush, rezonanță, mix, random și altele asemenea; timpii, înălțimile și numărătorile își păstrează "
+    "unitățile. Kick-ul pornește la 72 %."))
 p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each plays STAB (ro:MINImal's FM chords), CLICK "
     "(its noise grains; KLIKKI in suom1saundi) or PIIP (suom1saundi's sound chip), in either style, two of the same "
     "too. A new engine brings its sound and a pattern in its rules and comes in muted: [[SEL]] brings it in when the "

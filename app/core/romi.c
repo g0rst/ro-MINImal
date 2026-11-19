@@ -1847,7 +1847,7 @@ static void pattern_defaults(romi_pattern_t *p)
 {
     static const uint8_t DEF[ROMI_TRACKS][8] = {
         /* p0   p1   p2   p3  level pan  dly  rev */
-        {  44,  62,  70,  30, 120,  64,   0,   0},   /* kick: tune decay punch drive */
+        {  44,  62,  70,  30,  92,  64,   0,   0},   /* kick: tune decay punch drive (level 92: 72 %) */
         {  70,  52,   0,  45, 112,  64,   0,   0},   /* sub: decay fm ratio glide */
         {  42,  70,  80,  64,  90,  74,  18,  20},   /* hat: decay tone metal open */
         {  48,  52,  40,  30,  88,  46,  50,  34},   /* perc: decay fm ratio bend */
@@ -2448,7 +2448,7 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT, F_P127 };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
@@ -2639,6 +2639,22 @@ static int page_params(param_t p[4])
         break;
     }
 #undef P
+    {   /* amounts in per cent of 127 (levels, sends, depths, drive...); times, pitches and counts stay as they are */
+        static const char *const RAW[] = {"HITS", "ROTATE", "RELEASE", "GLIDE", "TUNE", "DECAY", "TONE", "FREQ",
+                                          "CUTOFF", "RATIO", "FM.TIME", "P.TIME", "B.TIME", "ATTACK", "SNAP", "SPEED",
+                                          "ZTIME", "PITCH", "RATE"};
+        for (i = 0; i < 4; i++)
+            if (p[i].v && p[i].fmt == F_NUM && p[i].hi == 127) {
+                uint32_t k, raw = 0;
+                for (k = 0; k < sizeof RAW / sizeof RAW[0]; k++) {
+                    const char *a = p[i].name, *b = RAW[k];
+                    while (*a && *a == *b) a++, b++;
+                    raw |= !*a && !*b;
+                }
+                if (!raw)
+                    p[i].fmt = F_P127;
+            }
+    }
     return 4;
 }
 
@@ -2654,6 +2670,7 @@ static void param_text(const param_t *p, char *t)
     t[0] = 0;
     switch (p->fmt) {
     case F_PCT: cat_int(t, v); cat(t, "%"); break;
+    case F_P127: cat_int(t, (v * 100 + 63) / 127); cat(t, "%"); break;   /* 0..127 as 0..100 % */
     case F_PAN:
         if (v == 64) cat(t, "C");
         else { cat(t, v < 64 ? "L" : "R"); cat_int(t, v < 64 ? 64 - v : v - 64); }
@@ -2727,7 +2744,14 @@ static void param_text(const param_t *p, char *t)
             cat(t, "+");
         cat_int(t, v - 24);
         break;
-    case F_LDEPTH:
+    case F_LDEPTH:                      /* -64..63 as -100..+100 % */
+        v = (int8_t)*p->v;
+        v = v >= 0 ? (v * 100 + 31) / 63 : -((-v * 100 + 32) / 64);
+        if (v > 0)
+            cat(t, "+");
+        cat_int(t, v);
+        cat(t, "%");
+        break;
     case F_SHIFT:                       /* - early, + late */
         v = (int8_t)*p->v;
         if (v > 0)

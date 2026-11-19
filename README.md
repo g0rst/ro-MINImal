@@ -91,6 +91,10 @@ sitzt auf TIMING (KNOB3), SLIDE pro Step auf KNOB3 beim gehaltenen Step.
 Last: Der Stil suom1saundi braucht etwa 8 % mehr Rechenzeit (typisch 1 519 statt 1 398, schlimmster Fall 1 777 statt
 1 646 Instruktionen pro Sample, geschätzt 35 bis 65 % des FM-1). Er macht die Firmware etwa 17 KB größer.
 
+**Anzeige:** Mengen (Pegel, Sends, Drift, Duck, Tiefen, Drive, Crush, Resonanz, Mix, Random …) stehen in Prozent,
+LFO- und ENV-Tiefen von −100 bis +100 %. Zeiten, Tonhöhen und Zählwerte behalten ihre Einheiten. Die Kick startet
+in beiden Stilen bei Pegel 92 von 127 (72 %).
+
 ## Konzept
 
 Rominimal und Microhouse leben von wenigen Elementen, die sich kaum merklich bewegen. Daraus folgt der Aufbau:

@@ -129,7 +129,7 @@ static void su_defaults(romi_pattern_t *p)
 {
     static const uint8_t DEF[ROMI_TRACKS][9] = {
         /* p0   p1   p2   p3 level pan  dly  rev  q1 */
-        {  48,  58,  62,  40, 122,  64,   0,   0,  50},   /* POTKU (q1 CLICK; SNAP is q2) */
+        {  48,  58,  62,  40,  92,  64,   0,   0,  50},   /* POTKU (q1 CLICK; SNAP is q2; level 92: 72 %) */
         {  52,  40,  60,  34, 108,  64,   0,   0,   0},   /* BASSO (q1 WAVE: saw) */
         {  40,  72,  70,  64,  84,  76,  14,  14,   0},   /* HATTU (q1 CHIP) */
         {  58,  96,  74,  44,  84,  52,  60,  20,   0},   /* HAPPO (q1 WAVE) */

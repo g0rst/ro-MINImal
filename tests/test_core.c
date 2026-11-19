@@ -917,9 +917,9 @@ int main(int argc, char **argv)
         turn(ROMI_E_PRESET, 1);
         CHECK(romi_state(ROMI_Q_PATTERN) == 1, "PRESETS: pattern %d", romi_state(ROMI_Q_PATTERN));
         tap_button(ROMI_B_ENV);
-        turn(ROMI_E_K1, -5);                        /* the kick's level, on B: 120 - 5 x 4 (a fast turn) */
-        CHECK(romi_project()->pat[0].tr[ROMI_KICK].level == 100 && romi_project()->pat[1].tr[ROMI_KICK].level == 100 &&
-              romi_project()->pat[3].tr[ROMI_KICK].level == 100, "an edit on B: A %d B %d D %d",
+        turn(ROMI_E_K1, -5);                        /* the kick's level, on B: 92 - 5 x 4 (a fast turn) */
+        CHECK(romi_project()->pat[0].tr[ROMI_KICK].level == 72 && romi_project()->pat[1].tr[ROMI_KICK].level == 72 &&
+              romi_project()->pat[3].tr[ROMI_KICK].level == 72, "an edit on B: A %d B %d D %d",
               romi_project()->pat[0].tr[ROMI_KICK].level, romi_project()->pat[1].tr[ROMI_KICK].level,
               romi_project()->pat[3].tr[ROMI_KICK].level);
         /* NEW on B: B again, A, C and D as they were */
@@ -975,7 +975,7 @@ int main(int argc, char **argv)
         turn(ROMI_E_PRESET, 1);                     /* on B */
         tap_button(ROMI_B_ENV);
         turn(ROMI_E_K1, -5);
-        CHECK(romi_project()->pat[1].tr[ROMI_KICK].level == 100 && romi_project()->pat[0].tr[ROMI_KICK].level == 120,
+        CHECK(romi_project()->pat[1].tr[ROMI_KICK].level == 72 && romi_project()->pat[0].tr[ROMI_KICK].level == 92,
               "HARD edit on B: A %d B %d", romi_project()->pat[0].tr[ROMI_KICK].level, romi_project()->pat[1].tr[ROMI_KICK].level);
         keep_b = romi_project()->pat[1];
         tap_key(22);                                /* NEW: B's current track, only B */
