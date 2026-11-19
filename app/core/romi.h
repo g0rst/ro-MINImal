@@ -114,6 +114,8 @@ typedef struct {
     uint8_t style;                      /* 0 ro:MINImal, 1 suom1saundi (its voices and its generator; ROMI_SUOMI) */
     uint8_t filter;                     /* the master filter (GROOVE 2): 64 off, below a low-pass, above a high-pass */
     uint8_t bass;                       /* the master's low shelf (GROOVE 2): 0 none .. 127 about +9 dB at 80 Hz */
+    uint8_t air;                        /* GLOBAL 2: the master's high shelf (presence and air), 0 off .. 127 +6 dB
+                                         * over about 2.5 kHz */
     uint8_t work;                       /* GLOBAL 2: 0 LIVE (an engine changes the track in all patterns),
                                          * 1 PROD (in HARD, only in the pattern edited: a track's engine per pattern) */
     uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
@@ -127,7 +129,7 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 21u
+#define ROMI_VERSION 22u
 /* the style SUOMI (suom1saundi's voices and generator) is built in when ROMI_SUOMI is 1: the first thing to leave
  * (ROMI_SUOMI 0) or to become a firmware of its own, should the FM-1 run short of time. ROMI_START_STYLE: the style
  * a fresh start comes up in: 0 the firmware ro:MINImal (suom1saundi its bonus), 1 the firmware suom1saundi */

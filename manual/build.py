@@ -347,7 +347,7 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[FX]] ×3", "SLICE", "MODE<br>OFF, GATE, STUTTER, GRAIN", "RATE", "RANDOM", "MIX"),
       ("[[FX]] ×4", "SLICE LFO", "RATE", "DEPTH", "TARGET<br>RATE, RANDOM, MIX", "SHAPE"),
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN, PDOM, HMIN", "CLOCK", "CHAIN"),
-      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "", "WORK<br>LIVE, PROD"),
+      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "AIR<br>0–100 %", "WORK<br>LIVE, PROD"),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
       ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", "ACCENT"),
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", T("GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)"), ""),

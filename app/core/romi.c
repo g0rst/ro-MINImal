@@ -87,7 +87,7 @@ typedef struct { float gl, gr, sd, sr; } bus_t;
 typedef struct { float att, attc, g, norm, held, levels; int32_t hold, cnt; } shape_t;   /* a track's SOUND 2 state */
 
 /* the engines of tracks 5 and 6 (PIIP's in piip_voice.inc) */
-typedef struct { float ph[3], f[3], ft[3], gc, amp, ac, ienv, ic, idx, lp, vel; } stab_v;
+typedef struct { float ph[3], f[3], ft[3], gc, amp, ac, ienv, ic, idx, lp, vel, cf, hp; } stab_v;
 typedef struct { float amp, ac, lp, bp, fc, q, pan, vel; } click_v;
 
 static struct {
@@ -123,7 +123,7 @@ static struct {
     stab_v stab[2];                     /* tracks 5 and 6, each its engine's own */
     click_v click[2];
     float slot_pan[2];                  /* tracks 5 and 6: where a click scattered to (0.5: the middle) */
-    float mf_low[2], mf_band[2], mb_lp[2];   /* the master filter (a state-variable a side), the bass shelf */
+    float mf_low[2], mf_band[2], mb_lp[2], ma_lp[2];   /* the master filter (a state-variable a side), the bass shelf */
     volatile int8_t br_req;             /* BEAT REPEAT: -1 off, 0..3 a length asked for (SEL + white key 1..4) */
     int8_t br_on;                       /* the length repeating, -1 none */
     uint32_t br_len, br_pos;            /* its length, its place (first recorded, then looped) */
@@ -424,6 +424,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
             ST->gc = tr->glide ? 1.0f - decay_coef(pmap((float)tr->glide, 0.002f, 6.0f)) : 1.0f - decay_coef(0.05f);
             ST->ac = decay_coef(pmap(drifted(t, 0, p[0]), 0.03f, 4.5f));
             ST->idx = drifted(t, 1, p[1]) * (0.5f / 127.0f);
+            ST->cf = 0.05f + 0.2f * (float)p[1] * (1.0f / 127.0f);   /* BRIGHT: where the filter rests, 0.4 to 2.2 kHz */
             ST->ic = decay_coef(pmap((float)p[0], 0.02f, 4.0f));
             if (slide) {
                 ST->amp = ST->amp > 0.85f ? ST->amp : 0.85f;
@@ -819,16 +820,17 @@ static inline float stab_run(int s)
     /* stab: a three-note chord of FM pairs through a low-pass that closes with the envelope */
     x = 0.0f;
     if (V->amp > 1e-4f) {
-        float ix = V->idx * V->ienv, c;
+        float ix = V->idx * (0.45f + V->ienv), c;   /* FM stays a little after the attack: overtones, presence */
         for (k = 0; k < 3; k++) {
             V->f[k] += (V->ft[k] - V->f[k]) * V->gc;
             V->ph[k] += V->f[k] * INV_SR;
             if (V->ph[k] >= 1.0f) V->ph[k] -= 1.0f;
             x += fsin(V->ph[k] + fsin(V->ph[k]) * ix);
         }
-        c = 0.04f + 0.5f * V->ienv;
+        c = V->cf + 0.5f * V->ienv;     /* the filter falls with the envelope to where BRIGHT keeps it (the presence) */
         V->lp += (x * (1.0f / 3.0f) - V->lp) * c;
-        x = V->lp * V->amp * V->vel;
+        V->hp += (V->lp - V->hp) * 0.02f;   /* and below 140 Hz out: that is the sub's and the kick's room */
+        x = (V->lp - V->hp) * V->amp * V->vel;
         V->ienv *= V->ic;
         V->amp *= V->ac;
     }
@@ -1060,6 +1062,13 @@ static inline void master_run(float *l, float *r, float mf, float mq, int mode)
         for (c = 0; c < 2; c++) {
             R.mb_lp[c] += (in[c] - R.mb_lp[c]) * 0.0142f;   /* about 100 Hz */
             in[c] += R.mb_lp[c] * g;
+        }
+    }
+    if (R.prj.air) {                    /* AIR: what is over about 2.5 kHz once more, up to +6 dB */
+        float g = (float)R.prj.air * (1.0f / 127.0f);
+        for (c = 0; c < 2; c++) {
+            R.ma_lp[c] += (in[c] - R.ma_lp[c]) * 0.30f;
+            in[c] += (in[c] - R.ma_lp[c]) * g;
         }
     }
     if (mode)                           /* FILTER */
@@ -1421,7 +1430,7 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
         l += dly_l + rl * duck;
         r += dly_r + rr * duck;
-        if (mmode || R.prj.bass || R.br_on >= 0 || R.br_x > 0.0f)
+        if (mmode || R.prj.bass || R.prj.air || R.br_on >= 0 || R.br_x > 0.0f)
             master_run(&l, &r, mf, mq, mmode);
         if (R.mus_on ? R.mus_g < 1.0f : R.mus_g > 0.0f) {   /* the show: the music out with the picture (0.3 s),
                                                                  * back with the fade (0.3 s) */
@@ -1790,7 +1799,7 @@ static void gen_track(int t)
                 tr->slide = (uint16_t)(1u << on[urand(non)]);
         }
         tr->p[0] = near(66, 16);                        /* decay */
-        tr->p[1] = near(60, 18);                        /* bright */
+        tr->p[1] = near(78, 16);                        /* bright: the presence */
         tr->p[2] = (uint8_t)(urand(5) * 26u + 4u);      /* chord: min, min7, min9, sus, fifth */
         break;
     default: {
@@ -2140,7 +2149,8 @@ static void pattern_defaults(romi_pattern_t *p)
         {  42,  70,  80,  64,  90,  74,  18,  20},   /* hat: decay tone metal open */
         {   0,  12,  40,  16,  78,  46,  50,  40},   /* perc: decay fm ratio bend (in the back: the shortest, little
                                                        * FM, less bend, level 78: 61 %) */
-        {  66,  60,  30,  40,  78,  64,  70,  60},   /* stab: decay bright chord detune */
+        {  66,  80,  30,  40,  78,  64,  70,  60},   /* stab: decay bright chord detune (bright 80: in the 1-3 kHz,
+                                                       * the presence the rest leaves free) */
         {  40,  78,  84,  90,  86,  64,  40,  30},   /* click: decay freq reso scatter */
     };
     int t, i;
@@ -2172,7 +2182,7 @@ static void pattern_defaults(romi_pattern_t *p)
         tr->engine = 0;
         {   /* SOUND 2: as the sound was before it had the page (kick click 0.25, pitch 22 ms; sub FM 60 ms; perc
              * bend 12 ms; stab attack 2.3 ms); no pitch, drive or crush */
-            static const uint8_t Q[ROMI_TRACKS][4] = {{24, 53, 79, 0}, {24, 82, 0, 0}, {24, 0, 0, 0},
+            static const uint8_t Q[ROMI_TRACKS][4] = {{24, 68, 79, 0}, {24, 82, 0, 0}, {24, 0, 0, 0},
                                                       {24, 64, 0, 0}, {24, 38, 0, 0}, {24, 0, 0, 0}};
             for (i = 0; i < 4; i++)
                 tr->q[i] = Q[t][i];
@@ -2222,6 +2232,7 @@ static void prj_sanitize(romi_project_t *p)
     LIM(p->mode, 0, 1);
     LIM(p->style, 0, ROMI_SUOMI ? 1 : 0);
     LIM(p->work, 0, 1);
+    LIM(p->air, 0, 127);
     LIM(p->order, 0, 2);
     LIM(p->sc_src, 0, ROMI_TRACKS - 1);
     LIM(p->sc_rel, 0, 127);
@@ -2352,6 +2363,7 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
         d[n++] = p->filter;
         d[n++] = p->bass;
         d[n++] = p->work;
+        d[n++] = p->air;
     } else {
         const romi_pattern_t *pt = &R.prj.pat[obj - 1];
         uint32_t nl = 0, at;
@@ -2426,13 +2438,13 @@ int romi_store_set(int obj, const void *src, uint32_t len)
     uint32_t ver = len > 3u ? b[3] : 0u, old = ver == 13u, v14 = ver == 14u, v15 = ver == 15u;
     uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) + (ver >= 18u ? 4u : 0u) + (ver >= 19u ? 5u : 0u) +
                                               (old ? 2u : v14 ? 3u : 4u) * ROMI_STEPS) + 1u
-                        : 5u + (ver >= 21u ? 27u : ver >= 20u ? 26u : ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the style; 20: the
+                        : 5u + (ver >= 22u ? 28u : ver >= 21u ? 27u : ver >= 20u ? 26u : ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the style; 20: the
                                                                            * master's filter and bass) */
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
     if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u && ver != 18u && ver != 19u &&
-         ver != 20u) ||
+         ver != 20u && ver != 21u) ||
         b[4] != (obj ? obj - 1 : 0))
         return -2;
     if (obj)
@@ -2453,6 +2465,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
         p->filter = ver >= 20u ? b[n++] : 64u;
         p->bass = ver >= 20u ? b[n++] : 0u;
         p->work = ver >= 21u ? b[n++] : 0u;     /* (before 21: LIVE) */
+        p->air = ver >= 22u ? b[n++] : 40u;     /* (before 22: the default) */
     } else {
         for (t = 0; t < ROMI_TRACKS; t++) {
             romi_track_t *tr = &in.tr[t];
@@ -2628,6 +2641,7 @@ void romi_init(uint32_t seed)
     R.prj.clock_out = 1;
     R.prj.filter = 64;                  /* the master filter off, no bass shelf */
     R.prj.bass = 0;
+    R.prj.air = 40;                     /* a little presence and air (+2.4 dB): the hats and the clicks forward */
     R.br_req = R.br_on = -1;
     R.prj.cur_pat = 0;                  /* A, and B..D made from it */
     pattern_defaults(BASE);
@@ -2957,6 +2971,7 @@ static int page_params(param_t p[4])
     case ROMI_PG_GLOBAL2:
         P(0, "MODE", &R.prj.mode, 0, 1, F_MODE, 0);
         P(1, "PLAY", &R.prj.order, 0, 2, F_ORDER, 0);
+        P(2, "AIR", &R.prj.air, 0, 127, F_P127, 1);        /* the master's presence and air */
         P(3, "WORK", &R.prj.work, 0, 1, F_WORK, 0);       /* LIVE or PROD */
         break;
     default:
