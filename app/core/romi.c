@@ -2453,7 +2453,8 @@ typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param
 
 static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
                                                         {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "KLIKKI"}};
-static const char *const ENG_NAMES[2][ROMI_NENG] = {{"STAB", "CLICK", "PIIP"}, {"STAB", "KLIKKI", "PIIP"}};
+static const char *const ENG_NAMES[2][ROMI_NENG] = {{"STAB", "CLICK", "8-BIT"}, {"STAB", "KLIKKI", "PIIP"}};   /* (PIIP
+                                                                                 * is called 8-BIT in ro:MINImal) */
 static const char *track_name(int t)    /* tracks 5 and 6 by their engine */
 {
     if (t >= ROMI_STAB)

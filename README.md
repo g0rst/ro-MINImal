@@ -69,6 +69,7 @@ Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
 | KLIKKI (Engine CLICK, Spur 6 ab Start) | DECAY, FREQ, RESO, SCATTER | PITCH, ATTACK, DRIVE, CRUSH |
 
 Die Spuren 5 und 6 wählen ihre Engine in beiden Stilen frei (HOME zweimal, Seite GROOVE 2): STAB, CLICK oder PIIP.
+In ro:MINImal heißt PIIP **8-BIT**, der Click bei suom1saundi KLIKKI.
 
 Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
 HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30). GLIDE von BASSO, HAPPO und PIIP
