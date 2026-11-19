@@ -117,7 +117,7 @@ typedef struct {
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
 #define ROMI_VERSION 15u
-#define ROMI_SAVER_MS 20000u             /* the screensaver: after 20 s without a touch */
+#define ROMI_SAVER_MS 59000u             /* the screensaver: after 59 s without a touch */
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
                                          * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects
                                          * 2..4 load aside: the HARD patterns, back when HARD is chosen again */

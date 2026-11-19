@@ -361,13 +361,13 @@ p(T("Trig conditions (hold a step, turn [[ALGORITHM]]): 1:2 plays in the first o
     "treia din fiecare patru, până la 8:8. FILL cântă doar cât e ținut [[ARP]], !FILL doar când nu. PRE cântă când "
     "ultima condiție a pistei a fost adevărată, !PRE când nu. 1ST doar în prima măsură după PLAY. Generatorul dă "
     "din când în când unor hat-uri încete un 1:2 sau 3:4: groove-ul respiră peste patru măsuri."))
-p(T("Twenty seconds untouched and the screen dreams: only the name, grey. Every kick pumps it up like a ball from "
+p(T("Fifty-nine seconds untouched and the screen dreams: only the name, grey. Every kick pumps it up like a ball from "
     "its middle; on every step the next letter glows orange, one at a time. Behind it, dimmed, the sixteen by six "
     "dots light with what plays. The name drifts and bounces. Any touch wakes it, and still does what it does.",
-    "Zwanzig Sekunden unberührt, und der Bildschirm träumt: nur der Name, grau. Jede Kick pumpt ihn kugelförmig aus "
+    "Neunundfünfzig Sekunden unberührt, und der Bildschirm träumt: nur der Name, grau. Jede Kick pumpt ihn kugelförmig aus "
     "seiner Mitte auf; bei jedem Step leuchtet der nächste Buchstabe orange, immer nur einer. Dahinter, gedimmt, "
     "leuchten die sechzehn mal sechs Punkte mit, was spielt. Der Name treibt und prallt ab. Jede Berührung weckt ihn und tut trotzdem, was sie tut.",
-    "Douăzeci de secunde neatins și ecranul visează: doar numele, gri. Fiecare kick îl umflă ca pe o minge din "
+    "Cincizeci și nouă de secunde neatins și ecranul visează: doar numele, gri. Fiecare kick îl umflă ca pe o minge din "
     "mijloc; la fiecare pas următoarea literă se aprinde portocaliu, câte una. În spate, estompate, cele "
     "șaisprezece pe șase puncte se aprind cu ce cântă. Numele plutește și ricoșează. Orice atingere îl trezește și își face totuși treaba."))
 p(T("DRIFT moves timbre, decay, level and timing slowly and at random. At zero the machine is exact. "

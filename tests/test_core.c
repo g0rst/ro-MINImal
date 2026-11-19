@@ -1181,16 +1181,16 @@ int main(int argc, char **argv)
         CHECK(hits > 600 * 25 / 100 && hits < 600 * 41 / 100, "chance 33 %%: %d hits in 600 steps", hits);
     }
 
-    /* the screensaver: after 20 s without a touch, drawn 25 times a second, lit by the music; a touch wakes it and
+    /* the screensaver: after 59 s without a touch, drawn 30 times a second, lit by the music; a touch wakes it and
      * still acts (a knob still turns) */
     {
         int k, frames = 0, bpm;
         romi_init(71);
         tap_button(ROMI_B_PLAY);
-        for (k = 0; k < 19000 / 17; k++) frame(0), run(0.017, 0, 0, 0);
-        CHECK(!romi_state(ROMI_Q_SAVER), "screensaver before 20 s");
+        for (k = 0; k < 58000 / 17; k++) frame(0), run(0.017, 0, 0, 0);
+        CHECK(!romi_state(ROMI_Q_SAVER), "screensaver before 59 s");
         for (k = 0; k < 2000 / 17; k++) frame(0), run(0.017, 0, 0, 0);
-        CHECK(romi_state(ROMI_Q_SAVER), "no screensaver after 21 s");
+        CHECK(romi_state(ROMI_Q_SAVER), "no screensaver after 60 s");
         for (k = 0; k < 60; k++) { frame(0); run(0.017, 0, 0, 0); frames += romi_dirty() != 0; }
         CHECK(frames >= 25 && frames <= 36, "screensaver: %d frames drawn in a second", frames);
         snprintf(path, sizeof path, "%s/screen-saver.ppm", out);
