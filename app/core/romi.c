@@ -1660,30 +1660,44 @@ static void clap_steps(romi_track_t *tr, int flam)
     if (flam)
         set_step(tr, 11, 0, 2, 0);      /* (at 50 %) */
 }
+/* NOISE's rules keep to what it is set to. A CLAP (LENGTH left, and so it comes when chosen) stays a clap: always on
+ * 2 and 4, the 4 accented, never on the one, with one of a few figures around it (a flam before the 4, a ghost at
+ * the bar's end, a fill in bar four, a shuffled ghost on the off-beat), its sound near a clap's. A sweep stays a
+ * sweep: a riser through bar four into the next one, a downlifter out of bar one, or hiss on the off-beats. */
 static void noise_gen(romi_track_t *tr)
 {
-    uint32_t k = urand(5), i;
-    if (k <= 1) {                       /* the clap (half the time) */
-        clap_steps(tr, urand(4) == 0);
-        tr->p[0] = NLEN_V(0);
-        tr->p[1] = near(56, 14);        /* the tail, 150 ms or so */
+    uint32_t k, i;
+    if (tr->p[0] * 9 / 128 == 0) {      /* the clap */
+        k = urand(6);
+        clap_steps(tr, k == 2);         /* 2: a flam before the 4 (at 50 %) */
+        if (k == 3)
+            set_step(tr, 15, 0, 3, 0);  /* a ghost at the bar's end (25 %): into the next */
+        else if (k == 4) {
+            set_step(tr, 14, 0, 0, 0);  /* bar four: a fill of two */
+            set_step(tr, 15, 1, 0, 0);
+            tr->step[14].cond = tr->step[15].cond = 9;
+        } else if (k == 5)
+            set_step(tr, 10, 0, 3, 0);  /* a shuffled ghost before the 4 (25 %) */
+        tr->p[1] = near(56, 12);        /* the tail, 150 ms or so */
         tr->p[2] = near(77, 6);         /* about 1.3 kHz */
-        tr->p[3] = near(40, 16);
+        tr->p[3] = near(40, 14);
         tr->q[1] = 0;
         return;
-    } else if (k == 2) {
+    }
+    k = urand(3);
+    if (k == 0) {                       /* a riser in bar four, into the one */
         set_step(tr, 0, 1, 0, 0);
         tr->step[0].cond = 9;           /* 4:4 */
         tr->p[0] = NLEN_V(5);           /* a bar */
         tr->p[1] = (uint8_t)(100 + urand(28));
         tr->q[1] = 127;
-    } else if (k == 3) {
+    } else if (k == 1) {                /* a downlifter out of bar one */
         set_step(tr, 0, 1, 0, 0);
         tr->step[0].cond = 6;           /* 1:4 */
         tr->p[0] = NLEN_V(5);
         tr->p[1] = (uint8_t)(urand(28));
         tr->q[1] = 0;
-    } else {
+    } else {                            /* hiss on the off-beats */
         for (i = 2; i < 16; i += 4)
             set_step(tr, i, 0, (int)urand(2), 0);
         tr->p[0] = NLEN_V(1);           /* a sixteenth */
@@ -1911,9 +1925,71 @@ static int key_step(void)
     return STEP[x % 4u];
 }
 
+/* tracks 5 and 6 in B (1) and C (2), each by the rules of the engine it plays:
+ *   STAB   B: its chords in another order          C: as A (the build-up is the drums')
+ *   CLICK  B: turned on its own loop, another freq  C: a double, then a triple at the bar's end (suom1saundi: one
+ *                                                     double); every click sure
+ *   8-BIT  B, C: as A (a melody is recognised by staying)
+ *   NOISE  a clap stays on 2 and 4: B a ghost at the bar's end comes or goes; C a fill of two into the next bar.
+ *          A sweep stays as it is. */
+static void slot_rules(romi_pattern_t *d, int which)
+{
+    int k;
+    uint32_t i, on[ROMI_STEPS], non;
+    for (k = ROMI_STAB; k < ROMI_TRACKS; k++) {
+        romi_track_t *tr = &d->tr[k];
+        switch (tr->engine) {
+        case ROMI_ENG_STAB:
+            if (which != 1)
+                break;
+            for (non = 0, i = 0; i < tr->len; i++)
+                if (tr->step[i].flags & ROMI_ST_ON)
+                    on[non++] = i;
+            if (non >= 2) {
+                int8_t first = tr->step[on[0]].note;
+                for (i = 0; i + 1 < non; i++)
+                    tr->step[on[i]].note = tr->step[on[i + 1]].note;
+                tr->step[on[non - 1]].note = first;
+            }
+            break;
+        case ROMI_ENG_CLICK:
+            if (which == 1) {
+                turn_loop(tr, 1 + vrand(3));
+                tr->p[1] = nudge(tr->p[1], 10);
+            } else if (STYLE) {
+                if (tr->len == 16)
+                    tr->step[15].flags = (uint8_t)(ROMI_ST_ON | 1u);
+            } else if (tr->len == 16) {
+                for (i = 14; i < 16; i++)
+                    tr->step[i].flags = (uint8_t)(ROMI_ST_ON | 2u);
+            } else {
+                for (i = 0; i < tr->len; i++)
+                    if (tr->step[i].flags & ROMI_ST_ON)
+                        tr->step[i].chance = 0;
+            }
+            break;
+        case ROMI_ENG_NOISE:
+            if (tr->p[0] * 9 / 128 != 0 || tr->len != 16)
+                break;                  /* a sweep: as A */
+            if (which == 1) {
+                if (tr->step[15].flags & ROMI_ST_ON)
+                    tr->step[15].flags = 0;
+                else
+                    set_step(tr, 15, 0, 3, 0);
+            } else {
+                set_step(tr, 14, 0, 0, 0);
+                set_step(tr, 15, 1, 0, 0);
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+
 static void vary(romi_pattern_t *d)
 {
-    romi_track_t *h = &d->tr[ROMI_HAT], *sb = &d->tr[ROMI_SUB], *st = &d->tr[ROMI_STAB], *kk = &d->tr[ROMI_KICK];
+    romi_track_t *h = &d->tr[ROMI_HAT], *sb = &d->tr[ROMI_SUB], *kk = &d->tr[ROMI_KICK];
     uint32_t i, j, n = 2 + vrand(2), on[ROMI_STEPS], non = 0;
     for (j = 0; j < n; j++) {                       /* hats: a few between the off-beats turn over */
         i = vrand(16);
@@ -1929,8 +2005,7 @@ static void vary(romi_pattern_t *d)
     }
     i = 2u + 4u * vrand(4);                         /* and one off-beat doubles */
     h->step[i].flags = (uint8_t)((h->step[i].flags & ~3u) | 1u);
-    turn_loop(&d->tr[ROMI_PERC], 1 + vrand(2));     /* percussion and clicks: turned on their own loops */
-    turn_loop(&d->tr[ROMI_CLICK], 1 + vrand(3));
+    turn_loop(&d->tr[ROMI_PERC], 1 + vrand(2));     /* percussion: turned on its own loop */
     for (i = 0; i < sb->len; i++)                   /* the sub: one hit beside itself, never on a quarter */
         if (sb->step[i].flags & ROMI_ST_ON)
             on[non++] = i;
@@ -1951,15 +2026,7 @@ static void vary(romi_pattern_t *d)
             sb->step[from] = tmp;
         }
     }
-    for (non = 0, i = 0; i < st->len; i++)          /* the stab: its chords in another order */
-        if (st->step[i].flags & ROMI_ST_ON)
-            on[non++] = i;
-    if (non >= 2) {
-        int8_t first = st->step[on[0]].note;
-        for (i = 0; i + 1 < non; i++)
-            st->step[on[i]].note = st->step[on[i + 1]].note;
-        st->step[on[non - 1]].note = first;
-    }
+    slot_rules(d, 1);                               /* tracks 5 and 6, each by its engine's rules */
     if (kk->len == 16 && vrand(3) == 0)             /* now and then the kick sits out a beat */
         kk->step[vrand(2) ? 8 : 12].flags = 0;
     if (kk->step[15].flags & ROMI_ST_ON) {          /* a ghost kick comes or goes */
@@ -1971,14 +2038,13 @@ static void vary(romi_pattern_t *d)
     }
     h->p[0] = nudge(h->p[0], 8);                    /* a nudge to the colour */
     d->tr[ROMI_PERC].p[0] = nudge(d->tr[ROMI_PERC].p[0], 8);
-    d->tr[ROMI_CLICK].p[1] = nudge(d->tr[ROMI_CLICK].p[1], 10);
 }
 
 static void rolls(romi_pattern_t *d)
 {
     static const uint8_t RATCH[2][4] = {{1, 1, 2, 3},    /* x2 x2 x3 x4 */
                                         {0, 0, 1, 1}};   /* suom1saundi: lighter, x2 on the last two */
-    romi_track_t *h = &d->tr[ROMI_HAT], *pc = &d->tr[ROMI_PERC], *cl = &d->tr[ROMI_CLICK];
+    romi_track_t *h = &d->tr[ROMI_HAT], *pc = &d->tr[ROMI_PERC];
     romi_track_t *kk = &d->tr[ROMI_KICK], *sb = &d->tr[ROMI_SUB];
     uint32_t i, last;
     for (i = 12; i < 16 && i < h->len; i++) {       /* the hats roll up to the bar */
@@ -1986,9 +2052,7 @@ static void rolls(romi_pattern_t *d)
         h->step[i].note = (int8_t)(i - 12);
     }
     if (STYLE) {
-        /* suom1saundi: fewer rolls; the acid line keeps its own phrase, the clicks one double at the end */
-        if (cl->len == 16)
-            cl->step[15].flags = (uint8_t)(ROMI_ST_ON | 1u);
+        /* suom1saundi: fewer rolls; the acid line keeps its own phrase */
     } else if (pc->len == 16) {                            /* the percussion with them, rising */
         for (i = 13; i < 16; i++) {
             pc->step[i].flags = (uint8_t)(ROMI_ST_ON | (i == 15 ? 2u | ROMI_ST_ACC : 1u));
@@ -2001,14 +2065,7 @@ static void rolls(romi_pattern_t *d)
                 break;
             }
     }
-    if (!STYLE && cl->len == 16) {                  /* the clicks too */
-        for (i = 14; i < 16; i++)
-            cl->step[i].flags = (uint8_t)(ROMI_ST_ON | 2u);
-    } else if (!STYLE) {
-        for (i = 0; i < cl->len; i++)
-            if (cl->step[i].flags & ROMI_ST_ON)
-                cl->step[i].chance = 0;                             /* every one sure */
-    }
+    slot_rules(d, 2);                               /* tracks 5 and 6, each by its engine's rules */
     if (kk->len == 16 && vrand(2)) {                /* the kick pauses for the bar's last four steps */
         for (i = 12; i < 16; i++)
             kk->step[i].flags = 0;
@@ -2025,11 +2082,13 @@ static void rolls(romi_pattern_t *d)
 
 static void to_key(romi_pattern_t *d)
 {
-    int iv = key_step();
+    int iv = key_step(), k;
     uint32_t i;
     romi_track_t *sb = &d->tr[ROMI_SUB];
     for (i = 0; i < ROMI_STEPS; i++) {
-        d->tr[ROMI_STAB].step[i].note = (int8_t)fold(d->tr[ROMI_STAB].step[i].note + iv, -7, 12);
+        for (k = ROMI_STAB; k < ROMI_TRACKS; k++)  /* chords and melodies with it; a click or a noise keeps its tone */
+            if (d->tr[k].engine == ROMI_ENG_STAB || d->tr[k].engine == ROMI_ENG_PIIP)
+                d->tr[k].step[i].note = (int8_t)fold(d->tr[k].step[i].note + iv, -7, 12);
         d->tr[ROMI_PERC].step[i].note = (int8_t)fold(d->tr[ROMI_PERC].step[i].note + iv, -5, 14);
         if (!sb->follow)
             sb->step[i].note = (int8_t)fold(sb->step[i].note + iv, -7, 12);
