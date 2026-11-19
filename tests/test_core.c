@@ -1625,6 +1625,53 @@ int main(int argc, char **argv)
               "FILTER, BASS not stored: %d %d", romi_project()->filter, romi_project()->bass);
     }
 
+    /* LFO held (600 ms): the track's sound back to its start, its steps kept; undo takes it back; a tap still pages */
+    {
+        static romi_track_t before;
+        romi_track_t *hh;
+        int k, steps_same = 1;
+        romi_init(131);
+        tap_key(5);                                 /* HAT */
+        hh = &romi_project()->pat[0].tr[ROMI_HAT];
+        before = *hh;
+        hh->level = 10; hh->p[1] = 3; hh->q[2] = 99; hh->lfo[0].depth = 40; hh->sl_mode = 2; hh->env_src = 1;
+        hh->step[3].flags ^= ROMI_ST_ON;
+        held_b = 1u << ROMI_B_LFO;
+        for (k = 0; k < 40; k++) frame(0);          /* 680 ms */
+        held_b = 0; frame(0);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_HOME, "LFO held: the page turned (%d)", romi_state(ROMI_Q_PAGE));
+        CHECK(hh->level == 90 && hh->p[1] == 70 && hh->q[2] == 0 && hh->lfo[0].depth == 0 &&   /* (the hat's start) */
+              hh->sl_mode == 0 && hh->env_src == 0, "LFO held: level %d p1 %d q2 %d depth %d slice %d env %d",
+              hh->level, hh->p[1], hh->q[2], hh->lfo[0].depth, hh->sl_mode, hh->env_src);
+        for (k = 0; k < 16; k++) steps_same &= (hh->step[k].flags == before.step[k].flags) == (k != 3);
+        CHECK(steps_same, "LFO held: the steps changed");
+        tap_key(25);                                /* UNDO */
+        CHECK(hh->level == 10 && hh->sl_mode == 2, "undo after the reset: level %d", hh->level);
+        tap_button(ROMI_B_LFO);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_LFO1, "LFO tapped: page %d", romi_state(ROMI_Q_PAGE));
+    }
+
+    /* FX held: the effects back to the style's start, tempo kept; a tap still turns FX's pages */
+    {
+        romi_init(132);
+        tap_key(10);
+        romi_project()->dly_fb = 5; romi_project()->rev_size = 9; romi_project()->sc_rel = 1; romi_project()->bpm = 133;
+        romi_project()->pat[0].tr[ROMI_STAB].sl_mode = 3; romi_project()->pat[0].tr[ROMI_STAB].sc = 3;
+        held_b = 1u << ROMI_B_FX;
+        { int k; for (k = 0; k < 40; k++) frame(0); }
+        held_b = 0; frame(0);
+        CHECK(romi_project()->dly_fb == 62 && romi_project()->rev_size == 70 && romi_project()->sc_rel == 54 &&
+              romi_project()->bpm == 133 && romi_project()->pat[0].tr[ROMI_STAB].sl_mode == 0 &&
+              romi_project()->pat[0].tr[ROMI_STAB].sc == 127 && romi_state(ROMI_Q_PAGE) == ROMI_PG_HOME,
+              "FX held: fb %d size %d rel %d bpm %d slice %d sc %d page %d", romi_project()->dly_fb, romi_project()->rev_size,
+              romi_project()->sc_rel, romi_project()->bpm, romi_project()->pat[0].tr[ROMI_STAB].sl_mode,
+              romi_project()->pat[0].tr[ROMI_STAB].sc, romi_state(ROMI_Q_PAGE));
+        tap_button(ROMI_B_FX);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_FX, "FX tapped: page %d", romi_state(ROMI_Q_PAGE));
+        tap_button(ROMI_B_FX);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SC, "FX tapped twice: page %d", romi_state(ROMI_Q_PAGE));
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);

@@ -118,9 +118,14 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[EDIT]]", T("page SOUND of the track; pressed again: SOUND 2", "Seite SOUND der Spur; nochmal: SOUND 2",
                      "pagina SOUND a pistei; apăsat din nou: SOUND 2")),
       ("[[ENV]]", T("page MIX of the track", "Seite MIX der Spur", "pagina MIX a pistei")),
-      ("[[FX]]", T("page FX; again: SIDECHAIN; a third time: SLICE; a fourth: SLICE LFO",
-                   "Seite FX; nochmal: SIDECHAIN; ein drittes Mal: SLICE; ein viertes: SLICE LFO",
-                   "pagina FX; din nou: SIDECHAIN; a treia oară: SLICE; a patra: SLICE LFO")),
+      ("[[FX]]", T("page FX; again: SIDECHAIN; a third time: SLICE; a fourth: SLICE LFO. Held: the effects back to the "
+                   "style's start (delay, reverb, sidechain; the track's sidechain amount, SLICE and its LFO)",
+                   "Seite FX; nochmal: SIDECHAIN; ein drittes Mal: SLICE; ein viertes: SLICE LFO. Gehalten: die "
+                   "Effekte zurück auf den Start des Stils (Delay, Reverb, Sidechain; Sidechain-Anteil, SLICE und "
+                   "SLICE LFO der Spur)",
+                   "pagina FX; din nou: SIDECHAIN; a treia oară: SLICE; a patra: SLICE LFO. Ținut: efectele înapoi "
+                   "la începutul stilului (delay, reverb, sidechain; cota de sidechain, SLICE și LFO-ul lui ale "
+                   "pistei)")),
       ("[[GLO]]", T("page GLOBAL; pressed again: GLOBAL 2 (MODE LAZY/HARD)", "Seite GLOBAL; nochmal gedrückt: GLOBAL 2 (MODE LAZY/HARD)",
                     "pagina GLOBAL; apăsat din nou: GLOBAL 2 (MODE LAZY/HARD)")),
       ("[[SEQ]]", T("back to the steps; pages EUCLID, LINK, TIMING in turn",
@@ -132,8 +137,12 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[ARP]]", T("tap: mutate, one small change; hold: FILL (steps with FILL play, !FILL rest)",
                     "kurz: Mutate, eine kleine Änderung; halten: FILL (Steps mit FILL spielen, !FILL schweigen)",
                     "scurt: mutate, o schimbare mică; ținut: FILL (pașii cu FILL cântă, !FILL tac)")),
-      ("[[LFO]]", T("page LFO 1 of the track; again: LFO 2; a third time: MOD", "Seite LFO 1 der Spur; nochmal: LFO 2; "
-                    "ein drittes Mal: MOD", "pagina LFO 1 a pistei; din nou: LFO 2; a treia oară: MOD")),
+      ("[[LFO]]", T("page LFO 1 of the track; again: LFO 2; a third time: MOD. Held: the track's sound back to its "
+                    "start (sound, mix, LFOs, MOD, SLICE; the steps stay; undo takes it back)",
+                    "Seite LFO 1 der Spur; nochmal: LFO 2; ein drittes Mal: MOD. Gehalten: der Klang der Spur zurück "
+                    "auf den Start (Sound, Mix, LFOs, MOD, SLICE; die Steps bleiben; Undo holt ihn zurück)",
+                    "pagina LFO 1 a pistei; din nou: LFO 2; a treia oară: MOD. Ținut: sunetul pistei înapoi la "
+                    "început (sunet, mix, LFO-uri, MOD, SLICE; pașii rămân; undo îl aduce înapoi)")),
       ("[[REC]]", T("keys mode: the keys play the track", "Tastenmodus: die Tasten spielen die Spur",
                     "modul clape: clapele cântă pista")),
       ("[[SAVE]]", T("save", "speichern", "salvează")),

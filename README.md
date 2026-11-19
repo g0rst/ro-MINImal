@@ -183,7 +183,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
 | EDIT ein zweites Mal | Seite SOUND 2: PITCH (±24 Halbtöne), dann je Spur CLICK (Kick), FM.TIME (Sub), B.TIME (Perc) oder ATTACK (Hat, Stab, Click), DRIVE (Kick: P.TIME), CRUSH. Lockbar pro Step, Ziel für LFOs |
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
-| FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
+| FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung. **FX gehalten** (0,6 s): die Effekte zurück auf den Start des Stils (Delay, Reverb, Sidechain-Quelle und Release; Sidechain-Anteil, SLICE und SLICE LFO der gewählten Spur), Tempo und Tonart bleiben |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
 | FX ein viertes Mal | Seite SLICE LFO: der eigene LFO des Slicers, K1 RATE, K2 DEPTH, K3 TARGET (RATE, RANDOM, MIX), K4 SHAPE |
 | FX ein drittes Mal | Seite SLICE (Hat, Perc, Stab, Click; nicht Kick und Sub): K1 MODE OFF, GATE (Raster 1/32 bis 1/128, an und aus), STUTTER (das erste Stück des Schlags immer wieder), GRAIN (Granular light: zwei Körner aus den letzten 186 ms der Spur); K2 RATE (Rastergröße, Stück- oder Korngröße), K3 RANDOM (Zufall: welche Stücke, rückwärts, Oktave, wo), K4 MIX. GRAIN auf höchstens zwei Spuren |
@@ -194,6 +194,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | SEL halten + schwarze Tasten 1 bis 6 | jede Spur direkt stumm oder an, auch mehrere zugleich; die gewählte Spur bleibt |
 | ARP | kurz: Spur leicht verändern; halten: FILL (Steps mit FILL spielen, mit !FILL schweigen) |
 | SEQ ein drittes Mal | Seite TIMING: SELECT springt von Schlag zu Schlag, eine weiße Taste wählt einen Step direkt (ohne ihn umzuschalten). K1 schiebt den gewählten Schlag, K2 die ganze Spur, zusammen bis zu eine halbe Sechzehntel früher oder später; K3 GLIDE (SUB, STAB) |
+| LFO gehalten (0,6 s) | der Klang der gewählten Spur zurück auf den Start: SOUND, SOUND 2, Mix, Sidechain-Anteil, Glide, beide LFOs, MOD, SLICE und SLICE LFO; Steps, Länge, Engine und Verknüpfungen bleiben; UNDO holt ihn zurück |
 | LFO | Seite LFO 1 der Spur; nochmal: LFO 2. Je RATE (1/16 bis 16 Takte), DEPTH (±), TARGET (Klangparameter beider SOUND-Seiten, Pegel, Pan, Delay, Reverb), SHAPE (Sinus, Dreieck, Säge, Rechteck, Zufall) |
 | LFO ein drittes Mal | Seite MOD: K1 RESTART (FREE oder eine Spur, deren Schläge die LFOs der Spur neu starten), K2 ENV SRC (die Lautstärke einer Spur als Modulation), K3 ENV DEPTH (±), K4 ENV TGT (dieselben Ziele wie ein LFO; Pegel, Pan, Sends fließend) |
 | REC | Tasten spielen die Spur chromatisch; bei laufendem Groove werden die Noten aufgenommen |

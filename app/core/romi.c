@@ -156,6 +156,10 @@ static struct {
     uint8_t pre[ROMI_TRACKS];           /* the last trig condition of the track came out true (PRE) */
     volatile uint8_t fill;              /* FILL: ARP held */
     uint32_t arp_t;                     /* ARP pressed: when (a tap mutates, a hold fills) */
+    uint32_t lfo_t;                     /* LFO pressed: when (a tap turns the pages, a hold resets the track) */
+    uint8_t lfo_held;
+    uint32_t fx_t;                      /* FX pressed: when (a tap turns the pages, a hold resets the effects) */
+    uint8_t fx_held;
     float lfo_t0[ROMI_TRACKS];          /* where the track's LFOs were last restarted, in steps of the song */
     bus_t bus_t[ROMI_TRACKS];           /* a mix modulated by an ENV: the block's target, reached by a ramp */
     bus_t bus_d[ROMI_TRACKS];
@@ -3337,6 +3341,65 @@ static void set_style(void)
     R.dirty |= STRIP_ALL;
 }
 
+/* LFO held: the track's sound back to where it starts - SOUND, SOUND 2, the mix and sidechain, glide, both LFOs,
+ * MOD (restart, ENV), SLICE and its LFO. Its steps, length, engine, links and timing stay; undo takes it back. */
+static void reset_track(int t)
+{
+    static romi_pattern_t d;            /* (static: not on a small stack) */
+    romi_track_t *tr = &EDT->tr[t], *s = &d.tr[t];
+    int i;
+    pattern_defaults(&d);
+    if (t >= ROMI_STAB)
+        engine_sound(s, tr->engine);    /* its engine's start */
+    keep_undo();
+    for (i = 0; i < 4; i++) {
+        tr->p[i] = s->p[i];
+        tr->q[i] = s->q[i];
+    }
+    tr->level = s->level;
+    tr->pan = s->pan;
+    tr->dly = s->dly;
+    tr->rev = s->rev;
+    tr->sc = s->sc;
+    tr->glide = s->glide;
+    for (i = 0; i < ROMI_LFOS; i++)
+        tr->lfo[i] = s->lfo[i];
+    tr->slfo = s->slfo;
+    tr->lfo_rst = s->lfo_rst;
+    tr->env_src = s->env_src;
+    tr->env_depth = s->env_depth;
+    tr->env_tgt = s->env_tgt;
+    tr->sl_mode = s->sl_mode;
+    tr->sl_rate = s->sl_rate;
+    tr->sl_rand = s->sl_rand;
+    tr->sl_mix = s->sl_mix;
+    romi_message("RESET", track_name(t));
+    changed();
+}
+
+/* FX held: the effects back to where the style starts - delay and reverb, the sidechain's source and release - and
+ * the track's: its sidechain amount, SLICE and SLICE's LFO. Undo takes the track's part back. */
+static void reset_fx(int t)
+{
+    static romi_pattern_t d;
+    uint8_t keep[6] = {R.prj.bpm, R.prj.swing, R.prj.drift, R.prj.duck, R.prj.root, R.prj.scale};
+    romi_track_t *tr = &EDT->tr[t], *s = &d.tr[t];
+    pattern_defaults(&d);
+    keep_undo();
+    prj_style_defaults();               /* the style's effects; tempo, key and the like as they were */
+    R.prj.bpm = keep[0]; R.prj.swing = keep[1]; R.prj.drift = keep[2]; R.prj.duck = keep[3];
+    R.prj.root = keep[4]; R.prj.scale = keep[5];
+    tr->sc = s->sc;
+    tr->sl_mode = s->sl_mode;
+    tr->sl_rate = s->sl_rate;
+    tr->sl_rand = s->sl_rand;
+    tr->sl_mix = s->sl_mix;
+    tr->slfo = s->slfo;
+    romi_message("RESET", "FX");
+    R.unsaved = 1;
+    changed();
+}
+
 /* An engine turned (GROOVE 2, HOME twice): track 5 or 6 plays another engine, muted until SEL brings it in. Its sound
  * comes from the engine's defaults, its pattern from the engine's rules (undo brings the old one back). A sub that followed a stab that is now a
  * click follows nothing. */
@@ -3408,9 +3471,33 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
 {
     static const uint8_t WK[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26};
     static const uint8_t BK[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
-    uint32_t pressed = buttons & ~R.btn, kdown = keys & ~R.keys, kup = R.keys & ~keys;
+    uint32_t pressed = buttons & ~R.btn, kdown = keys & ~R.keys, kup = R.keys & ~keys, lfo_tap = 0, fx_tap = 0;
     romi_track_t *tr;
     int i, hs, e_sel = (int)enc[ROMI_E_SELECT], e_pre = (int)enc[ROMI_E_PRESET];
+    if (pressed & 1u << ROMI_B_LFO)     /* LFO: a tap turns the pages, a hold (600 ms) resets the track's sound */
+        R.lfo_t = now_ms ? now_ms : 1u;
+    if (R.lfo_t && (buttons & 1u << ROMI_B_LFO) && now_ms - R.lfo_t >= 600u) {
+        R.lfo_t = 0;
+        R.lfo_held = 1;
+        reset_track(R.track);
+    }
+    if (!(buttons & 1u << ROMI_B_LFO) && (R.btn & 1u << ROMI_B_LFO)) {
+        lfo_tap = !R.lfo_held;
+        R.lfo_t = 0;
+        R.lfo_held = 0;
+    }
+    if (pressed & 1u << ROMI_B_FX)      /* FX the same: a tap turns its pages, a hold resets the effects */
+        R.fx_t = now_ms ? now_ms : 1u;
+    if (R.fx_t && (buttons & 1u << ROMI_B_FX) && now_ms - R.fx_t >= 600u) {
+        R.fx_t = 0;
+        R.fx_held = 1;
+        reset_fx(R.track);
+    }
+    if (!(buttons & 1u << ROMI_B_FX) && (R.btn & 1u << ROMI_B_FX)) {
+        fx_tap = !R.fx_held;
+        R.fx_t = 0;
+        R.fx_held = 0;
+    }
     R.now = now_ms;
     {                                   /* a touch: a button, a key, a knob; it wakes the screen and still acts */
         int any = buttons || keys;
@@ -3451,24 +3538,25 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                                                   ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
                                                   ROMI_B_HOME, ROMI_B_FX};
         uint8_t was = R.page;
+        uint32_t pgp = (pressed & ~(1u << ROMI_B_FX)) | (fx_tap ? 1u << ROMI_B_FX : 0u);   /* (FX: at its release) */
         for (i = 0; i < ROMI_PG_EUCLID; i++)
-            if (pressed & 1u << PAGE_BTN[i]) {
+            if (pgp & 1u << PAGE_BTN[i]) {
                 R.page = (uint8_t)i;
                 R.dirty |= STRIP_ALL;
             }
-        if ((pressed & 1u << ROMI_B_FX) && was == ROMI_PG_FX)
+        if ((pgp & 1u << ROMI_B_FX) && was == ROMI_PG_FX)
             R.page = ROMI_PG_SC;        /* FX again: the sidechain */
-        if ((pressed & 1u << ROMI_B_FX) && was == ROMI_PG_SC)
+        if ((pgp & 1u << ROMI_B_FX) && was == ROMI_PG_SC)
             R.page = ROMI_PG_SLICE;     /* and again: SLICE */
-        if ((pressed & 1u << ROMI_B_FX) && was == ROMI_PG_SLICE)
+        if ((pgp & 1u << ROMI_B_FX) && was == ROMI_PG_SLICE)
             R.page = ROMI_PG_SLFO;      /* a fourth time: SLICE's LFO */
-        if ((pressed & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND)
+        if ((pgp & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND)
             R.page = ROMI_PG_SOUND2;    /* EDIT again: SOUND 2 */
-        if ((pressed & 1u << ROMI_B_HOME) && was == ROMI_PG_HOME)
+        if ((pgp & 1u << ROMI_B_HOME) && was == ROMI_PG_HOME)
             R.page = ROMI_PG_ENGINE;    /* HOME again: GROOVE 2, the engines of tracks 5 and 6 */
-        if ((pressed & 1u << ROMI_B_GLO) && was == ROMI_PG_GLOBAL)
+        if ((pgp & 1u << ROMI_B_GLO) && was == ROMI_PG_GLOBAL)
             R.page = ROMI_PG_GLOBAL2;   /* GLO again: GLOBAL 2 */
-        if (pressed & 1u << ROMI_B_LFO) {   /* LFO: the first LFO's page; again: the second's */
+        if (lfo_tap) {                  /* LFO tapped: the first LFO's page; again: the second's; then MOD */
             R.page = was == ROMI_PG_LFO1 ? ROMI_PG_LFO2 : was == ROMI_PG_LFO2 ? ROMI_PG_MOD : ROMI_PG_LFO1;
             R.dirty |= STRIP_ALL;
         }
