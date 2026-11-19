@@ -112,7 +112,9 @@ table(T(["control", "what it does"], ["bedienelement", "funktion"], ["control", 
       ("[[OCT−]] [[OCT+]]", T("previous and next track; in keys mode the octave",
                               "vorige und nächste Spur; im Tastenmodus die Oktave",
                               "pista anterioară și următoare; în modul clape, octava")),
-      ("[[HOME]]", T("page GROOVE", "Seite GROOVE", "pagina GROOVE")),
+      ("[[HOME]]", T("page GROOVE; pressed again: GROOVE 2 (the engines of tracks 5 and 6)",
+                     "Seite GROOVE; nochmal gedrückt: GROOVE 2 (die Engines der Spuren 5 und 6)",
+                     "pagina GROOVE; apăsat din nou: GROOVE 2 (engine-urile pistelor 5 și 6)")),
       ("[[EDIT]]", T("page SOUND of the track; pressed again: SOUND 2", "Seite SOUND der Spur; nochmal: SOUND 2",
                      "pagina SOUND a pistei; apăsat din nou: SOUND 2")),
       ("[[ENV]]", T("page MIX of the track", "Seite MIX der Spur", "pagina MIX a pistei")),
@@ -318,7 +320,10 @@ p(T("Every track has two LFOs: slow waves in time with the groove. [[LFO]] opens
 h("b", 5, T("pages", "seiten", "pagini"))
 table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite", "KNOB1", "KNOB2", "KNOB3", "KNOB4"],
         ["buton", "pagină", "KNOB1", "KNOB2", "KNOB3", "KNOB4"]),
-      ("[[HOME]]", "GROOVE", "TEMPO<br>90 – 150", "SWING<br>50 – 75 %", "DRIFT", "DUCK"),
+      ("[[HOME]]", "GROOVE", "TEMPO<br>90 – 160", "SWING<br>50 – 75 %", "DRIFT", "DUCK"),
+      ("[[HOME]] ×2", "GROOVE 2", T("TRACK 5<br>STAB, CLICK, PIIP", "TRACK 5 (Spur 5)<br>STAB, CLICK, PIIP",
+                                    "TRACK 5 (pista 5)<br>STAB, CLICK, PIIP"),
+       T("TRACK 6<br>STAB, CLICK, PIIP", "TRACK 6 (Spur 6)<br>STAB, CLICK, PIIP", "TRACK 6 (pista 6)<br>STAB, CLICK, PIIP"), "", ""),
       ("[[EDIT]]", "SOUND", T("see “six tracks”", "siehe „sechs spuren“", "vezi „șase piste”"), "", "", ""),
       ("[[EDIT]] ×2", "SOUND 2", "PITCH", T("see above", "siehe oben", "vezi mai sus"), "DRIVE", "CRUSH"),
       ("[[ENV]]", "MIX", "LEVEL", "PAN", "DELAY", "REVERB"),
@@ -326,8 +331,6 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[FX]] ×2", "SIDECHAIN", "SOURCE", "DEPTH", "RELEASE", "AMOUNT"),
       ("[[FX]] ×3", "SLICE", "MODE<br>OFF, GATE, STUTTER, GRAIN", "RATE", "RANDOM", "MIX"),
       ("[[FX]] ×4", "SLICE LFO", "RATE", "DEPTH", "TARGET<br>RATE, RANDOM, MIX", "SHAPE"),
-      ("[[EDIT]] ×3", "ENGINE", T("ENGINE (tracks 5, 6)<br>STAB, CLICK, PIIP", "ENGINE (Spuren 5, 6)<br>STAB, CLICK, PIIP",
-                                  "ENGINE (pistele 5, 6)<br>STAB, CLICK, PIIP"), "", "", ""),
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN, PDOM, HMIN", "CLOCK", "CHAIN"),
       ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "STYLE<br>ROMI, SUOM1", ""),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
@@ -336,15 +339,15 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[LFO]]", "LFO 1", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×2", "LFO 2", "RATE", "DEPTH", "TARGET", "SHAPE"),
       ("[[LFO]] ×3", "MOD", "RESTART", "ENV SRC", "ENV DEPTH", "ENV TGT"))
-p(T("Tracks 5 and 6 are free: [[EDIT]] three times, ENGINE, and each plays STAB (ro:MINImal's FM chords), CLICK "
+p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each plays STAB (ro:MINImal's FM chords), CLICK "
     "(its noise grains; KLIKKI in suom1saundi) or PIIP (suom1saundi's sound chip), in either style, two of the same "
     "too. A new engine brings its sound and a pattern in its rules; undo brings the old one back. Live, that is a "
     "third voice to swap without leaving the groove.",
-    "Die Spuren 5 und 6 sind frei: [[EDIT]] dreimal, ENGINE, und jede spielt STAB (die FM-Akkorde von ro:MINImal), "
+    "Die Spuren 5 und 6 sind frei: [[HOME]] zweimal, GROOVE 2, Regler 1 und 2, und jede spielt STAB (die FM-Akkorde von ro:MINImal), "
     "CLICK (seine Rauschkörner; bei suom1saundi KLIKKI) oder PIIP (der Soundchip von suom1saundi), in beiden "
     "Stilen, auch zweimal dasselbe. Eine neue Engine bringt ihren Klang und ein Pattern nach ihren Regeln mit; "
     "Undo holt das alte zurück. Live ist das eine Stimme zum Tauschen, ohne den Groove zu verlassen.",
-    "Pistele 5 și 6 sunt libere: [[EDIT]] de trei ori, ENGINE, și fiecare cântă STAB (acordurile FM ale lui "
+    "Pistele 5 și 6 sunt libere: [[HOME]] de două ori, GROOVE 2, butoanele 1 și 2, și fiecare cântă STAB (acordurile FM ale lui "
     "ro:MINImal), CLICK (boabele lui de zgomot; KLIKKI în suom1saundi) sau PIIP (cipul de sunet al lui suom1saundi), "
     "în ambele stiluri, chiar de două ori același. Un engine nou își aduce sunetul și un pattern după regulile lui; "
     "undo îl aduce înapoi pe cel vechi. Live e o voce de schimbat fără să ieși din groove."))

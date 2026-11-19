@@ -86,7 +86,7 @@ typedef struct {
     uint8_t env_tgt;                    /* 0..11, as an LFO's target */
     uint8_t sl_mode;                    /* SLICE (hat, perc, stab, click): 0 off, 1 GATE, 2 STUTTER, 3 GRAIN */
     uint8_t sl_rate, sl_rand, sl_mix;   /* 0..127: the slices' size, how much is left to chance, dry to sliced */
-    uint8_t engine;                     /* tracks 5 and 6: ROMI_ENG_STAB, _CLICK or _PIIP (EDIT three times) */
+    uint8_t engine;                     /* tracks 5 and 6: ROMI_ENG_STAB, _CLICK or _PIIP (GROOVE 2: HOME twice) */
     romi_lfo_t slfo;                    /* SLICE's own LFO (FX four times): target 0 RATE, 1 RANDOM, 2 MIX */
     romi_lfo_t lfo[ROMI_LFOS];
 } romi_track_t;

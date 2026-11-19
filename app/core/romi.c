@@ -2461,7 +2461,7 @@ static const char *track_name(int t)    /* tracks 5 and 6 by their engine */
     return TRACK_NAMES[STYLE ? 1 : 0][t];
 }
 static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
-                                                    "GLOBAL 2", "MOD", "SLICE", "ENGINE", "SLICE LFO"};
+                                                    "GLOBAL 2", "MOD", "SLICE", "GROOVE 2", "SLICE LFO"};
 static const char *const SOUND_NAMES[2][ROMI_TRACKS][4] = {{
     {"TUNE", "DECAY", "PUNCH", "DRIVE"}, {"DECAY", "FM", "RATIO", "GLIDE"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
@@ -2592,9 +2592,9 @@ static int page_params(param_t p[4])
         P(2, "FOLLOW", &tr->follow, 0, ROMI_TRACKS, F_DEPSRC, 0);
         P(3, "ACCENT", &tr->acc_src, 0, ROMI_TRACKS, F_DEPSRC, 0);   /* its accents accent this track too */
         break;
-    case ROMI_PG_ENGINE:                /* EDIT a third time: what tracks 5 and 6 play, in either style */
-        if (R.track >= ROMI_STAB)
-            P(0, "ENGINE", &tr->engine, 0, ROMI_NENG - 1, F_ENGINE, 0);
+    case ROMI_PG_ENGINE:                /* GROOVE 2 (HOME twice): what tracks 5 and 6 play, in either style */
+        P(0, "TRACK 5", &EDT->tr[ROMI_STAB].engine, 0, ROMI_NENG - 1, F_ENGINE, 0);
+        P(1, "TRACK 6", &EDT->tr[ROMI_CLICK].engine, 0, ROMI_NENG - 1, F_ENGINE, 0);
         break;
     case ROMI_PG_SLFO:                  /* FX a fourth time: SLICE's own LFO */
         if (R.track >= SL_FIRST) {
@@ -3137,20 +3137,20 @@ static void set_style(void)
     R.dirty |= STRIP_ALL;
 }
 
-/* ENGINE turned (EDIT three times): track 5 or 6 plays another engine. Its sound comes from the engine's defaults,
+/* An engine turned (GROOVE 2, HOME twice): track 5 or 6 plays another engine. Its sound comes from the engine's defaults,
  * its pattern from the engine's rules (undo brings the old one back). A sub that followed a stab that is now a
  * click follows nothing. */
-static void set_engine(uint8_t was)
+static void set_engine(int t, uint8_t was)
 {
-    romi_track_t *tr = &EDT->tr[R.track];
+    romi_track_t *tr = &EDT->tr[t];
     uint8_t en = tr->engine;
     tr->engine = was;
     keep_undo();
     engine_sound(tr, en);
-    gen_track(R.track);
-    if (en == ROMI_ENG_CLICK && EDT->tr[ROMI_SUB].follow == R.track + 1)
+    gen_track(t);
+    if (en == ROMI_ENG_CLICK && EDT->tr[ROMI_SUB].follow == t + 1)
         EDT->tr[ROMI_SUB].follow = 0;
-    romi_message("ENGINE", track_name(R.track));
+    romi_message(t == ROMI_STAB ? "TRACK 5" : "TRACK 6", track_name(t));
 }
 
 /* LAZY <-> HARD. Into HARD: B..D are the HARD patterns kept aside (if there are), else copies of A ("all the same,
@@ -3248,7 +3248,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
                                                   ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
-                                                  ROMI_B_EDIT, ROMI_B_FX};
+                                                  ROMI_B_HOME, ROMI_B_FX};
         uint8_t was = R.page;
         for (i = 0; i < ROMI_PG_EUCLID; i++)
             if (pressed & 1u << PAGE_BTN[i]) {
@@ -3263,8 +3263,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             R.page = ROMI_PG_SLFO;      /* a fourth time: SLICE's LFO */
         if ((pressed & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND)
             R.page = ROMI_PG_SOUND2;    /* EDIT again: SOUND 2 */
-        if ((pressed & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND2)
-            R.page = ROMI_PG_ENGINE;    /* a third time: the engine (tracks 5 and 6) */
+        if ((pressed & 1u << ROMI_B_HOME) && was == ROMI_PG_HOME)
+            R.page = ROMI_PG_ENGINE;    /* HOME again: GROOVE 2, the engines of tracks 5 and 6 */
         if ((pressed & 1u << ROMI_B_GLO) && was == ROMI_PG_GLOBAL)
             R.page = ROMI_PG_GLOBAL2;   /* GLO again: GLOBAL 2 */
         if (pressed & 1u << ROMI_B_LFO) {   /* LFO: the first LFO's page; again: the second's */
@@ -3462,7 +3462,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         }
     } else {
         param_t pp[4];
-        uint8_t mode_was = R.prj.mode, style_was = R.prj.style, eng_was = EDT->tr[R.track].engine;
+        uint8_t mode_was = R.prj.mode, style_was = R.prj.style;
+        uint8_t eng_was[2] = {EDT->tr[ROMI_STAB].engine, EDT->tr[ROMI_CLICK].engine};
         page_params(pp);
         for (i = 0; i < 4; i++) {
             int d = (int)enc[ROMI_E_K1 + i];
@@ -3496,8 +3497,9 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             set_mode(R.prj.mode);
         if (R.prj.style != style_was)
             set_style();
-        if (R.track >= ROMI_STAB && EDT->tr[R.track].engine != eng_was)
-            set_engine(eng_was);
+        for (i = 0; i < 2; i++)
+            if (EDT->tr[ROMI_STAB + i].engine != eng_was[i])
+                set_engine(ROMI_STAB + i, eng_was[i]);
     }
 
     /* the keys */
@@ -3640,7 +3642,7 @@ void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint3
     static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
                                                   ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
-                                                  ROMI_B_EDIT, ROMI_B_FX};
+                                                  ROMI_B_HOME, ROMI_B_FX};
     const romi_track_t *tr = &PAT->tr[R.track];
     uint32_t b = 1u << PAGE_BTN[R.page], k = 0, dk = 0;
     int i;

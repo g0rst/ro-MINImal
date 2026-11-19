@@ -4,7 +4,7 @@
  * build with ROMI_SUOMI 0 (or make it a firmware of its own) and ro:MINImal is as it was.
  *
  *   track   0 POTKU  1 BASSO  2 HATTU  3 HAPPO   (ro:MINImal: KICK SUB HAT PERC)
- *   Tracks 5 and 6 play an engine of their own choice in either style (EDIT three times): ro:MINImal's STAB or
+ *   Tracks 5 and 6 play an engine of their own choice in either style (GROOVE 2: HOME twice): ro:MINImal's STAB or
  *   CLICK, or suom1saundi's PIIP (piip_voice.inc); suom1saundi starts with PIIP and CLICK (called KLIKKI there).
  *
  * suom1saundi has eight sound parameters a track; here SOUND holds its first four, SOUND 2 keeps ro:MINImal's shape

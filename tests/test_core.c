@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     tap_key(25);                                    /* black key 10: undo (the last kept: before the clear) */
 
     /* pages, tempo, mute, generate */
-    tap_button(ROMI_B_HOME);
+    CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_HOME, "the start page: %d", romi_state(ROMI_Q_PAGE));
     turn(ROMI_E_K1, -6);
     CHECK(romi_state(ROMI_Q_BPM) == 120, "bpm %d", romi_state(ROMI_Q_BPM));
     tap_button(ROMI_B_FX);
@@ -794,9 +794,7 @@ int main(int argc, char **argv)
         snprintf(path, sizeof path, "%s/screen-sound2.ppm", out);
         write_screen(path);
         tap_button(ROMI_B_EDIT);
-        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE, "EDIT three times: page %d", romi_state(ROMI_Q_PAGE));
-        tap_button(ROMI_B_EDIT);
-        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SOUND, "EDIT four times: page %d", romi_state(ROMI_Q_PAGE));
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SOUND, "EDIT three times: page %d", romi_state(ROMI_Q_PAGE));
         /* PITCH: the sub's notes, five up */
         sub = &romi_project()->pat[0].tr[ROMI_SUB];
         sub->follow = 0;
@@ -1485,18 +1483,15 @@ int main(int argc, char **argv)
         romi_init(111);
         t5 = &romi_project()->pat[0].tr[ROMI_STAB]; t6 = &romi_project()->pat[0].tr[ROMI_CLICK];
         CHECK(t5->engine == ROMI_ENG_STAB && t6->engine == ROMI_ENG_CLICK, "ro:MINImal's engines %d %d", t5->engine, t6->engine);
-        tap_key(13);                                /* black key 5: the sixth track */
-        CHECK(romi_state(ROMI_Q_TRACK) == ROMI_CLICK, "track %d", romi_state(ROMI_Q_TRACK));
-        tap_button(ROMI_B_EDIT); tap_button(ROMI_B_EDIT); tap_button(ROMI_B_EDIT);
-        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE, "EDIT x3: page %d", romi_state(ROMI_Q_PAGE));
-        turn(ROMI_E_K1, 1);
+        tap_button(ROMI_B_HOME);                    /* (on GROOVE already) GROOVE 2: K1 track 5, K2 track 6 */
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE, "HOME x2: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_K2, 1);
         CHECK(t6->engine == ROMI_ENG_PIIP && t6->p[1] == 46 && t6->q[1] == 64, "CLICK -> PIIP: engine %d, sound %d %d",
               t6->engine, t6->p[1], t6->q[1]);
         tap_key(25);                                /* UNDO */
         CHECK(t6->engine == ROMI_ENG_CLICK, "undo: engine %d", t6->engine);
-        turn(ROMI_E_K1, 1);
-        tap_key(10);                                /* the fifth track, STAB -> PIIP too: two PIIPs */
-        turn(ROMI_E_K1, 2);
+        turn(ROMI_E_K2, 1);
+        turn(ROMI_E_K1, 2);                         /* track 5, STAB -> PIIP too: two PIIPs */
         CHECK(t5->engine == ROMI_ENG_PIIP && t6->engine == ROMI_ENG_PIIP, "two PIIPs: %d %d", t5->engine, t6->engine);
         for (k = 0; k < 2; k++) {                   /* each alone: both sound */
             romi_project()->drift = 0;

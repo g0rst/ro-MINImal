@@ -68,7 +68,7 @@ Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
 | PIIP (Engine, Spur 5 ab Start) | WAVE, DECAY, ARP, VIBRATO | PITCH, SPEED, DRIVE, CRUSH |
 | KLIKKI (Engine CLICK, Spur 6 ab Start) | DECAY, FREQ, RESO, SCATTER | PITCH, ATTACK, DRIVE, CRUSH |
 
-Die Spuren 5 und 6 wählen ihre Engine in beiden Stilen frei (EDIT dreimal): STAB, CLICK oder PIIP.
+Die Spuren 5 und 6 wählen ihre Engine in beiden Stilen frei (HOME zweimal, Seite GROOVE 2): STAB, CLICK oder PIIP.
 
 Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
 HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30). GLIDE von BASSO, HAPPO und PIIP
@@ -170,13 +170,13 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | SELECT, OCT−, OCT+ | Spur wählen |
 | ALGO | Looplänge der Spur |
 | PRESET | Pattern A bis D (wechselt zum nächsten Takt) |
-| HOME | Seite GROOVE: Tempo (90 bis 150), Swing, Drift, Duck |
+| HOME | Seite GROOVE: Tempo (90 bis 160), Swing, Drift, Duck |
+| HOME ein zweites Mal | Seite GROOVE 2: K1 Engine von Spur 5, K2 Engine von Spur 6 (beide Stile): STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI) oder PIIP (Soundchip); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, UNDO holt das alte zurück |
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
 | EDIT ein zweites Mal | Seite SOUND 2: PITCH (±24 Halbtöne), dann je Spur CLICK (Kick), FM.TIME (Sub), B.TIME (Perc) oder ATTACK (Hat, Stab, Click), DRIVE (Kick: P.TIME), CRUSH. Lockbar pro Step, Ziel für LFOs |
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
-| EDIT ein drittes Mal | Seite ENGINE (Spuren 5 und 6, beide Stile): K1 STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI) oder PIIP (Soundchip); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, UNDO holt das alte zurück |
 | FX ein viertes Mal | Seite SLICE LFO: der eigene LFO des Slicers, K1 RATE, K2 DEPTH, K3 TARGET (RATE, RANDOM, MIX), K4 SHAPE |
 | FX ein drittes Mal | Seite SLICE (Hat, Perc, Stab, Click; nicht Kick und Sub): K1 MODE OFF, GATE (Raster 1/32 bis 1/128, an und aus), STUTTER (das erste Stück des Schlags immer wieder), GRAIN (Granular light: zwei Körner aus den letzten 186 ms der Spur); K2 RATE (Rastergröße, Stück- oder Korngröße), K3 RANDOM (Zufall: welche Stücke, rückwärts, Oktave, wo), K4 MIX. GRAIN auf höchstens zwei Spuren |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik, Phrygisch-dominant, Harmonisch Moll), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT
- * PIIP, suom1saundi's sound chip voice, as an engine of tracks 5 and 6 in either style (EDIT three times): pulses
+ * PIIP, suom1saundi's sound chip voice, as an engine of tracks 5 and 6 in either style (GROOVE 2: HOME twice): pulses
  * of three widths, a 4-bit triangle, a saw, pitched noise; its chord a note a frame, vibrato, a pitch bend at the
  * start. Two of it, one a track. Included by romi.c ahead of trig() (always: it is not part of ROMI_SUOMI).
  *   SOUND   WAVE DECAY ARP VIBRATO      SOUND 2  PITCH SPEED DRIVE CRUSH   (PWM 30, BEND none, DETUNE 0 fixed)
