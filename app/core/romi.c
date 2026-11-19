@@ -296,7 +296,8 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     }
     case ROMI_SUB: {
         int legato = R.sub.amp > 0.05f;
-        R.sub.ft = note_hz(root + (float)note);
+        R.sub.ft = note_hz(root + 12.0f + (float)note);   /* an octave over the root (F2, 87 Hz): heard on small
+                                                            * speakers and apart from the kick; PITCH -12 for the deep one */
         R.sub.gc = p[3] ? 1.0f - decay_coef(pmap((float)p[3], 0.002f, 6.0f)) : 1.0f;
         if (!legato) {
             R.sub.f = R.sub.ft;
@@ -1410,7 +1411,7 @@ static void pattern_defaults(romi_pattern_t *p)
     static const uint8_t DEF[ROMI_TRACKS][8] = {
         /* p0   p1   p2   p3  level pan  dly  rev */
         {  44,  62,  70,  30, 120,  64,   0,   0},   /* kick: tune decay punch drive */
-        {  70,  40,   0,  45, 104,  64,   0,   0},   /* sub: decay fm ratio glide */
+        {  70,  52,   0,  45, 112,  64,   0,   0},   /* sub: decay fm ratio glide */
         {  42,  70,  80,  64,  90,  74,  18,  20},   /* hat: decay tone metal open */
         {  48,  52,  40,  30,  88,  46,  50,  34},   /* perc: decay fm ratio bend */
         {  66,  60,  30,  40,  78,  64,  70,  60},   /* stab: decay bright chord detune */
@@ -1431,7 +1432,7 @@ static void pattern_defaults(romi_pattern_t *p)
         tr->follow = t == ROMI_SUB ? ROMI_STAB + 1 : 0;   /* the bass follows the stab's chords */
         {   /* SOUND 2: as the sound was before it had the page (kick click 0.25, pitch 22 ms; sub FM 60 ms; perc
              * bend 12 ms; stab attack 2.3 ms); no pitch, drive or crush */
-            static const uint8_t Q[ROMI_TRACKS][4] = {{24, 53, 79, 0}, {24, 82, 0, 0}, {24, 0, 0, 0},
+            static const uint8_t Q[ROMI_TRACKS][4] = {{24, 53, 79, 0}, {24, 82, 30, 0}, {24, 0, 0, 0},
                                                       {24, 64, 0, 0}, {24, 38, 0, 0}, {24, 0, 0, 0}};
             for (i = 0; i < 4; i++)
                 tr->q[i] = Q[t][i];
@@ -1443,7 +1444,7 @@ static void pattern_defaults(romi_pattern_t *p)
             tr->lfo[i].shape = 0;
         }
         tr->eu_prob = 3;
-        tr->sc = t == ROMI_KICK ? 0 : 127;
+        tr->sc = t == ROMI_KICK ? 0 : t == ROMI_SUB ? 72 : 127;   /* the sub ducks less: it plays between the kicks */
         tr->len = 16;
         for (i = 0; i < ROMI_STEPS; i++) {
             tr->step[i].flags = 0;

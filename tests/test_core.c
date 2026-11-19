@@ -333,6 +333,7 @@ int main(int argc, char **argv)
         for (v = 0; v < 2; v++) {
             romi_init(23);
             romi_project()->pat[0].tr[ROMI_KICK].mute = 1;
+            romi_project()->pat[0].tr[ROMI_SUB].mute = 1;   /* (the sub ducks only a little) */
             romi_project()->drift = 0;
             romi_project()->duck = v ? 127 : 0;
             tap_button(ROMI_B_PLAY);
