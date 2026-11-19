@@ -2076,6 +2076,7 @@ static void prj_sanitize(romi_project_t *p)
     LIM(p->chain, 0, 4);
     LIM(p->mode, 0, 1);
     LIM(p->style, 0, ROMI_SUOMI ? 1 : 0);
+    LIM(p->work, 0, 1);
     LIM(p->order, 0, 2);
     LIM(p->sc_src, 0, ROMI_TRACKS - 1);
     LIM(p->sc_rel, 0, 127);
@@ -2205,6 +2206,7 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
         d[n++] = p->style;
         d[n++] = p->filter;
         d[n++] = p->bass;
+        d[n++] = p->work;
     } else {
         const romi_pattern_t *pt = &R.prj.pat[obj - 1];
         uint32_t nl = 0, at;
@@ -2279,12 +2281,13 @@ int romi_store_set(int obj, const void *src, uint32_t len)
     uint32_t ver = len > 3u ? b[3] : 0u, old = ver == 13u, v14 = ver == 14u, v15 = ver == 15u;
     uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) + (ver >= 18u ? 4u : 0u) + (ver >= 19u ? 5u : 0u) +
                                               (old ? 2u : v14 ? 3u : 4u) * ROMI_STEPS) + 1u
-                        : 5u + (ver >= 20u ? 26u : ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the style; 20: the
+                        : 5u + (ver >= 21u ? 27u : ver >= 20u ? 26u : ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the style; 20: the
                                                                            * master's filter and bass) */
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
-    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u && ver != 18u && ver != 19u) ||
+    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u && ver != 18u && ver != 19u &&
+         ver != 20u) ||
         b[4] != (obj ? obj - 1 : 0))
         return -2;
     if (obj)
@@ -2304,6 +2307,7 @@ int romi_store_set(int obj, const void *src, uint32_t len)
         p->style = ver >= 16u ? b[n++] : 0u;    /* (before 16: ro:MINImal) */
         p->filter = ver >= 20u ? b[n++] : 64u;
         p->bass = ver >= 20u ? b[n++] : 0u;
+        p->work = ver >= 21u ? b[n++] : 0u;     /* (before 21: LIVE) */
     } else {
         for (t = 0; t < ROMI_TRACKS; t++) {
             romi_track_t *tr = &in.tr[t];
@@ -2600,7 +2604,7 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT, F_P127, F_NLEN, F_NSWEEP, F_FILT };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT, F_P127, F_NLEN, F_NSWEEP, F_FILT, F_WORK };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
@@ -2789,6 +2793,7 @@ static int page_params(param_t p[4])
 #if ROMI_SUOMI
         P(2, "STYLE", &R.prj.style, 0, 1, F_STYLE, 0);   /* ro:MINImal or suom1saundi: a new groove in it */
 #endif
+        P(3, "WORK", &R.prj.work, 0, 1, F_WORK, 0);       /* LIVE or PROD */
         break;
     default:
         P(0, "ROOT", &R.prj.root, 24, 47, F_ROOT, 0);
@@ -2889,6 +2894,7 @@ static void param_text(const param_t *p, char *t)
     case F_ORDER: cat(t, v == 1 ? "A-D" : v == 2 ? "RANDOM" : "LOOP"); break;
     case F_RST: cat(t, v && v <= ROMI_TRACKS ? track_name(v - 1) : "FREE"); break;
     case F_STYLE: cat(t, v ? "SUOM1" : "ROMI"); break;
+    case F_WORK: cat(t, v ? "PROD" : "LIVE"); break;
     case F_ENGINE: cat(t, ENG_NAMES[STYLE ? 1 : 0][v % ROMI_NENG]); break;
     case F_SLTGT: cat(t, v == 1 ? "RANDOM" : v == 2 ? "MIX" : "RATE"); break;
     case F_SLMODE: {
@@ -3416,7 +3422,8 @@ static void set_engine(int t, uint8_t was)
     engine_sound(tr, en);
     gen_track(t);
     tr->mute = 1;                       /* it comes in muted: brought in live when wanted (SEL) */
-    if (R.prj.mode) {                   /* HARD: the track changes in all four patterns, as in this one */
+    if (R.prj.mode && !R.prj.work) {    /* HARD, LIVE: the track changes in all four patterns, as in this one
+                                         * (PROD: only here, a track can play another engine in each pattern) */
         int k;
         for (k = 0; k < ROMI_PATTERNS; k++)
             if (&R.prj.pat[k] != EDT) {

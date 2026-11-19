@@ -1689,6 +1689,15 @@ int main(int argc, char **argv)
         for (k = 0; k < 4; k++)
             CHECK(romi_project()->pat[k].tr[ROMI_CLICK].engine == ROMI_ENG_CLICK, "undo: pattern %c engine %d", 'A' + k,
                   romi_project()->pat[k].tr[ROMI_CLICK].engine);
+        /* PROD (GLOBAL 2, knob 4): in HARD only the pattern edited changes, the others keep their engines */
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        turn(ROMI_E_K4, 1);
+        CHECK(romi_project()->work == 1, "WORK: %d", romi_project()->work);
+        tap_button(ROMI_B_HOME); tap_button(ROMI_B_HOME);
+        turn(ROMI_E_K2, 1);                         /* track 6 on C: 8-BIT */
+        for (k = 0; k < 4; k++)
+            CHECK(romi_project()->pat[k].tr[ROMI_CLICK].engine == (k == 2 ? ROMI_ENG_PIIP : ROMI_ENG_CLICK),
+                  "PROD: pattern %c engine %d", 'A' + k, romi_project()->pat[k].tr[ROMI_CLICK].engine);
         /* LAZY: B..D follow A */
         romi_init(142);
         turn(ROMI_E_PRESET, 1);

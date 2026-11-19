@@ -342,7 +342,7 @@ table(T(["button", "page", "KNOB1", "KNOB2", "KNOB3", "KNOB4"], ["taste", "seite
       ("[[FX]] ×3", "SLICE", "MODE<br>OFF, GATE, STUTTER, GRAIN", "RATE", "RANDOM", "MIX"),
       ("[[FX]] ×4", "SLICE LFO", "RATE", "DEPTH", "TARGET<br>RATE, RANDOM, MIX", "SHAPE"),
       ("[[GLO]]", "GLOBAL", "ROOT<br>C1 – B2", "SCALE<br>MIN, DOR, PHR, PEN, PDOM, HMIN", "CLOCK", "CHAIN"),
-      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "STYLE<br>ROMI, SUOM1", ""),
+      ("[[GLO]] ×2", "GLOBAL 2", "MODE<br>LAZY, HARD", "PLAY<br>LOOP, A-D, RANDOM", "STYLE<br>ROMI, SUOM1", "WORK<br>LIVE, PROD"),
       ("[[SEQ]]", "EUCLID", "HITS", "ROTATE", "CHANCE", "ACCENT"),
       ("[[SEQ]] ×2", "LINK", "SOURCE", "MODE", "FOLLOW", "ACCENT"),
       ("[[SEQ]] ×3", "TIMING", "STEP", "TRACK", T("GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)", "GLIDE (SUB, STAB)"), ""),
@@ -387,18 +387,18 @@ p(T("Tracks 5 and 6 are free: [[HOME]] twice, GROOVE 2, knobs 1 and 2, and each 
     "(its noise grains; KLIKKI in suom1saundi) or PIIP (suom1saundi's sound chip), in either style, two of the same "
     "too; in ro:MINImal PIIP is called 8-BIT. A new engine brings its sound and a pattern in its rules and comes in muted: [[SEL]] brings it in when the "
     "moment is right; undo brings the old one back. The track changes in all four patterns (in HARD the new track "
-    "is copied into the other three). Live, that is a voice to swap without leaving the groove.",
+    "is copied into the other three), as long as [[GLO]] twice, knob 4 WORK, says LIVE. WORK PROD is for producing ahead: in HARD only the pattern edited changes, so a track can play another engine in each pattern. Live, that is a voice to swap without leaving the groove.",
     "Die Spuren 5 und 6 sind frei: [[HOME]] zweimal, GROOVE 2, Regler 1 und 2, und jede spielt STAB (die FM-Akkorde von ro:MINImal), "
     "CLICK (seine Rauschkörner; bei suom1saundi KLIKKI) oder PIIP (der Soundchip von suom1saundi), in beiden "
     "Stilen, auch zweimal dasselbe; in ro:MINImal heißt PIIP 8-BIT. Eine neue Engine bringt ihren Klang und ein Pattern nach ihren Regeln mit und "
     "kommt stumm dazu: [[SEL]] holt sie rein, wenn der Moment passt; Undo holt das alte zurück. Die Spur wechselt in "
-    "allen vier Patterns (bei HARD wird die neue Spur in die anderen drei übernommen). Live ist das eine "
+    "allen vier Patterns (bei HARD wird die neue Spur in die anderen drei übernommen), solange [[GLO]] zweimal, Regler 4 WORK, auf LIVE steht. WORK PROD ist zum Vorproduzieren: bei HARD wechselt nur das bearbeitete Pattern, so spielt eine Spur in jedem Pattern eine andere Engine. Live ist das eine "
     "Stimme zum Tauschen, ohne den Groove zu verlassen.",
     "Pistele 5 și 6 sunt libere: [[HOME]] de două ori, GROOVE 2, butoanele 1 și 2, și fiecare cântă STAB (acordurile FM ale lui "
     "ro:MINImal), CLICK (boabele lui de zgomot; KLIKKI în suom1saundi) sau PIIP (cipul de sunet al lui suom1saundi), "
     "în ambele stiluri, chiar de două ori același; în ro:MINImal PIIP se numește 8-BIT. Un engine nou își aduce sunetul și un pattern după regulile lui și "
     "vine pe mut: [[SEL]] îl aduce când e momentul; undo îl aduce înapoi pe cel vechi. Pista se schimbă în toate "
-    "cele patru pattern-uri (în HARD pista nouă e copiată în celelalte trei). Live e o voce de schimbat "
+    "cele patru pattern-uri (în HARD pista nouă e copiată în celelalte trei), cât timp [[GLO]] de două ori, butonul 4 WORK, e pe LIVE. WORK PROD e pentru pre-producție: în HARD se schimbă doar pattern-ul editat, așa o pistă poate cânta alt engine în fiecare pattern. Live e o voce de schimbat "
     "fără să ieși din groove."))
 p(T("SLICE ([[FX]] three times) cuts up the sound of hat, percussion, stab and click; never the kick and the sub. "
     "GATE opens and shuts it on a grid from the hit (1/32 to 1/128; RANDOM 0 alternates, more shuts slices at "
