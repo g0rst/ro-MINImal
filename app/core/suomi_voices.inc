@@ -3,8 +3,9 @@
  * Included by romi.c ahead of trig() when ROMI_SUOMI is 1. The first thing to go if the FM-1 runs short of time:
  * build with ROMI_SUOMI 0 (or make it a firmware of its own) and ro:MINImal is as it was.
  *
- *   track   0 POTKU  1 BASSO  2 HATTU  3 HAPPO  4 PIIP  5 KLIKKI (ro:MINImal: KICK SUB HAT PERC STAB CLICK)
- *   KLIKKI is ro:MINImal's click (suom1saundi's OUTO, the FM zaps, left out: it fits better).
+ *   track   0 POTKU  1 BASSO  2 HATTU  3 HAPPO   (ro:MINImal: KICK SUB HAT PERC)
+ *   Tracks 5 and 6 play an engine of their own choice in either style (EDIT three times): ro:MINImal's STAB or
+ *   CLICK, or suom1saundi's PIIP (piip_voice.inc); suom1saundi starts with PIIP and CLICK (called KLIKKI there).
  *
  * suom1saundi has eight sound parameters a track; here SOUND holds its first four, SOUND 2 keeps ro:MINImal's shape
  * (PITCH, one of the track's own, DRIVE, CRUSH) and the other three of suom1saundi's second page stay at its
@@ -22,13 +23,8 @@ static struct {
     struct { float ph, amp, ac, penv, pc, f0, pd, drive, norm, vel, click_g, body; int32_t click, hold; } kick;
     acid_t basso, happo;
     struct { float ph, mph, ph2, mph2, f, amp, ac, metal, lp, vel, chip, cph, nz, att, atc, pan, cut; uint32_t lfsr; } hat;
-    struct { float ph, ph2, nph, f, ft, gc, amp, ac, att, vph, vinc, vdep, pwm, bend, benv, bc, det, vel, nz, mul[3];
-             int32_t arp_n, arp_i, arp_cnt, arp_len; uint32_t lfsr; uint8_t wave; } piip;
 } SU;
 
-/* PIIP's arpeggios, a note a frame as on a sound chip: none, octave, minor, major, sus4, fifth and octave, diminished */
-static const int8_t PIIP_ARP[7][3] = {{0, 0, 0}, {0, 12, 0}, {0, 3, 7}, {0, 4, 7}, {0, 5, 7}, {0, 7, 12}, {0, 3, 6}};
-static const uint8_t PIIP_ARP_N[7] = {1, 2, 3, 3, 3, 3, 3};
 /* suom1saundi's second page, the three that are not on SOUND 2 here: (the one in SOUND 2's second place is -1) */
 static const int16_t SU_EXTRA[ROMI_TRACKS][4] = {
     {-1, -1, 20, 10},                   /* POTKU: SNAP (SOUND 2 P.TIME), CLICK (SOUND 2), HOLD, BODY */
@@ -41,9 +37,9 @@ static const int16_t SU_EXTRA[ROMI_TRACKS][4] = {
 
 static void su_panic(void)
 {
-    SU.kick.amp = SU.basso.amp = SU.hat.amp = SU.happo.amp = SU.piip.amp = 0.0f;
+    SU.kick.amp = SU.basso.amp = SU.hat.amp = SU.happo.amp = 0.0f;
     if (!SU.hat.lfsr)
-        SU.hat.lfsr = SU.piip.lfsr = 0x4321u;
+        SU.hat.lfsr = 0x4321u;
 }
 
 /* the filter's coefficients from its envelope: every 16 samples */
@@ -150,7 +146,6 @@ static void acid_trig(acid_t *a, int t, const uint8_t *s, float hz, float vel, i
     a->ctl = 0;
 }
 
-static float semis(float n) { return fexp2(n * (1.0f / 12.0f)); }
 
 /* a hit: p the SOUND page (locks and LFOs applied), q SOUND 2's; note as ro:MINImal hands it (PITCH added) */
 static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_t *p, const uint8_t *q, float root)
@@ -207,42 +202,6 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
     case ROMI_PERC:
         acid_trig(&SU.happo, t, s, note_hz(root + 12.0f + (float)note), vel, acc, slide, 0);
         break;
-    case ROMI_STAB: {                   /* WAVE DECAY ARP VIBRATO | SPEED PWM BEND DETUNE */
-        int a = s[2] * 7 / 128;
-        float hz = note_hz(root + 36.0f + (float)note), rate = pmap((float)s[4], 8.0f, 3.0f);
-        SU.piip.ft = hz;
-        SU.piip.wave = (uint8_t)(s[0] * 6 / 128);
-        SU.piip.ac = decay_coef(pmap(drifted(t, 0, s[1]), 0.02f, 5.5f));
-        SU.piip.arp_n = PIIP_ARP_N[a];
-        for (i = 0; i < 3; i++)
-            SU.piip.mul[i] = semis((float)PIIP_ARP[a][i]);
-        SU.piip.arp_len = (int32_t)((float)ROMI_SR / rate);
-        SU.piip.vinc = rate * (0.25f * INV_SR);
-        SU.piip.vdep = drifted(t, 1, s[3]) * (0.06f / 127.0f);
-        SU.piip.pwm = (float)s[5] * (0.4f / 127.0f);
-        SU.piip.det = (float)s[7] * (0.02f / 127.0f);
-        SU.piip.vel = vel * (acc ? 1.0f : 0.8f);
-        if (slide && SU.piip.amp > 0.02f) {        /* a slide: portamento, the note goes on */
-            SU.piip.gc = tr->glide ? 1.0f - decay_coef(pmap((float)tr->glide, 0.002f, 6.0f)) : 0.0012f;
-            SU.piip.amp = SU.piip.amp * 0.5f + 0.5f;
-            break;
-        }
-        SU.piip.bend = ((float)s[6] - 64.0f) * (1.0f / 64.0f);   /* from below (-) or above (+), up to an octave */
-        SU.piip.bend = SU.piip.bend >= 0.0f ? SU.piip.bend : SU.piip.bend * 0.5f;
-        SU.piip.benv = 1.0f;
-        SU.piip.bc = decay_coef(0.03f);
-        if (tr->glide && SU.piip.amp > 0.05f) {    /* GLIDE: a note over the last one glides there */
-            SU.piip.gc = 1.0f - decay_coef(pmap((float)tr->glide, 0.002f, 6.0f));
-        } else {
-            SU.piip.f = hz;
-            SU.piip.gc = 1.0f;
-        }
-        SU.piip.arp_i = SU.piip.arp_cnt = 0;
-        if (SU.piip.amp < 0.05f)
-            SU.piip.att = 0.0f;
-        SU.piip.amp = 1.0f;
-        break;
-    }
     default:                            /* (KLIKKI: ro:MINImal's click, in trig) */
         break;
     }
@@ -255,8 +214,7 @@ static float su_env(int t)
     case ROMI_KICK: return SU.kick.amp * SU.kick.vel;
     case ROMI_SUB: return SU.basso.amp * SU.basso.vel;
     case ROMI_HAT: return SU.hat.amp * SU.hat.vel;
-    case ROMI_PERC: return SU.happo.amp * SU.happo.vel;
-    default: return SU.piip.amp * SU.piip.vel;
+    default: return SU.happo.amp * SU.happo.vel;   /* (tracks 0..3 only: STAB, CLICK, PIIP are the engines') */
     }
 }
 
@@ -320,61 +278,4 @@ static inline void su_voices(float *v)
     }
     v[ROMI_HAT] = x;
 
-    /* PIIP: the waves of a sound chip, naive on purpose: pulses of three widths, a 4-bit triangle, a saw,
-     * pitched noise; its chord a note a frame, vibrato, a pitch bend at the start */
-    x = 0.0f;
-    if (SU.piip.amp > 1e-4f) {
-        float f, duty, lfo;
-        SU.piip.f += (SU.piip.ft - SU.piip.f) * SU.piip.gc;
-        if (SU.piip.arp_n > 1 && ++SU.piip.arp_cnt >= SU.piip.arp_len) {
-            SU.piip.arp_cnt = 0;
-            SU.piip.arp_i = (SU.piip.arp_i + 1) % SU.piip.arp_n;
-        }
-        SU.piip.vph += SU.piip.vinc;
-        if (SU.piip.vph >= 1.0f)
-            SU.piip.vph -= 1.0f;
-        lfo = fsin(SU.piip.vph);
-        f = SU.piip.f * SU.piip.mul[SU.piip.arp_i] * (1.0f + SU.piip.vdep * lfo) * (1.0f + SU.piip.bend * SU.piip.benv) * INV_SR;
-        SU.piip.benv *= SU.piip.bc;
-        SU.piip.ph += f;
-        if (SU.piip.ph >= 1.0f)
-            SU.piip.ph -= 1.0f;
-        SU.piip.ph2 += f * (1.0f + SU.piip.det);
-        if (SU.piip.ph2 >= 1.0f)
-            SU.piip.ph2 -= 1.0f;
-        duty = SU.piip.wave == 0 ? 0.125f : SU.piip.wave == 1 ? 0.25f : 0.5f;
-        duty += SU.piip.pwm * lfo * duty;
-        switch (SU.piip.wave) {
-        case 3: {
-            float tr = SU.piip.ph < 0.5f ? 4.0f * SU.piip.ph : 4.0f - 4.0f * SU.piip.ph;   /* 0..2 */
-            x = (float)(int)(tr * 7.99f) * (1.0f / 7.5f) - 1.0f;
-            break;
-        }
-        case 4:
-            x = 2.0f * SU.piip.ph - 1.0f;
-            if (SU.piip.det > 0.0f)
-                x = (x + 2.0f * SU.piip.ph2 - 1.0f) * 0.5f;
-            x *= 0.8f;
-            break;
-        case 5:
-            SU.piip.nph += f * 12.0f;
-            if (SU.piip.nph >= 1.0f) {
-                uint32_t b = (SU.piip.lfsr ^ SU.piip.lfsr >> 6) & 1u;   /* the short sequence: it has a pitch */
-                SU.piip.nph -= (float)(int)SU.piip.nph;
-                SU.piip.lfsr = SU.piip.lfsr >> 1 | b << 14;
-                SU.piip.nz = SU.piip.lfsr & 1u ? 0.8f : -0.8f;
-            }
-            x = SU.piip.nz;
-            break;
-        default:
-            x = SU.piip.ph < duty ? 0.7f : -0.7f;
-            if (SU.piip.det > 0.0f)
-                x = (x + (SU.piip.ph2 < duty ? 0.7f : -0.7f)) * 0.5f;
-            break;
-        }
-        x *= SU.piip.amp * SU.piip.att * SU.piip.vel * 0.9f;
-        SU.piip.att += (1.0f - SU.piip.att) * 0.05f;
-        SU.piip.amp *= SU.piip.ac;
-    }
-    v[ROMI_STAB] = x;
 }

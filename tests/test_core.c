@@ -794,7 +794,9 @@ int main(int argc, char **argv)
         snprintf(path, sizeof path, "%s/screen-sound2.ppm", out);
         write_screen(path);
         tap_button(ROMI_B_EDIT);
-        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SOUND, "EDIT three times: page %d", romi_state(ROMI_Q_PAGE));
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE, "EDIT three times: page %d", romi_state(ROMI_Q_PAGE));
+        tap_button(ROMI_B_EDIT);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SOUND, "EDIT four times: page %d", romi_state(ROMI_Q_PAGE));
         /* PITCH: the sub's notes, five up */
         sub = &romi_project()->pat[0].tr[ROMI_SUB];
         sub->follow = 0;
@@ -1131,7 +1133,7 @@ int main(int argc, char **argv)
         /* the same object as version 13: drop each track's three bytes, new sum */
         memcpy(o13, obj, 5); o13[3] = 13;
         for (m = 5, k = 5, t = 0; t < ROMI_TRACKS; t++) {
-            memcpy(o13 + m, obj + k, 19 + 4 * ROMI_LFOS + 4); m += 19 + 4 * ROMI_LFOS + 4; k += 19 + 4 * ROMI_LFOS + 4 + 3 + 5 + 4;
+            memcpy(o13 + m, obj + k, 19 + 4 * ROMI_LFOS + 4); m += 19 + 4 * ROMI_LFOS + 4; k += 19 + 4 * ROMI_LFOS + 4 + 3 + 5 + 4 + 5;
             {
                 uint32_t q;
                 for (q = 0; q < ROMI_STEPS; q++, k += 4) {   /* (chance 0: sure, the old bits 0) */
@@ -1340,7 +1342,7 @@ int main(int argc, char **argv)
             memcpy(o14, obj, 5); o14[3] = 14;
             for (m = 5, kk = 5, t = 0; t < ROMI_TRACKS; t++) {
                 uint32_t q, hd = 19 + 4 * ROMI_LFOS + 4 + 3;
-                memcpy(o14 + m, obj + kk, hd); m += hd; kk += hd + 5 + 4;
+                memcpy(o14 + m, obj + kk, hd); m += hd; kk += hd + 5 + 4 + 5;
                 for (q = 0; q < ROMI_STEPS; q++, kk += 4) {
                     o14[m++] = obj[kk]; o14[m++] = obj[kk + 1]; o14[m++] = obj[kk + 2];
                 }
@@ -1459,7 +1461,7 @@ int main(int argc, char **argv)
             memcpy(o17, obj, 5); o17[3] = 17;
             for (mm = 5, kk = 5, t = 0; t < ROMI_TRACKS; t++) {
                 uint32_t hd = 19 + 4 * ROMI_LFOS + 4 + 3 + 5;
-                memcpy(o17 + mm, obj + kk, hd); mm += hd; kk += hd + 4;
+                memcpy(o17 + mm, obj + kk, hd); mm += hd; kk += hd + 4 + 5;
                 for (q = 0; q < 4 * ROMI_STEPS; q++) o17[mm++] = obj[kk++];
             }
             memcpy(o17 + mm, obj + kk, n - 4 - kk); mm += n - 4 - kk;
@@ -1469,6 +1471,88 @@ int main(int argc, char **argv)
             romi_init(105);
             CHECK(romi_store_set(1, o17, mm) == 0 && romi_project()->pat[0].tr[ROMI_PERC].sl_mode == 0,
                   "version 17 did not load (%d)", romi_store_set(1, o17, mm));
+        }
+    }
+
+    /* ENGINE (EDIT three times): tracks 5 and 6 play STAB, CLICK or PIIP in either style, two of the same too;
+     * a new pattern in the engine's rules, undo brings the old one back; SLICE's own LFO (FX four times) */
+    {
+        static int16_t pa[2 * 44100], pb[2 * 44100];
+        static uint8_t obj[ROMI_OBJ_MAX], o18[ROMI_OBJ_MAX];
+        romi_track_t *t5, *t6;
+        double r5, r6;
+        int k, t, diff;
+        romi_init(111);
+        t5 = &romi_project()->pat[0].tr[ROMI_STAB]; t6 = &romi_project()->pat[0].tr[ROMI_CLICK];
+        CHECK(t5->engine == ROMI_ENG_STAB && t6->engine == ROMI_ENG_CLICK, "ro:MINImal's engines %d %d", t5->engine, t6->engine);
+        tap_key(13);                                /* black key 5: the sixth track */
+        CHECK(romi_state(ROMI_Q_TRACK) == ROMI_CLICK, "track %d", romi_state(ROMI_Q_TRACK));
+        tap_button(ROMI_B_EDIT); tap_button(ROMI_B_EDIT); tap_button(ROMI_B_EDIT);
+        CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_ENGINE, "EDIT x3: page %d", romi_state(ROMI_Q_PAGE));
+        turn(ROMI_E_K1, 1);
+        CHECK(t6->engine == ROMI_ENG_PIIP && t6->p[1] == 46 && t6->q[1] == 64, "CLICK -> PIIP: engine %d, sound %d %d",
+              t6->engine, t6->p[1], t6->q[1]);
+        tap_key(25);                                /* UNDO */
+        CHECK(t6->engine == ROMI_ENG_CLICK, "undo: engine %d", t6->engine);
+        turn(ROMI_E_K1, 1);
+        tap_key(10);                                /* the fifth track, STAB -> PIIP too: two PIIPs */
+        turn(ROMI_E_K1, 2);
+        CHECK(t5->engine == ROMI_ENG_PIIP && t6->engine == ROMI_ENG_PIIP, "two PIIPs: %d %d", t5->engine, t6->engine);
+        for (k = 0; k < 2; k++) {                   /* each alone: both sound */
+            romi_project()->drift = 0;
+            for (t = 0; t < ROMI_TRACKS; t++) romi_project()->pat[0].tr[t].mute = t != (k ? ROMI_CLICK : ROMI_STAB);
+            romi_project()->pat[0].tr[k ? ROMI_CLICK : ROMI_STAB].step[0].flags = ROMI_ST_ON;
+            romi_project()->pat[0].tr[k ? ROMI_CLICK : ROMI_STAB].step[0].cond = 0;
+            romi_project()->pat[0].tr[k ? ROMI_CLICK : ROMI_STAB].step[0].chance = 0;
+            tap_button(ROMI_B_PLAY);
+            run(2.0, 0, 0, k ? &r6 : &r5);
+            tap_button(ROMI_B_PLAY);
+        }
+        CHECK(r5 > 0.002 && r6 > 0.002, "two PIIPs: rms %f %f", r5, r6);
+        /* SLICE's LFO on MIX: the sound moves */
+        for (k = 0; k < 2; k++) {
+            romi_init(112);
+            romi_project()->drift = 0;
+            for (t = 0; t < ROMI_TRACKS; t++) romi_project()->pat[0].tr[t].mute = t != ROMI_STAB;
+            t5 = &romi_project()->pat[0].tr[ROMI_STAB];
+            t5->sl_mode = 1; t5->sl_mix = 64; t5->sl_rand = 0;
+            if (k) {
+                tap_key(10);
+                tap_button(ROMI_B_FX); tap_button(ROMI_B_FX); tap_button(ROMI_B_FX); tap_button(ROMI_B_FX);
+                CHECK(romi_state(ROMI_Q_PAGE) == ROMI_PG_SLFO, "FX x4: page %d", romi_state(ROMI_Q_PAGE));
+                turn(ROMI_E_K1, -2);                /* fast */
+                turn(ROMI_E_K2, 30);
+                turn(ROMI_E_K3, 2);
+                CHECK(t5->slfo.depth > 30 && t5->slfo.target == 2, "SLICE LFO: depth %d target %d", t5->slfo.depth, t5->slfo.target);
+            }
+            tap_button(ROMI_B_PLAY);
+            run(1.0, k ? pb : pa, 0, 0);
+        }
+        for (diff = 0, k = 0; k < 2 * 44100; k++) diff += pa[k] != pb[k];
+        CHECK(diff > 5000, "SLICE LFO: %d samples differ", diff);
+        /* suom1saundi: PIIP and KLIKKI; stored; version 18 loads with the style's engines */
+        romi_init(113);
+        tap_button(ROMI_B_GLO); tap_button(ROMI_B_GLO);
+        turn(ROMI_E_K3, 1);
+        t5 = &romi_project()->pat[0].tr[ROMI_STAB];
+        CHECK(t5->engine == ROMI_ENG_PIIP && romi_project()->pat[0].tr[ROMI_CLICK].engine == ROMI_ENG_CLICK,
+              "suom1saundi's engines %d %d", t5->engine, romi_project()->pat[0].tr[ROMI_CLICK].engine);
+        t5->engine = ROMI_ENG_STAB; t5->slfo.depth = -12;
+        {
+            uint32_t n = romi_store_get(1, obj, sizeof obj), mm, kk, q, a1, c1;
+            CHECK(romi_store_set(1, obj, n) == 0 && t5->engine == ROMI_ENG_STAB && t5->slfo.depth == -12, "engine not stored");
+            memcpy(o18, obj, 5); o18[3] = 18;
+            for (mm = 5, kk = 5, t = 0; t < ROMI_TRACKS; t++) {
+                uint32_t hd = 19 + 4 * ROMI_LFOS + 4 + 3 + 5 + 4;
+                memcpy(o18 + mm, obj + kk, hd); mm += hd; kk += hd + 5;
+                for (q = 0; q < 4 * ROMI_STEPS; q++) o18[mm++] = obj[kk++];
+            }
+            memcpy(o18 + mm, obj + kk, n - 4 - kk); mm += n - 4 - kk;
+            for (a1 = 1, c1 = 0, kk = 0; kk < mm; kk++) { a1 = (a1 + o18[kk]) % 65521u; c1 = (c1 + a1) % 65521u; }
+            a1 = c1 << 16 | a1;
+            o18[mm++] = (uint8_t)a1; o18[mm++] = (uint8_t)(a1 >> 8); o18[mm++] = (uint8_t)(a1 >> 16); o18[mm++] = (uint8_t)(a1 >> 24);
+            CHECK(romi_store_set(1, o18, mm) == 0 && t5->engine == ROMI_ENG_PIIP && t5->slfo.depth == 0,
+                  "version 18: engine %d (the style's: PIIP)", t5->engine);
         }
     }
 

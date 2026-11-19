@@ -86,6 +86,10 @@ static inline float brand(uint32_t *s) { return frand(s) * 2.0f - 1.0f; }       
 typedef struct { float gl, gr, sd, sr; } bus_t;
 typedef struct { float att, attc, g, norm, held, levels; int32_t hold, cnt; } shape_t;   /* a track's SOUND 2 state */
 
+/* the engines of tracks 5 and 6 (PIIP's in piip_voice.inc) */
+typedef struct { float ph[3], f[3], ft[3], gc, amp, ac, ienv, ic, idx, lp, vel; } stab_v;
+typedef struct { float amp, ac, lp, bp, fc, q, pan, vel; } click_v;
+
 static struct {
     romi_project_t prj;
     /* audio */
@@ -116,8 +120,9 @@ static struct {
     struct { float ph, mph, f, ft, gc, amp, ac, ienv, ic, idx, ratio, att, vel; } sub;
     struct { float ph, mph, ph2, mph2, f, amp, ac, metal, lp, vel; } hat;
     struct { float ph, mph, f, benv, bc, bend, amp, ac, ienv, ic, idx, ratio, vel; } perc;
-    struct { float ph[3], f[3], ft[3], gc, amp, ac, ienv, ic, idx, lp, vel; } stab;
-    struct { float amp, ac, lp, bp, fc, q, pan, vel; } click;
+    stab_v stab[2];                     /* tracks 5 and 6, each its engine's own */
+    click_v click[2];
+    float slot_pan[2];                  /* tracks 5 and 6: where a click scattered to (0.5: the middle) */
     shape_t shape[ROMI_TRACKS];
     float duck_env;
     uint32_t dly_w;
@@ -234,6 +239,8 @@ static float lfo_wave(const romi_lfo_t *l, int t, int k)
     }
 }
 
+#include "piip_voice.inc"
+
 /* the sum of the track's LFOs aimed at target, in 0..127 units */
 #if ROMI_SUOMI
 static float su_env(int t);
@@ -242,18 +249,22 @@ static float voice_env(int t)           /* how loud a voice sounds now, 0..1: it
 {
     float e;
 #if ROMI_SUOMI
-    if (STYLE && t != ROMI_CLICK) {
+    if (STYLE && t < ROMI_STAB) {
         e = su_env(t);
         return e > 1.0f ? 1.0f : e;
     }
 #endif
+    if (t >= ROMI_STAB) {               /* tracks 5 and 6: their engine */
+        int s = t - ROMI_STAB, en = PAT->tr[t].engine;
+        e = en == ROMI_ENG_PIIP ? PI[s].amp * PI[s].vel : en == ROMI_ENG_STAB ? R.stab[s].amp * R.stab[s].vel
+                                                                              : R.click[s].amp * R.click[s].vel;
+        return e > 1.0f ? 1.0f : e;
+    }
     switch (t) {
     case ROMI_KICK: e = R.kick.amp * R.kick.vel; break;
     case ROMI_SUB: e = R.sub.amp * R.sub.vel; break;
     case ROMI_HAT: e = R.hat.amp * R.hat.vel; break;
-    case ROMI_PERC: e = R.perc.amp * R.perc.vel; break;
-    case ROMI_STAB: e = R.stab.amp * R.stab.vel; break;
-    default: e = R.click.amp * R.click.vel; break;
+    default: e = R.perc.amp * R.perc.vel; break;
     }
     return e > 1.0f ? 1.0f : e;
 }
@@ -304,7 +315,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     uint8_t p[4], q[4];
     int li, pt;
     float root = (float)R.prj.root, x;
-    int stab_quiet = R.stab.amp < 0.05f;
+    int stab_quiet = t < ROMI_STAB || R.stab[t - ROMI_STAB].amp < 0.05f;
     for (li = 0; li < 4; li++) {          /* the step's lock or the track's value, then the LFOs on it */
         p[li] = lock && lock[li] ? (uint8_t)(lock[li] - 1u) : tr->p[li];
         p[li] = (uint8_t)lim127((float)p[li] + lfo_offset(t, li));
@@ -318,10 +329,11 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     /* SOUND 2: attack (hat, stab, click), drive (all but the kick: its own is on SOUND), crush (all) */
     {
         shape_t *sh = &R.shape[t];
-        int has_att = t == ROMI_CLICK || (!STYLE && (t == ROMI_HAT || t == ROMI_STAB));   /* (SUOMI: its own there) */
+        int has_att = t >= ROMI_STAB ? PAT->tr[t].engine != ROMI_ENG_PIIP : !STYLE && t == ROMI_HAT;   /* (PIIP, HATTU:
+                                                                                         * their own there) */
         float g = t == ROMI_KICK ? 1.0f : 1.0f + (float)q[2] * (6.0f / 127.0f);
         if (has_att && q[1]) {
-            if (t != ROMI_STAB || stab_quiet)
+            if (t < ROMI_STAB || tr->engine != ROMI_ENG_STAB || stab_quiet)
                 sh->att = 0.0f;
             sh->attc = 1.0f - decay_coef(0.0005f * fexp2((float)q[1] * (7.3f / 127.0f)));
         } else {
@@ -339,8 +351,51 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     R.last_note[t] = (int8_t)note;
     if (t == (int)R.prj.sc_src)
         R.duck_env = 1.0f;
+    if (t >= ROMI_STAB) {               /* tracks 5 and 6: their engine, STAB, CLICK or PIIP, in either style */
+        int s = t - ROMI_STAB;
+        if (tr->engine == ROMI_ENG_PIIP) {
+            piip_trig(s, t, note, vel, acc, R.slide_now, p, q, root);
+            R.slot_pan[s] = 0.5f;
+        } else if (tr->engine == ROMI_ENG_STAB) {
+            stab_v *ST = &R.stab[s];
+            const int8_t *ch = CHORDS[p[2] * 5 / 128];
+            float det = (float)p[3] * (0.008f / 127.0f);
+            int i, slide = R.slide_now && ST->amp > 0.01f, glide = tr->glide && ST->amp > 0.05f;
+            for (i = 0; i < 3; i++) {       /* GLIDE: an overlapping chord glides there; SLIDE: always, no new attack */
+                ST->ft[i] = note_hz(root + 24.0f + (float)note + (float)ch[i]) * (1.0f + det * (float)(i - 1));
+                if (!glide && !slide)
+                    ST->f[i] = ST->ft[i];
+            }
+            ST->gc = tr->glide ? 1.0f - decay_coef(pmap((float)tr->glide, 0.002f, 6.0f)) : 1.0f - decay_coef(0.05f);
+            ST->ac = decay_coef(pmap(drifted(t, 0, p[0]), 0.03f, 4.5f));
+            ST->idx = drifted(t, 1, p[1]) * (0.5f / 127.0f);
+            ST->ic = decay_coef(pmap((float)p[0], 0.02f, 4.0f));
+            if (slide) {
+                ST->amp = ST->amp > 0.85f ? ST->amp : 0.85f;
+                ST->vel = ST->vel > vel ? ST->vel : vel;
+            } else {
+                ST->ienv = 1.0f;
+                ST->amp = 1.0f;
+                ST->vel = vel;
+            }
+            R.slot_pan[s] = 0.5f;
+        } else {
+            click_v *CL = &R.click[s];
+            float sc = (float)p[3] * (1.0f / 127.0f);
+            float f = pmap((float)p[1], 400.0f, 3.8f) * fexp2((float)note * (1.0f / 12.0f) + brand(&R.rng) * sc * 1.5f);
+            float fc = 6.2831853f * f * INV_SR;
+            CL->fc = fc > 0.9f ? 0.9f : fc;
+            CL->q = 1.0f - (float)p[2] * (0.94f / 127.0f);
+            CL->ac = decay_coef(pmap(drifted(t, 0, p[0]), 0.0008f, 6.0f));
+            CL->pan = 0.5f + brand(&R.rng) * sc * 0.5f;
+            CL->amp = 1.0f;
+            CL->vel = vel;
+            R.slot_pan[s] = CL->pan;
+        }
+        return;
+    }
 #if ROMI_SUOMI
-    if (STYLE && t != ROMI_CLICK) {     /* suom1saundi's voices (its click is ro:MINImal's) */
+    if (STYLE) {                        /* suom1saundi's voices on tracks 1..4 */
         su_trig(t, note, vel, acc, R.slide_now, p, q, root);
         return;
     }
@@ -411,48 +466,17 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
         R.perc.ph = R.perc.mph = 0.0f;
         R.perc.vel = vel;
         break;
-    case ROMI_STAB: {
-        const int8_t *ch = CHORDS[p[2] * 5 / 128];
-        float det = (float)p[3] * (0.008f / 127.0f);
-        int i, slide = R.slide_now && R.stab.amp > 0.01f, glide = tr->glide && R.stab.amp > 0.05f;
-        for (i = 0; i < 3; i++) {       /* GLIDE: an overlapping chord glides there; SLIDE: always, no new attack */
-            R.stab.ft[i] = note_hz(root + 24.0f + (float)note + (float)ch[i]) * (1.0f + det * (float)(i - 1));
-            if (!glide && !slide)
-                R.stab.f[i] = R.stab.ft[i];
-        }
-        R.stab.gc = tr->glide ? 1.0f - decay_coef(pmap((float)tr->glide, 0.002f, 6.0f)) : 1.0f - decay_coef(0.05f);
-        R.stab.ac = decay_coef(pmap(drifted(t, 0, p[0]), 0.03f, 4.5f));
-        R.stab.idx = drifted(t, 1, p[1]) * (0.5f / 127.0f);
-        R.stab.ic = decay_coef(pmap((float)p[0], 0.02f, 4.0f));
-        if (slide) {
-            R.stab.amp = R.stab.amp > 0.85f ? R.stab.amp : 0.85f;
-            R.stab.vel = R.stab.vel > vel ? R.stab.vel : vel;
-        } else {
-            R.stab.ienv = 1.0f;
-            R.stab.amp = 1.0f;
-            R.stab.vel = vel;
-        }
-        break;
-    }
-    default: {
-        float sc = (float)p[3] * (1.0f / 127.0f);
-        float f = pmap((float)p[1], 400.0f, 3.8f) * fexp2((float)note * (1.0f / 12.0f) + brand(&R.rng) * sc * 1.5f);
-        float fc = 6.2831853f * f * INV_SR;
-        R.click.fc = fc > 0.9f ? 0.9f : fc;
-        R.click.q = 1.0f - (float)p[2] * (0.94f / 127.0f);
-        R.click.ac = decay_coef(pmap(drifted(t, 0, p[0]), 0.0008f, 6.0f));
-        R.click.pan = 0.5f + brand(&R.rng) * sc * 0.5f;
-        R.click.amp = 1.0f;
-        R.click.vel = vel;
-        break;
-    }
     }
 }
 
 void romi_panic(void)
 {
     uint32_t i, k;
-    R.kick.amp = R.sub.amp = R.hat.amp = R.perc.amp = R.stab.amp = R.click.amp = 0.0f;
+    R.kick.amp = R.sub.amp = R.hat.amp = R.perc.amp = 0.0f;
+    for (i = 0; i < 2; i++) {
+        R.stab[i].amp = R.click[i].amp = PI[i].amp = 0.0f;
+        R.slot_pan[i] = 0.5f;
+    }
 #if ROMI_SUOMI
     su_panic();
 #endif
@@ -726,6 +750,50 @@ static void tq_push(int t, int note, int vel)   /* main loop */
 }
 
 /* ---------------------------------------------------------------- render --- */
+static inline float stab_run(int s)
+{
+    stab_v *V = &R.stab[s];
+    float x;
+    int k;
+    /* stab: a three-note chord of FM pairs through a low-pass that closes with the envelope */
+    x = 0.0f;
+    if (V->amp > 1e-4f) {
+        float ix = V->idx * V->ienv, c;
+        for (k = 0; k < 3; k++) {
+            V->f[k] += (V->ft[k] - V->f[k]) * V->gc;
+            V->ph[k] += V->f[k] * INV_SR;
+            if (V->ph[k] >= 1.0f) V->ph[k] -= 1.0f;
+            x += fsin(V->ph[k] + fsin(V->ph[k]) * ix);
+        }
+        c = 0.04f + 0.5f * V->ienv;
+        V->lp += (x * (1.0f / 3.0f) - V->lp) * c;
+        x = V->lp * V->amp * V->vel;
+        V->ienv *= V->ic;
+        V->amp *= V->ac;
+    }
+    return x;
+}
+
+static inline float click_run(int s)
+{
+    click_v *V = &R.click[s];
+    float x;
+    /* click (both styles: suom1saundi plays ro:MINImal's): a grain of noise through a resonant band-pass,
+     * somewhere in the stereo field */
+    x = 0.0f;
+    if (V->amp > 1e-4f) {
+        float nz = brand(&R.rng) * V->amp, hp;
+        V->lp += V->fc * V->bp;
+        hp = nz - V->lp - V->q * V->bp;
+        V->bp += V->fc * hp;
+        x = V->bp * V->vel * (0.4f + 0.6f * V->q);
+        V->amp *= V->ac;
+    } else {
+        V->lp = V->bp = 0.0f;
+    }
+    return x;
+}
+
 /* ---- SLICE: hat, percussion, stab and click cut up after their sound (FX three times) ----
  * GATE     the track's sound opened and shut on a grid from its hit: 1/32 to 1/128; RANDOM 0 alternates, more
  *          shuts slices at random. No memory.
@@ -746,6 +814,7 @@ static struct {
                                          * sc: samples to GATE's next slice, sn: its number; sp: STUTTER's place */
     uint32_t L;                         /* this block's slice or grain length */
     float invL;
+    uint8_t rate, rnd, mix;             /* this block's RATE, RANDOM and MIX: the knobs and SLICE's LFO */
     float g, gt, gain;
     int dir, oct, mute;
     struct { uint32_t pos; int32_t inc; } gr[2];   /* (16.16 fixed point: the buffer's place, the step) */
@@ -753,15 +822,15 @@ static struct {
 } SL[SL_N];
 static const uint8_t SL_GATE_DIV[5] = {2, 3, 4, 6, 8};      /* slices a step: 1/32, 1/48, 1/64, 1/96, 1/128 */
 static const uint8_t SL_STUT_DIV[6] = {1, 2, 3, 4, 6, 8};   /* 1/16 .. 1/128 */
-static uint32_t sl_len(const romi_track_t *tr, float slen)   /* a slice's or a grain's length, samples */
+static uint32_t sl_len(const romi_track_t *tr, uint32_t rate, float slen)   /* a slice's or grain's length */
 {
     float l;
     if (tr->sl_mode == 1)
-        l = slen / (float)SL_GATE_DIV[tr->sl_rate * 5 / 128];
+        l = slen / (float)SL_GATE_DIV[rate * 5 / 128];
     else if (tr->sl_mode == 2)
-        l = slen / (float)SL_STUT_DIV[tr->sl_rate * 6 / 128];
+        l = slen / (float)SL_STUT_DIV[rate * 6 / 128];
     else
-        l = 4000.0f * fexp2(-(float)tr->sl_rate * (3.32f / 127.0f));   /* 90 ms .. 9 ms */
+        l = 4000.0f * fexp2(-(float)rate * (3.32f / 127.0f));   /* 90 ms .. 9 ms */
     return l < 64.0f ? 64u : l > (float)(SL_LEN / 2u - 8u) ? SL_LEN / 2u - 8u : (uint32_t)l;
 }
 static void slice_hit(int t)            /* the track hit: its slices start over */
@@ -789,7 +858,11 @@ static void slice_block(float slen)    /* a block's lengths: no divisions sample
     for (k = 0; k < SL_N; k++) {
         const romi_track_t *tr = &PAT->tr[SL_FIRST + k];
         if (tr->sl_mode) {
-            SL[k].L = sl_len(tr, slen);
+            float o = tr->slfo.depth ? (float)tr->slfo.depth * 2.0f * lfo_wave(&tr->slfo, SL_FIRST + k, 2) : 0.0f;
+            SL[k].rate = (uint8_t)lim127((float)tr->sl_rate + (tr->slfo.target == 0 ? o : 0.0f));
+            SL[k].rnd = (uint8_t)lim127((float)tr->sl_rand + (tr->slfo.target == 1 ? o : 0.0f));
+            SL[k].mix = (uint8_t)lim127((float)tr->sl_mix + (tr->slfo.target == 2 ? o : 0.0f));
+            SL[k].L = sl_len(tr, SL[k].rate, slen);
             SL[k].invL = 1.0f / (float)SL[k].L;
             if (SL[k].gc >= SL[k].L)
                 SL[k].gc = 0;
@@ -804,7 +877,7 @@ static float slice_run(int t, float x)
 {
     const romi_track_t *tr = &PAT->tr[t];
     int k = t - SL_FIRST;
-    float r = (float)tr->sl_rand * (1.0f / 127.0f), mix = (float)tr->sl_mix * (1.0f / 127.0f), y = 0.0f;
+    float r = (float)SL[k].rnd * (1.0f / 127.0f), mix = (float)SL[k].mix * (1.0f / 127.0f), y = 0.0f;
     uint32_t L = SL[k].L;
     SL[k].quiet = x > 1e-5f || x < -1e-5f ? 0u : SL[k].quiet + (SL[k].quiet < SL_LEN);
     if (tr->sl_mode >= 2 && (tr->sl_mode == 3 || SL[k].cnt < L)) {   /* (STUTTER: only its first slice) */
@@ -1033,39 +1106,12 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
         v[ROMI_PERC] = x;
 
-        /* stab: a three-note chord of FM pairs through a low-pass that closes with the envelope */
-        x = 0.0f;
-        if (R.stab.amp > 1e-4f) {
-            float ix = R.stab.idx * R.stab.ienv, c;
-            for (k = 0; k < 3; k++) {
-                R.stab.f[k] += (R.stab.ft[k] - R.stab.f[k]) * R.stab.gc;
-                R.stab.ph[k] += R.stab.f[k] * INV_SR;
-                if (R.stab.ph[k] >= 1.0f) R.stab.ph[k] -= 1.0f;
-                x += fsin(R.stab.ph[k] + fsin(R.stab.ph[k]) * ix);
-            }
-            c = 0.04f + 0.5f * R.stab.ienv;
-            R.stab.lp += (x * (1.0f / 3.0f) - R.stab.lp) * c;
-            x = R.stab.lp * R.stab.amp * R.stab.vel;
-            R.stab.ienv *= R.stab.ic;
-            R.stab.amp *= R.stab.ac;
-        }
-        v[ROMI_STAB] = x;
 
         }
-        /* click (both styles: suom1saundi plays ro:MINImal's): a grain of noise through a resonant band-pass,
-         * somewhere in the stereo field */
-        x = 0.0f;
-        if (R.click.amp > 1e-4f) {
-            float nz = brand(&R.rng) * R.click.amp, hp;
-            R.click.lp += R.click.fc * R.click.bp;
-            hp = nz - R.click.lp - R.click.q * R.click.bp;
-            R.click.bp += R.click.fc * hp;
-            x = R.click.bp * R.click.vel * (0.4f + 0.6f * R.click.q);
-            R.click.amp *= R.click.ac;
-        } else {
-            R.click.lp = R.click.bp = 0.0f;
+        for (k = 0; k < 2; k++) {       /* tracks 5 and 6: their engines */
+            uint8_t en = PAT->tr[ROMI_STAB + k].engine;
+            v[ROMI_STAB + k] = en == ROMI_ENG_PIIP ? piip_run((int)k) : en == ROMI_ENG_STAB ? stab_run((int)k) : click_run((int)k);
         }
-        v[ROMI_CLICK] = x;
 
         /* SOUND 2 on each voice: attack, drive, crush (each skipped when off) */
         for (k = 0; k < ROMI_TRACKS; k++) {
@@ -1109,9 +1155,9 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
                 }
         for (k = 0; k < ROMI_TRACKS; k++) {
             float y = v[k] * (1.0f - x * sc[k]);
-            if (k == ROMI_CLICK) {
-                l += y * R.bus[k].gl * 2.0f * (1.0f - R.click.pan);
-                r += y * R.bus[k].gr * 2.0f * R.click.pan;
+            if (k >= ROMI_STAB) {       /* tracks 5 and 6: a click scatters in the stereo field */
+                l += y * R.bus[k].gl * 2.0f * (1.0f - R.slot_pan[k - ROMI_STAB]);
+                r += y * R.bus[k].gr * 2.0f * R.slot_pan[k - ROMI_STAB];
             } else {
                 l += y * R.bus[k].gl;
                 r += y * R.bus[k].gr;
@@ -1342,6 +1388,7 @@ static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const
 #if ROMI_SUOMI
 #include "suomi_gen.inc"
 #endif
+#include "piip_gen.inc"
 
 static void gen_track(int t)
 {
@@ -1354,12 +1401,19 @@ static void gen_track(int t)
     }
     tr->len = 16;
     tr->slide = 0;
+    {
+    int g = t;                          /* whose rules: tracks 5 and 6 by their engine (STAB, CLICK, PIIP) */
+    if (t >= ROMI_STAB)
+        g = tr->engine == ROMI_ENG_STAB ? ROMI_STAB : tr->engine == ROMI_ENG_CLICK ? ROMI_CLICK : -1;
+    if (g < 0)
+        piip_gen(tr, t);
+    else
 #if ROMI_SUOMI
-    if (STYLE && t != ROMI_CLICK)
-        su_gen(tr, t, d);               /* suom1saundi's rules (the clicks are ro:MINImal's) */
+    if (STYLE && g < ROMI_STAB)
+        su_gen(tr, g, d);               /* suom1saundi's rules for its own four */
     else
 #endif
-    switch (t) {
+    switch (g) {
     case ROMI_KICK: {
         static const uint8_t GHOST[3] = {15, 30, 45};   /* % of grooves with a ghost kick */
         int key = kick_in_key(tr, 0);
@@ -1482,6 +1536,7 @@ static void gen_track(int t)
         tr->p[1] = near(78, 22);                        /* freq */
         tr->p[2] = near(84, 22);                        /* reso */
         break;
+    }
     }
     }
     tr->eu_rot = 0;
@@ -1765,6 +1820,29 @@ static void rotate_track(int t, int dir)
     }
 }
 
+/* an engine's sound on track 5 or 6: its first and second page, level, pan, sends and glide */
+static void engine_sound(romi_track_t *tr, int en)
+{
+    static const uint8_t D[ROMI_NENG][13] = {
+        /* p0   p1   p2   p3 level pan  dly  rev  q0  q1  q2  q3 glide */
+        {  66,  60,  30,  40,  78,  64,  70,  60, 24, 38,  0,  0,  24},   /* STAB: decay bright chord detune */
+        {  40,  78,  84,  90,  86,  64,  40,  30, 24,  0,  0,  0,   0},   /* CLICK: decay freq reso scatter */
+        {  30,  46,  40,  30,  76,  80,  70,  40, 24, 64,  0,  0,   0},   /* PIIP: wave decay arp vibrato | SPEED */
+    };
+    const uint8_t *d = D[en % ROMI_NENG];
+    int i;
+    tr->engine = (uint8_t)(en % ROMI_NENG);
+    for (i = 0; i < 4; i++) {
+        tr->p[i] = d[i];
+        tr->q[i] = d[8 + i];
+    }
+    tr->level = d[4];
+    tr->pan = d[5];
+    tr->dly = d[6];
+    tr->rev = d[7];
+    tr->glide = d[12];
+}
+
 static void pattern_defaults(romi_pattern_t *p)
 {
     static const uint8_t DEF[ROMI_TRACKS][8] = {
@@ -1798,6 +1876,11 @@ static void pattern_defaults(romi_pattern_t *p)
         tr->sl_rate = 64;
         tr->sl_rand = 40;
         tr->sl_mix = 100;
+        tr->slfo.rate = 4;                            /* SLICE's LFO: a bar, off until turned, on RATE */
+        tr->slfo.depth = 0;
+        tr->slfo.target = 0;
+        tr->slfo.shape = 0;
+        tr->engine = 0;
         {   /* SOUND 2: as the sound was before it had the page (kick click 0.25, pitch 22 ms; sub FM 60 ms; perc
              * bend 12 ms; stab attack 2.3 ms); no pitch, drive or crush */
             static const uint8_t Q[ROMI_TRACKS][4] = {{24, 53, 79, 0}, {24, 82, 30, 0}, {24, 0, 0, 0},
@@ -1824,6 +1907,9 @@ static void pattern_defaults(romi_pattern_t *p)
     if (STYLE)
         su_defaults(p);
 #endif
+    /* tracks 5 and 6: ro:MINImal starts with STAB and CLICK, suom1saundi with PIIP and CLICK */
+    engine_sound(&p->tr[ROMI_STAB], STYLE ? ROMI_ENG_PIIP : ROMI_ENG_STAB);
+    engine_sound(&p->tr[ROMI_CLICK], ROMI_ENG_CLICK);
 }
 
 /* --------------------------------------------------------------- project --- */
@@ -1872,6 +1958,12 @@ static void prj_sanitize(romi_project_t *p)
             LIM(tr->sl_rate, 0, 127);
             LIM(tr->sl_rand, 0, 127);
             LIM(tr->sl_mix, 0, 127);
+            LIM(tr->engine, 0, t >= ROMI_STAB ? ROMI_NENG - 1 : 0);
+            LIM(tr->slfo.rate, 0, 8);
+            LIM(tr->slfo.target, 0, 2);
+            LIM(tr->slfo.shape, 0, 4);
+            if (tr->slfo.depth < -64)
+                tr->slfo.depth = -64;
             if (tr->env_depth < -64)
                 tr->env_depth = -64;
             for (i = 0; i < ROMI_STEPS; i++)
@@ -1926,7 +2018,8 @@ static int lock_count(const romi_pattern_t *p)
  *   settings bpm swing drift duck root scale dly_time dly_fb rev_size rev_damp clock_out cur_pat chain sc_src sc_rel
  *   pattern  per track: len mute p0..p3 level pan dly rev eu_hits eu_rot eu_prob eu_acc sc dep_src tshift dep_mode
  *            follow, its two LFOs (rate depth target shape each), q0..q3 (SOUND 2), slide (2 bytes, little-endian),
- *            glide (version 14 on; 13 had neither), acc_src lfo_rst env_src env_depth env_tgt (15 on), sl_mode sl_rate sl_rand sl_mix (18 on), then its
+ *            glide (version 14 on; 13 had neither), acc_src lfo_rst env_src env_depth env_tgt (15 on), sl_mode sl_rate sl_rand sl_mix (18 on),
+ *            engine, SLICE's LFO rate depth target shape (19 on), then its
  *            16 steps, two
  *            bytes each:
  *              b0 = flags (on, accent, ratchet: bits 7, 6, 1..0) | shift's high bits << 2
@@ -1988,6 +2081,8 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
             d[n++] = tr->acc_src; d[n++] = tr->lfo_rst; d[n++] = tr->env_src; d[n++] = (uint8_t)tr->env_depth;
             d[n++] = tr->env_tgt;
             d[n++] = tr->sl_mode; d[n++] = tr->sl_rate; d[n++] = tr->sl_rand; d[n++] = tr->sl_mix;
+            d[n++] = tr->engine; d[n++] = tr->slfo.rate; d[n++] = (uint8_t)tr->slfo.depth; d[n++] = tr->slfo.target;
+            d[n++] = tr->slfo.shape;
             for (i = 0; i < ROMI_STEPS; i++) {
                 const romi_step_t *st = &tr->step[i];
                 uint32_t sh = (uint32_t)(st->shift + 8), nt = (uint32_t)(st->note - ROMI_NOTE_MIN);
@@ -2036,13 +2131,13 @@ int romi_store_set(int obj, const void *src, uint32_t len)
     /* older versions load: 13 without slide and glide, steps of 2 bytes; 14 without the links of 15 (accent,
      * restart, ENV) and the trig conditions, steps of 3 bytes */
     uint32_t ver = len > 3u ? b[3] : 0u, old = ver == 13u, v14 = ver == 14u, v15 = ver == 15u;
-    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) + (ver >= 18u ? 4u : 0u) +
+    uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) + (ver >= 18u ? 4u : 0u) + (ver >= 19u ? 5u : 0u) +
                                               (old ? 2u : v14 ? 3u : 4u) * ROMI_STEPS) + 1u
                         : 5u + (ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the settings with the style) */
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
-    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u) ||
+    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u && ver != 18u) ||
         b[4] != (obj ? obj - 1 : 0))
         return -2;
     if (obj)
@@ -2103,6 +2198,18 @@ int romi_store_set(int obj, const void *src, uint32_t len)
                 tr->sl_rate = 64;
                 tr->sl_rand = 40;
                 tr->sl_mix = 100;
+            }
+            if (ver >= 19u) {               /* the engine, SLICE's LFO (19 on) */
+                tr->engine = b[n];
+                tr->slfo.rate = b[n + 1]; tr->slfo.depth = (int8_t)b[n + 2]; tr->slfo.target = b[n + 3];
+                tr->slfo.shape = b[n + 4];
+                n += 5;
+            } else {                        /* before: the style's engines */
+                tr->engine = t == ROMI_STAB ? (STYLE ? ROMI_ENG_PIIP : ROMI_ENG_STAB) : t == ROMI_CLICK ? ROMI_ENG_CLICK : 0;
+                tr->slfo.rate = 4;
+                tr->slfo.depth = 0;
+                tr->slfo.target = 0;
+                tr->slfo.shape = 0;
             }
             for (i = 0; i < ROMI_STEPS; i++) {
                 romi_step_t *st = &tr->step[i];
@@ -2341,14 +2448,20 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
                                                         {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "KLIKKI"}};
-#define TRACK_NAME (TRACK_NAMES[STYLE ? 1 : 0])
+static const char *const ENG_NAMES[2][ROMI_NENG] = {{"STAB", "CLICK", "PIIP"}, {"STAB", "KLIKKI", "PIIP"}};
+static const char *track_name(int t)    /* tracks 5 and 6 by their engine */
+{
+    if (t >= ROMI_STAB)
+        return ENG_NAMES[STYLE ? 1 : 0][EDT->tr[t].engine % ROMI_NENG];
+    return TRACK_NAMES[STYLE ? 1 : 0][t];
+}
 static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
-                                                    "GLOBAL 2", "MOD", "SLICE"};
+                                                    "GLOBAL 2", "MOD", "SLICE", "ENGINE", "SLICE LFO"};
 static const char *const SOUND_NAMES[2][ROMI_TRACKS][4] = {{
     {"TUNE", "DECAY", "PUNCH", "DRIVE"}, {"DECAY", "FM", "RATIO", "GLIDE"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
@@ -2363,12 +2476,29 @@ static const char *const SOUND2_NAMES[2][ROMI_TRACKS][4] = {{
     {"PITCH", "CLICK", "SNAP", "CRUSH"}, {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "CHIP", "DRIVE", "CRUSH"},
     {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
 }};
-#define SOUND_NAME (SOUND_NAMES[STYLE ? 1 : 0])
-#define SOUND2_NAME (SOUND2_NAMES[STYLE ? 1 : 0])
+static const char *const ENG_SOUND[ROMI_NENG][2][4] = {
+    {{"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}},   /* STAB */
+    {{"DECAY", "FREQ", "RESO", "SCATTER"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}},     /* CLICK */
+    {{"WAVE", "DECAY", "ARP", "VIBRATO"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"}},       /* PIIP */
+};
+static const char *sound_name(int t, int i)
+{
+    if (t >= ROMI_STAB)
+        return ENG_SOUND[EDT->tr[t].engine % ROMI_NENG][0][i & 3];
+    return SOUND_NAMES[STYLE ? 1 : 0][t][i & 3];
+}
+static const char *sound2_name(int t, int i)
+{
+    if (t >= ROMI_STAB)
+        return ENG_SOUND[EDT->tr[t].engine % ROMI_NENG][1][i & 3];
+    return SOUND2_NAMES[STYLE ? 1 : 0][t][i & 3];
+}
 /* the tracks with SLIDE steps and a GLIDE: ro:MINImal's sub and stab; suom1saundi's bass, acid and melody */
 static int slides(int t)
 {
-    return STYLE ? t == ROMI_SUB || t == ROMI_PERC || t == ROMI_STAB : t == ROMI_SUB || t == ROMI_STAB;
+    if (t >= ROMI_STAB)                 /* tracks 5 and 6: STAB and PIIP slide, a click does not */
+        return EDT->tr[t].engine != ROMI_ENG_CLICK;
+    return STYLE ? t == ROMI_SUB || t == ROMI_PERC : t == ROMI_SUB;
 }
 static const char *const NOTE_NAME[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
@@ -2394,20 +2524,22 @@ static int page_params(param_t p[4])
         break;
     case ROMI_PG_SOUND:
         for (i = 0; i < 4; i++)
-            P(i, SOUND_NAME[R.track][i], &tr->p[i], 0, 127, F_NUM, 1);
-        if (STYLE) {                    /* suom1saundi: PIIP's wave and arpeggio */
-            if (R.track == ROMI_STAB) {
+            P(i, sound_name(R.track, i), &tr->p[i], 0, 127, F_NUM, 1);
+        if (R.track >= ROMI_STAB) {     /* tracks 5 and 6: PIIP's wave and arpeggio, the stab's chord */
+            if (tr->engine == ROMI_ENG_PIIP) {
                 p[0].fmt = F_PWAVE;
                 p[2].fmt = F_PARP;
+            } else if (tr->engine == ROMI_ENG_STAB) {
+                p[2].fmt = F_CHORD;
             }
             break;
         }
+        if (STYLE)
+            break;
         if (R.track == ROMI_SUB)
             p[2].fmt = F_SUBRATIO;
         if (R.track == ROMI_PERC)
             p[2].fmt = F_PRATIO;
-        if (R.track == ROMI_STAB)
-            p[2].fmt = F_CHORD;
         break;
     case ROMI_PG_MIX:
         P(0, "LEVEL", &tr->level, 0, 127, F_NUM, 1);
@@ -2441,9 +2573,9 @@ static int page_params(param_t p[4])
         break;
     }
     case ROMI_PG_SOUND2:
-        P(0, SOUND2_NAME[R.track][0], &tr->q[0], 0, 48, F_PITCH, 0);
+        P(0, sound2_name(R.track, 0), &tr->q[0], 0, 48, F_PITCH, 0);
         for (i = 1; i < 4; i++)
-            P(i, SOUND2_NAME[R.track][i], &tr->q[i], 0, 127, F_NUM, 1);
+            P(i, sound2_name(R.track, i), &tr->q[i], 0, 127, F_NUM, 1);
         break;
     case ROMI_PG_LFO1:
     case ROMI_PG_LFO2: {
@@ -2459,6 +2591,18 @@ static int page_params(param_t p[4])
         P(1, "MODE", &tr->dep_mode, 0, 2, F_DEPMODE, 0);
         P(2, "FOLLOW", &tr->follow, 0, ROMI_TRACKS, F_DEPSRC, 0);
         P(3, "ACCENT", &tr->acc_src, 0, ROMI_TRACKS, F_DEPSRC, 0);   /* its accents accent this track too */
+        break;
+    case ROMI_PG_ENGINE:                /* EDIT a third time: what tracks 5 and 6 play, in either style */
+        if (R.track >= ROMI_STAB)
+            P(0, "ENGINE", &tr->engine, 0, ROMI_NENG - 1, F_ENGINE, 0);
+        break;
+    case ROMI_PG_SLFO:                  /* FX a fourth time: SLICE's own LFO */
+        if (R.track >= SL_FIRST) {
+            P(0, "RATE", &tr->slfo.rate, 0, 8, F_LRATE, 0);
+            P(1, "DEPTH", (uint8_t *)&tr->slfo.depth, 0, 128, F_LDEPTH, 1);
+            P(2, "TARGET", &tr->slfo.target, 0, 2, F_SLTGT, 0);
+            P(3, "SHAPE", &tr->slfo.shape, 0, 4, F_LSHAPE, 0);
+        }
         break;
     case ROMI_PG_SLICE:                 /* FX a third time: hat, perc, stab, click cut up (not kick and sub) */
         if (R.track >= SL_FIRST) {
@@ -2524,8 +2668,8 @@ static void param_text(const param_t *p, char *t)
     case F_CHAIN: cat(t, CHAIN[v > 4 ? 4 : v]); break;
     case F_EPROB: cat_int(t, v); cat(t, "%"); break;
     case F_EACC: cat(t, EACC[v > 4 ? 4 : v]); break;
-    case F_TRACK: cat(t, TRACK_NAME[v % ROMI_TRACKS]); break;
-    case F_DEPSRC: cat(t, v && v <= ROMI_TRACKS ? TRACK_NAME[v - 1] : "OFF"); break;
+    case F_TRACK: cat(t, track_name(v % ROMI_TRACKS)); break;
+    case F_DEPSRC: cat(t, v && v <= ROMI_TRACKS ? track_name(v - 1) : "OFF"); break;
     case F_DEPMODE: cat(t, DEPMODE[v > 2 ? 2 : v]); break;
     case F_LRATE: {
         static const char *const RATE[9] = {"1/16", "1/8", "1/4", "1/2", "1 BAR", "2 BAR", "4 BAR", "8 BAR", "16 BAR"};
@@ -2534,7 +2678,7 @@ static void param_text(const param_t *p, char *t)
     }
     case F_LTARGET: {
         static const char *const MIXT[4] = {"LEVEL", "PAN", "DELAY", "REVERB"};
-        cat(t, v < 4 ? SOUND_NAME[R.track][v] : v < 8 ? MIXT[(v - 4) & 3] : SOUND2_NAME[R.track][(v - 8) & 3]);
+        cat(t, v < 4 ? sound_name(R.track, v) : v < 8 ? MIXT[(v - 4) & 3] : sound2_name(R.track, (v - 8) & 3));
         break;
     }
     case F_LSHAPE: {
@@ -2544,8 +2688,10 @@ static void param_text(const param_t *p, char *t)
     }
     case F_MODE: cat(t, v ? "HARD" : "LAZY"); break;
     case F_ORDER: cat(t, v == 1 ? "A-D" : v == 2 ? "RANDOM" : "LOOP"); break;
-    case F_RST: cat(t, v && v <= ROMI_TRACKS ? TRACK_NAME[v - 1] : "FREE"); break;
+    case F_RST: cat(t, v && v <= ROMI_TRACKS ? track_name(v - 1) : "FREE"); break;
     case F_STYLE: cat(t, v ? "SUOM1" : "ROMI"); break;
+    case F_ENGINE: cat(t, ENG_NAMES[STYLE ? 1 : 0][v % ROMI_NENG]); break;
+    case F_SLTGT: cat(t, v == 1 ? "RANDOM" : v == 2 ? "MIX" : "RATE"); break;
     case F_SLMODE: {
         static const char *const M[4] = {"OFF", "GATE", "STUTTER", "GRAIN"};
         cat(t, M[v & 3]);
@@ -2760,9 +2906,9 @@ void romi_draw(uint16_t *px, int strip)
         int quiet = tr->mute || (R.solo >= 0 && R.solo != lane);
         if (cur)
             rect(0, y, 42, 17, R.solo == lane ? C_ACC : C_FG);
-        text(3, y + 5, TRACK_NAME[lane], cur ? C_BG : R.solo == lane ? C_ACC : quiet ? C_DIM : C_MID, 1);
+        text(3, y + 5, track_name(lane), cur ? C_BG : R.solo == lane ? C_ACC : quiet ? C_DIM : C_MID, 1);
         if (tr->mute)
-            rect(2, y + 8, text_w(TRACK_NAME[lane], 1) + 2, 1, cur ? C_BG : C_DIM);
+            rect(2, y + 8, text_w(track_name(lane), 1) + 2, 1, cur ? C_BG : C_DIM);
         if ((tr->dep_src && tr->dep_src - 1 != lane) || (tr->follow && tr->follow - 1 != lane))
             rect(37, y + 7, 3, 3, C_ACC);   /* linked to another track (its steps or its notes) */
         for (i = 0; i < ROMI_STEPS; i++) {
@@ -2818,7 +2964,7 @@ void romi_draw(uint16_t *px, int strip)
         R.page == ROMI_PG_LINK || R.page == ROMI_PG_TIMING || R.page == ROMI_PG_LFO1 || R.page == ROMI_PG_LFO2 ||
         R.page == ROMI_PG_SOUND2) {
         cat(t, " ");
-        cat(t, TRACK_NAME[R.track]);
+        cat(t, track_name(R.track));
     }
     text(4, PARAM_Y, t, C_ACC, 1);
     if (hs >= 0 && (R.page == ROMI_PG_SOUND || R.page == ROMI_PG_SOUND2)) {   /* a step held: its own values */
@@ -2833,7 +2979,7 @@ void romi_draw(uint16_t *px, int strip)
         for (i = 0; i < 4; i++) {
             int x = 4 + i * 60, lk = st->lock[base + i], pitch = base && i == 0;
             int v = lk ? lk - 1 : base ? ct->q[i] : ct->p[i];
-            text(x, PARAM_Y + 14, base ? SOUND2_NAME[R.track][i] : SOUND_NAME[R.track][i], lk ? C_ACC : C_MID, 1);
+            text(x, PARAM_Y + 14, base ? sound2_name(R.track, i) : sound_name(R.track, i), lk ? C_ACC : C_MID, 1);
             t[0] = 0;
             if (pitch && v > 24)
                 cat(t, "+");
@@ -2908,7 +3054,7 @@ void romi_draw(uint16_t *px, int strip)
         text(i + 6, FOOT_Y + 2, R.msg[1], C_FG, 2);
     } else {
         t[0] = 0;
-        cat(t, TRACK_NAME[R.track]);
+        cat(t, track_name(R.track));
         cat(t, " LEN ");
         cat_int(t, PAT->tr[R.track].len);
         text(4, FOOT_Y, t, C_FG, 1);
@@ -2989,6 +3135,22 @@ static void set_style(void)
     romi_message("STYLE", STYLE ? "SUOM1SAUNDI" : "RO:MINIMAL");
     R.unsaved = 1;
     R.dirty |= STRIP_ALL;
+}
+
+/* ENGINE turned (EDIT three times): track 5 or 6 plays another engine. Its sound comes from the engine's defaults,
+ * its pattern from the engine's rules (undo brings the old one back). A sub that followed a stab that is now a
+ * click follows nothing. */
+static void set_engine(uint8_t was)
+{
+    romi_track_t *tr = &EDT->tr[R.track];
+    uint8_t en = tr->engine;
+    tr->engine = was;
+    keep_undo();
+    engine_sound(tr, en);
+    gen_track(R.track);
+    if (en == ROMI_ENG_CLICK && EDT->tr[ROMI_SUB].follow == R.track + 1)
+        EDT->tr[ROMI_SUB].follow = 0;
+    romi_message("ENGINE", track_name(R.track));
 }
 
 /* LAZY <-> HARD. Into HARD: B..D are the HARD patterns kept aside (if there are), else copies of A ("all the same,
@@ -3085,7 +3247,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     {
         static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
-                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX};
+                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
+                                                  ROMI_B_EDIT, ROMI_B_FX};
         uint8_t was = R.page;
         for (i = 0; i < ROMI_PG_EUCLID; i++)
             if (pressed & 1u << PAGE_BTN[i]) {
@@ -3096,8 +3259,12 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             R.page = ROMI_PG_SC;        /* FX again: the sidechain */
         if ((pressed & 1u << ROMI_B_FX) && was == ROMI_PG_SC)
             R.page = ROMI_PG_SLICE;     /* and again: SLICE */
+        if ((pressed & 1u << ROMI_B_FX) && was == ROMI_PG_SLICE)
+            R.page = ROMI_PG_SLFO;      /* a fourth time: SLICE's LFO */
         if ((pressed & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND)
             R.page = ROMI_PG_SOUND2;    /* EDIT again: SOUND 2 */
+        if ((pressed & 1u << ROMI_B_EDIT) && was == ROMI_PG_SOUND2)
+            R.page = ROMI_PG_ENGINE;    /* a third time: the engine (tracks 5 and 6) */
         if ((pressed & 1u << ROMI_B_GLO) && was == ROMI_PG_GLOBAL)
             R.page = ROMI_PG_GLOBAL2;   /* GLO again: GLOBAL 2 */
         if (pressed & 1u << ROMI_B_LFO) {   /* LFO: the first LFO's page; again: the second's */
@@ -3214,7 +3381,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         } else {
             keep_undo();
             mutate_track(R.track);
-            romi_message("MUTATE", TRACK_NAME[R.track]);
+            romi_message("MUTATE", track_name(R.track));
             changed();
         }
         R.arp_t = 0;
@@ -3237,7 +3404,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             changed();
         } else {
             R.solo = (int8_t)(R.solo == (int)R.track ? -1 : (int)R.track);
-            romi_message("SOLO", R.solo < 0 ? "OFF" : TRACK_NAME[R.track]);
+            romi_message("SOLO", R.solo < 0 ? "OFF" : track_name(R.track));
             R.dirty |= STRIP_ALL;
         }
         R.sel_t = 0;
@@ -3295,7 +3462,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         }
     } else {
         param_t pp[4];
-        uint8_t mode_was = R.prj.mode, style_was = R.prj.style;
+        uint8_t mode_was = R.prj.mode, style_was = R.prj.style, eng_was = EDT->tr[R.track].engine;
         page_params(pp);
         for (i = 0; i < 4; i++) {
             int d = (int)enc[ROMI_E_K1 + i];
@@ -3329,6 +3496,8 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             set_mode(R.prj.mode);
         if (R.prj.style != style_was)
             set_style();
+        if (R.track >= ROMI_STAB && EDT->tr[R.track].engine != eng_was)
+            set_engine(eng_was);
     }
 
     /* the keys */
@@ -3367,7 +3536,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 /* SEL held: the track key mutes its track or lets it play, the selection stays */
                 EDT->tr[i].mute ^= 1u;
                 R.sel_used = 1;
-                romi_message(EDT->tr[i].mute ? "MUTE" : "PLAY", TRACK_NAME[i]);
+                romi_message(EDT->tr[i].mute ? "MUTE" : "PLAY", track_name(i));
                 changed();
             } else if (i < ROMI_TRACKS) {   /* the first six black keys: the tracks, heard as chosen */
                 R.track = (uint8_t)i;
@@ -3383,7 +3552,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                     tr->step[k].flags = 0;
                     step_plain(&tr->step[k]);
                 }
-                romi_message("CLEAR", TRACK_NAME[R.track]);
+                romi_message("CLEAR", track_name(R.track));
                 changed();
             } else if (i == 7 || i == 8) {
                 keep_undo();
@@ -3400,7 +3569,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             } else if (i == 9) {            /* NEW: the selected track, at once; held, the whole groove */
                 keep_undo();
                 gen_track(R.track);
-                romi_message("NEW", TRACK_NAME[R.track]);
+                romi_message("NEW", track_name(R.track));
                 R.new_t = now_ms ? now_ms : 1u;
                 changed();
             } else if (R.undo_ok && R.undo_pat == (R.prj.mode ? R.prj.cur_pat : 0)) {
@@ -3470,7 +3639,8 @@ void romi_lights(uint32_t *buttons, uint32_t *keys, uint32_t *dim_buttons, uint3
     static const uint8_t BK[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
     static const uint8_t PAGE_BTN[ROMI_NPAGES] = {ROMI_B_HOME, ROMI_B_EDIT, ROMI_B_ENV, ROMI_B_FX, ROMI_B_GLO,
                                                   ROMI_B_SEQ, ROMI_B_FX, ROMI_B_SEQ, ROMI_B_SEQ, ROMI_B_LFO,
-                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX};
+                                                  ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, ROMI_B_LFO, ROMI_B_FX,
+                                                  ROMI_B_EDIT, ROMI_B_FX};
     const romi_track_t *tr = &PAT->tr[R.track];
     uint32_t b = 1u << PAGE_BTN[R.page], k = 0, dk = 0;
     int i;

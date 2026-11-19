@@ -28,7 +28,7 @@ enum { ROMI_B_FX, ROMI_B_SEL, ROMI_B_ENV, ROMI_B_LFO, ROMI_B_EDIT, ROMI_B_GLO, R
 enum { ROMI_E_SELECT, ROMI_E_ALGO, ROMI_E_PRESET, ROMI_E_K1, ROMI_E_K2, ROMI_E_K3, ROMI_E_K4, ROMI_NE };
 
 enum { ROMI_PG_HOME, ROMI_PG_SOUND, ROMI_PG_MIX, ROMI_PG_FX, ROMI_PG_GLOBAL, ROMI_PG_EUCLID, ROMI_PG_SC, ROMI_PG_LINK,
-       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_PG_GLOBAL2, ROMI_PG_MOD, ROMI_PG_SLICE, ROMI_NPAGES };
+       ROMI_PG_TIMING, ROMI_PG_LFO1, ROMI_PG_LFO2, ROMI_PG_SOUND2, ROMI_PG_GLOBAL2, ROMI_PG_MOD, ROMI_PG_SLICE, ROMI_PG_ENGINE, ROMI_PG_SLFO, ROMI_NPAGES };
 
 /* step flags */
 #define ROMI_ST_ON 0x80u
@@ -45,6 +45,8 @@ typedef struct {
     uint8_t chance;                     /* 1..100 %: how likely it plays, stepless; 0 = 100 % (a plain step) */
     uint8_t cond;                       /* the trig condition: 0 none, else ROMI_COND_* (held step + ALGORITHM) */
 } romi_step_t;
+/* the engines tracks 5 and 6 can play, in either style */
+enum { ROMI_ENG_STAB, ROMI_ENG_CLICK, ROMI_ENG_PIIP, ROMI_NENG };
 /* trig conditions: 1..17 A:B (plays in bar A of every B: 1:2 2:2, 1:3..3:3, 1:4..4:4, 1:8..8:8), then: */
 enum { ROMI_COND_FILL = 18, ROMI_COND_NFILL, ROMI_COND_PRE, ROMI_COND_NPRE, ROMI_COND_FIRST, ROMI_COND_NFIRST,
        ROMI_NCOND };
@@ -84,6 +86,8 @@ typedef struct {
     uint8_t env_tgt;                    /* 0..11, as an LFO's target */
     uint8_t sl_mode;                    /* SLICE (hat, perc, stab, click): 0 off, 1 GATE, 2 STUTTER, 3 GRAIN */
     uint8_t sl_rate, sl_rand, sl_mix;   /* 0..127: the slices' size, how much is left to chance, dry to sliced */
+    uint8_t engine;                     /* tracks 5 and 6: ROMI_ENG_STAB, _CLICK or _PIIP (EDIT three times) */
+    romi_lfo_t slfo;                    /* SLICE's own LFO (FX four times): target 0 RATE, 1 RANDOM, 2 MIX */
     romi_lfo_t lfo[ROMI_LFOS];
 } romi_track_t;
 
@@ -119,7 +123,7 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 18u
+#define ROMI_VERSION 19u
 /* the style SUOMI (suom1saundi's voices and generator) is built in when ROMI_SUOMI is 1: the first thing to leave
  * (ROMI_SUOMI 0) or to become a firmware of its own, should the FM-1 run short of time. ROMI_START_STYLE: the style
  * a fresh start comes up in: 0 the firmware ro:MINImal (suom1saundi its bonus), 1 the firmware suom1saundi */
@@ -133,7 +137,7 @@ typedef struct {
 #define ROMI_NOBJ (1 + ROMI_PATTERNS)   /* object 0: the settings; 1..4: patterns A..D. In LAZY mode only 0 and
                                          * 1 are saved (B..D are made from A); in HARD all five. In LAZY, objects
                                          * 2..4 load aside: the HARD patterns, back when HARD is chosen again */
-#define ROMI_OBJ_MAX 752u               /* the largest packed object, in bytes */
+#define ROMI_OBJ_MAX 784u               /* the largest packed object, in bytes */
 
 /* ---- life cycle ---- */
 void romi_init(uint32_t seed);          /* tables, defaults and a first groove generated from seed */

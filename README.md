@@ -65,8 +65,10 @@ Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
 | BASSO | CUTOFF, RESO, ENVMOD, DECAY | PITCH, WAVE, DRIVE, CRUSH |
 | HATTU | DECAY, TONE, METAL, OPEN | PITCH, CHIP, DRIVE, CRUSH |
 | HAPPO | CUTOFF, RESO, ENVMOD, DECAY | PITCH, WAVE, DRIVE, CRUSH |
-| PIIP | WAVE, DECAY, ARP, VIBRATO | PITCH, SPEED, DRIVE, CRUSH |
-| KLIKKI (Click von ro:MINImal) | DECAY, FREQ, RESO, SCATTER | PITCH, ATTACK, DRIVE, CRUSH |
+| PIIP (Engine, Spur 5 ab Start) | WAVE, DECAY, ARP, VIBRATO | PITCH, SPEED, DRIVE, CRUSH |
+| KLIKKI (Engine CLICK, Spur 6 ab Start) | DECAY, FREQ, RESO, SCATTER | PITCH, ATTACK, DRIVE, CRUSH |
+
+Die Spuren 5 und 6 wählen ihre Engine in beiden Stilen frei (EDIT dreimal): STAB, CLICK oder PIIP.
 
 Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
 HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30). GLIDE von BASSO, HAPPO und PIIP
@@ -174,6 +176,8 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |
 | FX | Delay-Zeit, Feedback, Reverb-Größe, Dämpfung |
 | FX ein zweites Mal | Seite SIDECHAIN: Quelle (Spur), Tiefe, Release, Anteil der gewählten Spur. Eine stumme Quelle duckt weiter. |
+| EDIT ein drittes Mal | Seite ENGINE (Spuren 5 und 6, beide Stile): K1 STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI) oder PIIP (Soundchip); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, UNDO holt das alte zurück |
+| FX ein viertes Mal | Seite SLICE LFO: der eigene LFO des Slicers, K1 RATE, K2 DEPTH, K3 TARGET (RATE, RANDOM, MIX), K4 SHAPE |
 | FX ein drittes Mal | Seite SLICE (Hat, Perc, Stab, Click; nicht Kick und Sub): K1 MODE OFF, GATE (Raster 1/32 bis 1/128, an und aus), STUTTER (das erste Stück des Schlags immer wieder), GRAIN (Granular light: zwei Körner aus den letzten 186 ms der Spur); K2 RATE (Rastergröße, Stück- oder Korngröße), K3 RANDOM (Zufall: welche Stücke, rückwärts, Oktave, wo), K4 MIX. GRAIN auf höchstens zwei Spuren |
 | GLO | Grundton, Skala (Moll, Dorisch, Phrygisch, Pentatonik, Phrygisch-dominant, Harmonisch Moll), MIDI-Clock, CHAIN (A-B, A-C, A-D nacheinander, je vier Takte; EVOLVE: A-D und danach neue B, C, D) |
 | GLO ein zweites Mal | Seite GLOBAL 2: MODE LAZY (B bis D entstehen aus A) oder HARD (vier eigene Patterns); PLAY LOOP, A-D oder RANDOM; STYLE ROMI oder SUOM1 (neuer Groove im Stil) |
@@ -205,7 +209,7 @@ meldet sich nicht als Audio-Interface.
 | RAM .data + .bss | 34 312 B | 98 304 B | 35 % |
 | RAM-Pool (Delay, Reverb, fm1-base) | 118 980 B | 344 064 B | 35 % |
 | RAM-Code (.ram_text) | 5 100 B | 32 768 B | 16 % |
-| Speicherfenster 0xB1000–0xBAFFF | höchstens 3 025 B (Einstellungen 33 B, A–D je bis 748 B) | 40 960 B | 7 % |
+| Speicherfenster 0xB1000–0xBAFFF | höchstens 3 145 B (Einstellungen 33 B, A–D je bis 778 B) | 40 960 B | 8 % |
 
 Last des Renderers: Instruktionen pro Sample mit callgrind gezählt (x86-64, -O2, wie der Core gebaut wird), auf
 den AC79 (Kern r3, 360 MHz, Single-Precision-FPU) umgerechnet mit Faktor 1,6 bis 3,0 (mehr Instruktionen auf
@@ -217,8 +221,8 @@ einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Fla
 | typischer Groove | 1 397 | 27 / 38 / 51 % |
 | schlimmster Fall: jeder Step, Ratchet x4, Drive und Crush, LFOs, volle Sends | 1 648 | 32 / 44 / 61 % |
 | dazu alle Verknüpfungen (ACCENT, RESTART, ENV auf Pegel/Klang, Bedingungen) | 1 638 | 32 / 44 / 60 % |
-| suom1saundi, schlimmster Fall | 1 704 | 33 / 46 / 63 % |
-| suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 199 | 43 / 59 / 81 % |
+| suom1saundi, schlimmster Fall | 1 750 | 34 / 47 / 64 % |
+| suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 230 | 44 / 60 / 82 % |
 
 SLICE: GATE kostet fast nichts, STUTTER wenig, GRAIN etwa 170 Instruktionen pro Sample und Spur. Deshalb höchstens
 zwei Spuren mit GRAIN, und GRAIN ist nach suom1saundi das Erste, was rausfliegt, wenn es am Gerät eng wird.
@@ -235,7 +239,7 @@ Der echte Wert kommt am Gerät aus `plat_cpu_pct`.
 ### Speicher
 
 Gespeichert werden im LAZY-Modus zwei Objekte: die Einstellungen (32 Bytes, darin die Würfel für B bis D, MODE
-und PLAY) und Pattern A (652 Bytes, mit 32 Locks 748 Bytes); im HARD-Modus dazu B, C und D. Ein Step belegt 4 Bytes
+und PLAY) und Pattern A (682 Bytes, mit 32 Locks 778 Bytes); im HARD-Modus dazu B, C und D. Ein Step belegt 4 Bytes
 (Chance und Trig-Bedingung), Slide, Glide und die Verknüpfungen 8 Bytes pro Spur. Patterns der Versionen 13 und 14 werden weiter
 geladen (ohne Slide, die Chance in vier Stufen übernommen). Locks stehen als Liste pro Pattern. Daraus folgen die Grenzen: höchstens
 32 Locks pro Pattern (sonst „LOCKS FULL“), Verschiebung eines Steps ±7/16, Noten −32 bis +31 Halbtöne um den Grundton.
