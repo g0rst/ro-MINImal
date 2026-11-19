@@ -1834,8 +1834,8 @@ static void gen_track(int t)
         for (i = 0; i < 16; i++)
             if (!(tr->step[i].flags & ROMI_ST_ON) && urand(100) < FILL[d]) {
                 set_step(tr, i, 0, 1 + (int)urand(3), 0);
-                if (urand(8) == 0)
-                    tr->step[i].flags |= 1u;            /* now and then a double */
+                if (urand(20) == 0)
+                    tr->step[i].flags |= 1u;            /* seldom a double */
                 {                                       /* or one that comes only every second or fourth bar */
                     static const uint8_t CND[4] = {1, 2, 6, 8};   /* 1:2 2:2 1:4 3:4 */
                     uint32_t h = (R.ui_rng ^ (i + 1u) * 2654435761u) * 2246822519u;   /* (the dice not moved on:
@@ -2018,8 +2018,10 @@ static void slot_rules(romi_pattern_t *d, int which)
                 if (tr->len == 16)
                     tr->step[15].flags = (uint8_t)(ROMI_ST_ON | 1u);
             } else if (tr->len == 16) {
-                for (i = 14; i < 16; i++)
-                    tr->step[i].flags = (uint8_t)(ROMI_ST_ON | 2u);
+                for (i = 14; i < 16; i++) {     /* (a double at half a chance, not a triple each time) */
+                    tr->step[i].flags = (uint8_t)(ROMI_ST_ON | (i == 15u ? 1u : 0u));
+                    tr->step[i].chance = i == 15u ? 50u : 0u;
+                }
             } else {
                 for (i = 0; i < tr->len; i++)
                     if (tr->step[i].flags & ROMI_ST_ON)
@@ -2061,8 +2063,11 @@ static void vary(romi_pattern_t *d)
             h->step[i].note = 0;
         }
     }
-    i = 2u + 4u * vrand(4);                         /* and one off-beat doubles */
-    h->step[i].flags = (uint8_t)((h->step[i].flags & ~3u) | 1u);
+    if (vrand(3) == 0) {                            /* and now and then an off-beat doubles, at half a chance */
+        i = 2u + 4u * vrand(4);
+        h->step[i].flags = (uint8_t)((h->step[i].flags & ~3u) | 1u);
+        h->step[i].chance = 50;
+    }
     turn_loop(&d->tr[ROMI_PERC], 1 + vrand(2));     /* percussion: turned on its own loop */
     for (i = 0; i < sb->len; i++)                   /* the sub: one hit beside itself, never on a quarter */
         if (sb->step[i].flags & ROMI_ST_ON)
@@ -2105,9 +2110,17 @@ static void rolls(romi_pattern_t *d)
     romi_track_t *h = &d->tr[ROMI_HAT], *pc = &d->tr[ROMI_PERC];
     romi_track_t *kk = &d->tr[ROMI_KICK], *sb = &d->tr[ROMI_SUB];
     uint32_t i, last;
-    for (i = 12; i < 16 && i < h->len; i++) {       /* the hats roll up to the bar */
-        h->step[i].flags = (uint8_t)(ROMI_ST_ON | RATCH[SUOMI ? 1 : 0][i - 12] | (i == 15 ? ROMI_ST_ACC : 0u));
-        h->step[i].note = (int8_t)(i - 12);
+    if (h->len == 16 && vrand(4) == 0) {            /* the hats roll up to the bar, one C in four, the rolls at a
+                                                     * chance (not every time: the "dring dring" wears) */
+        for (i = 12; i < 16; i++) {
+            h->step[i].flags = (uint8_t)(ROMI_ST_ON | RATCH[SUOMI ? 1 : 0][i - 12] | (i == 15 ? ROMI_ST_ACC : 0u));
+            h->step[i].chance = RATCH[SUOMI ? 1 : 0][i - 12] ? 50u : 0u;
+            h->step[i].note = (int8_t)(i - 12);
+        }
+    } else if (h->len == 16) {                      /* else a last sixteenth before the bar, doubled at a chance */
+        h->step[14].flags = ROMI_ST_ON;
+        h->step[15].flags = (uint8_t)(ROMI_ST_ON | ROMI_ST_ACC | 1u);
+        h->step[15].chance = 40;
     }
     if (SUOMI) {
         /* suom1saundi: fewer rolls; the acid line keeps its own phrase */

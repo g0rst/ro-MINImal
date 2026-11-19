@@ -883,7 +883,7 @@ int main(int argc, char **argv)
         static romi_pattern_t keep_b, keep_c, keep_d;
         static uint8_t obj[ROMI_NOBJ][ROMI_OBJ_MAX];
         uint32_t len[ROMI_NOBJ];
-        int g, k, t2, drops[3] = {0, 0, 0};
+        int g, k, t2, drops[3] = {0, 0, 0}, rolls_c = 0;
         for (g = 0; g < 80; g++) {
             const romi_pattern_t *pa, *pb, *pc2, *pd;
             int sa[16], sb2[16], na = 0, nb = 0, iv, sc = g % 4, m, j, ok;
@@ -913,9 +913,15 @@ int main(int argc, char **argv)
                 for (ok = 0, j = 0; j < nb; j++) ok |= sa[k] == sb2[j];
                 CHECK(ok, "groove %d: B's stab has a chord A has not", g);
             }
-            for (k = 12; k < 16; k++)               /* C: rolling hats */
-                CHECK((pc2->tr[ROMI_HAT].step[k].flags & ROMI_ST_ON) && ROMI_ST_RATCH(pc2->tr[ROMI_HAT].step[k].flags) >= 2,
-                      "groove %d: C without a roll on %d", g, k);
+            {                                       /* C: the hats lead into the bar, a roll seldom and at a chance */
+                int roll = ROMI_ST_RATCH(pc2->tr[ROMI_HAT].step[14].flags) >= 3;
+                rolls_c += roll;
+                CHECK((pc2->tr[ROMI_HAT].step[14].flags & ROMI_ST_ON) && (pc2->tr[ROMI_HAT].step[15].flags & ROMI_ST_ON),
+                      "groove %d: C's hats do not lead into the bar", g);
+                for (k = roll ? 13 : 15; k < 16; k++)
+                    if (ROMI_ST_RATCH(pc2->tr[ROMI_HAT].step[k].flags) >= 2)
+                        CHECK(ROMI_CHANCE(&pc2->tr[ROMI_HAT].step[k]) <= 50, "groove %d: a sure ratchet on %d", g, k);
+            }
             iv = romi_state(ROMI_Q_KEY_STEP);       /* D: A's stab, moved by the key step */
             for (k = 0; k < 16; k++)
                 if (pa->tr[ROMI_STAB].step[k].flags & ROMI_ST_ON) {
@@ -938,6 +944,7 @@ int main(int argc, char **argv)
         }
         CHECK(drops[1] > 5 && drops[1] < 60, "B left out a kick beat %d times in 80 grooves", drops[1]);
         CHECK(drops[2] > 20 && drops[2] < 70, "C paused the kick %d times in 80 grooves", drops[2]);
+        CHECK(rolls_c > 8 && rolls_c < 35, "C rolled the hats %d times in 80 grooves (about one in four)", rolls_c);
         /* an edit while B plays goes to A, and B follows */
         romi_init(13);
         turn(ROMI_E_PRESET, 1);

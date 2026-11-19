@@ -49,15 +49,18 @@ wie immer (jetzt beim Loslassen). Akzentfarbe Dunkelrot, Gute Nacht „DOBROU NO
 | Spur | Stimme | Regeln |
 |---|---|---|
 | KICK | Kick von suom1saundi, lange tonale Fahne, viel Drive: die Kick ist der Bass | jede Viertel, gestimmt; manchmal ein Doppel vor dem Takt |
-| ACID | Acid-Stimme von suom1saundi, eine Oktave höher, ohne Sub | rollende Sechzehntel, Akzent alle 3–4 Steps gegen die Vier, Slides, Loop 16 oder 12 |
+| ACID | Acid-Stimme von suom1saundi, eine Oktave höher, ohne Sub | ein Motiv aus 3 oder 4 Tönen (Grundton, Oktave, Quinte) immer wieder, Akzent fest im Motiv, Slide in die Oktave |
 | HAT | HATTU | offen auf jedem Offbeat, Ride mit 25/50 % |
-| TRIBE | FM-Percussion von ro:MINImal als Toms | Euclid 5 oder 7 in 12/16, fallend Oktave–Quinte–Grundton |
+| TRIBE | FM-Percussion von ro:MINImal als Toms, zwei Oktaven tiefer, wenig Bend | zwei Toms (Grundton tief, Quinte hoch), Euclid 5 oder 7 in 12/16 |
 | SCREAM | Engine 8-BIT als Säge mit Vibrato | Melodie-Regeln der Engine |
 | SIREN | Engine NOISE als Riser | Riser, Downlifter oder Zischen |
 
 Klang: Die Summe läuft in FRE3tek durch einen Kompressor (schneller Attack, 150 ms Release, 1:5, aufgeholt), alles
 liegt auf einem Akkord (die SCREAM-Melodie bleibt auf den Tönen des Grundakkords, der Drone von Kick und Acid), die
 Acid-Linie bleibt meist auf Grundton, Oktave und Quinte, AIR fast aus. SIREN kommt stumm (SEL holt sie rein).
+Ratchets auf den Hats: In C kommt ein echter Wirbel nur noch jedes vierte Mal (seine Ratchets mit 50 %), sonst nur ein
+Doppel auf der letzten Sechzehntel mit 40 %; B verdoppelt nur noch manchmal einen Offbeat (mit 50 %); der Generator
+setzt Doppelschläge auf Hats viel seltener. Gilt für alle Stile.
 In allen drei Stilen steht der TUNE der Kick jetzt auf Halbtonschritten: eine Kick in der Tonart sitzt auf den Cent
 genau (vorher bis zu einem Viertelton daneben, gemessen −18 Cent in FRE3tek).
 

@@ -72,7 +72,7 @@ static void su_gen(romi_track_t *tr, int t, uint32_t d)
         for (i = 0; i < 16; i++)
             if (!(tr->step[i].flags & ROMI_ST_ON) && urand(100) < FILL[d]) {
                 set_step(tr, i, 0, (int)urand(3), 0);
-                if (urand(16) == 0)
+                if (urand(32) == 0)
                     tr->step[i].flags |= 1u;    /* seldom a double (few rolls) */
             }
         break;

@@ -43,10 +43,10 @@ UI = {
 ROLE = [
     L("Die Kick ist der Bass: verzerrt, lange tonale Fahne, vier auf den Boden, auf die Tonart gestimmt",
       "The kick is the bass: distorted, a long tonal tail, four on the floor, tuned to the key"),
-    L("303-Linie aus rollenden Sechzehnteln, Akzent im Dreier gegen die Vier, Slides",
-      "a 303 line of rolling sixteenths, the accent on a three against the four, slides"),
+    L("303-Linie: ein kurzes Motiv immer wieder, Akzent fest im Motiv, Slide in die Oktave",
+      "a 303 line: a short motif over and over, the accent fixed in it, a slide into the octave"),
     L("offene Hats auf dem Offbeat, darunter ein Sechzehntel-Ride mit Chance", "open hats on the off-beat, a sixteenth ride under them at a chance"),
-    L("FM-Toms, polyrhythmisch: fünf oder sieben in zwölf oder sechzehn", "FM toms, polyrhythmic: five or seven in twelve or sixteen"),
+    L("zwei FM-Toms, polyrhythmisch: fünf oder sieben in zwölf oder sechzehn", "two FM toms, polyrhythmic: five or seven in twelve or sixteen"),
     L("das Mental-Kreischen: eine Säge mit Vibrato", "the mental scream: a saw with vibrato"),
     L("Rauschen als Riser und Fall, die Sirene vor dem Drop", "noise as riser and fall, the siren before the drop"),
 ]
@@ -102,15 +102,16 @@ sec("Die Regeln", "The rules",
     ("ul", [L("<b>KICK</b>: jeder Viertel, auf die Tonart gestimmt; manchmal ein Doppel vor dem Takt. In C pausiert sie gern die "
               "letzten vier Steps: der Drop.", "<b>KICK</b>: every quarter, tuned to the key; now and then a double before the bar. In "
               "C it likes to pause for the last four steps: the drop."),
-            L("<b>ACID</b>: rollende Sechzehntel, ein paar Pausen, auf dem Viertel der Grundton, sonst Quinte, Oktave, Sekunde. "
-              "Der Akzent kommt alle drei oder vier Steps und wandert so gegen die Kick. Loop 16 oder 12.",
-              "<b>ACID</b>: rolling sixteenths, a few rests, the root on the quarter, else fifth, octave, second. The accent "
-              "comes every three or four steps and so walks against the kick. Loop 16 or 12."),
+            L("<b>ACID</b>: ein kurzes Motiv aus drei oder vier Tönen (Grundton, Oktave, Quinte), immer wieder: das ist Tekno. "
+              "Der Akzent sitzt fest an einer Stelle des Motivs; ist es drei lang, wandert er gegen die Kick. In die Oktave "
+              "wird geslidet.",
+              "<b>ACID</b>: a short motif of three or four notes (root, octave, fifth), again and again: that is tekno. The "
+              "accent sits on one place of the motif; three long, it walks against the kick. It slides up to the octave."),
             L("<b>HAT</b>: offen auf jedem Offbeat, betont; dazwischen ein Ride mit 25 oder 50 %.", "<b>HAT</b>: open on every off-beat, accented; between them a ride at 25 or 50 %."),
-            L("<b>TRIBE</b>: Euclid-Toms, fünf oder sieben Schläge in zwölf oder sechzehn, fallend von der Oktave über die Quinte "
-              "zum Grundton. 12 gegen 16: das Muster trifft die Kick erst nach drei Takten wieder.",
-              "<b>TRIBE</b>: euclidean toms, five or seven hits in twelve or sixteen, falling from the octave over the fifth to "
-              "the root. 12 against 16: the figure meets the kick again only after three bars."),
+            L("<b>TRIBE</b>: zwei Toms, tief auf dem Grundton, hoch auf der Quinte, Euclid fünf oder sieben in zwölf oder "
+              "sechzehn. 12 gegen 16: das Muster trifft die Kick erst nach drei Takten wieder.",
+              "<b>TRIBE</b>: two toms, low on the root, high on the fifth, euclidean five or seven in twelve or sixteen. 12 "
+              "against 16: the figure meets the kick again only after three bars."),
             L("<b>B</b> variiert, <b>C</b> rollt die Toms zum Takt hoch und lässt die Kick fallen, <b>D</b> geht in die Nachbartonart.",
               "<b>B</b> varies, <b>C</b> rolls the toms up to the bar and drops the kick, <b>D</b> moves to a related key.")]))
 

@@ -22,20 +22,23 @@ static void tek_gen(romi_track_t *tr, int t, uint32_t d)
             set_step(tr, 14, 0, 2, key);        /* the tekno double before the bar, half the time */
         break;
     }
-    case ROMI_SUB: {                            /* ACID: sixteenths that roll, a few rests, the accent every third */
-        /* the root most, its octave, the fifth, the minor seventh below and the minor third; the flat second (the
-         * phrygian sting) seldom: a line that stays on the kick's drone */
-        static const int8_t DEG[12] = {0, 0, 0, 0, 0, 7, 7, 4, -1, 2, 0, 1};
-        uint32_t rests = 2u + urand(3u - (d > 2 ? 2 : d)), cyc = 3u + urand(2);
-        tr->len = urand(3) == 0 ? 12 : 16;
-        for (i = 0; i < tr->len; i++) {
-            int deg = (i & 3u) == 0u ? 0 : DEG[urand(12)];
-            set_step(tr, i, i % cyc == 0u, (i & 1u) && urand(5) == 0 ? 1 : 0, scale_note(deg));
-            if (i && urand(5) == 0)
-                tr->slide |= (uint16_t)(1u << i);
+    case ROMI_SUB: {                            /* ACID: a short motif, repeated: the root on the beat, the octave and
+                                                 * the fifth around it, a slide into the octave; the accent on a fixed place
+                                                 * of the motif, so it walks against the four when the motif is three long */
+        static const int8_t MOT[6][4] = {
+            {0, 0, 7, 0}, {0, 7, 0, 4}, {0, 0, 0, 7}, {0, 4, 7, 4}, {0, -1, 0, 7}, {0, 0, 4, 2},
+        };
+        const int8_t *m = MOT[urand(6)];
+        uint32_t ml = urand(3) == 0 ? 3u : 4u, ap = urand(ml), rest = 1u + urand(ml - 1u);
+        tr->len = 16;
+        for (i = 0; i < 16; i++) {
+            uint32_t k = i % ml;
+            if (k == rest && urand(2))
+                continue;                       /* the same rest in each turn, half the time */
+            set_step(tr, i, k == ap, 0, scale_note(m[k]));
+            if (m[k] == 7 && k && m[k - 1] != 7)
+                tr->slide |= (uint16_t)(1u << i);   /* up to the octave, sliding */
         }
-        for (i = 0; i < rests; i++)
-            tr->step[1u + urand(tr->len - 1u)].flags = 0;
         break;
     }
     case ROMI_HAT:
@@ -48,7 +51,7 @@ static void tek_gen(romi_track_t *tr, int t, uint32_t d)
         break;
     case ROMI_PERC: {                           /* TRIBE: toms against the four */
         static const uint8_t LEN[4] = {12, 12, 16, 6};
-        static const int8_t TOM[4] = {7, 4, 0, -3};     /* octave, fifth, root, below: falling like toms */
+        static const int8_t TOM[2] = {4, 0};    /* a high tom on the fifth, a low one on the root: two drums */
         uint32_t hits;
         tr->len = LEN[urand(4)];
         hits = tr->len == 6 ? 3u + urand(2) : tr->len == 12 ? 5u + urand(2) * 2u : 7u;
@@ -57,14 +60,15 @@ static void tek_gen(romi_track_t *tr, int t, uint32_t d)
             uint32_t n = 0;
             for (i = 0; i < tr->len; i++)
                 if (tr->step[i].flags & ROMI_ST_ON) {
-                    set_step(tr, i, n == 0, n && urand(4) == 0 ? 1 : 0, scale_note(TOM[n % 4u]));
+                    set_step(tr, i, n == 0, 0, scale_note(TOM[(n == 0) ? 1 : n & 1u]) - 24);   /* (toms: two octaves
+                                                                                           * under the percussion's) */
                     n++;
                 }
         }
-        tr->p[0] = near(44, 10);                /* decay */
-        tr->p[1] = near(14, 8);                 /* fm: little, a skin */
-        tr->p[2] = (uint8_t)(urand(2) * 16u + 4u);   /* ratio: the tom's */
-        tr->p[3] = near(60, 12);                /* bend: the drop of a tom */
+        tr->p[0] = near(54, 8);                 /* decay: a tom rings */
+        tr->p[1] = near(10, 6);                 /* fm: hardly, a skin */
+        tr->p[2] = 4;                           /* ratio 1: a round tone */
+        tr->p[3] = near(34, 8);                 /* bend: a tom's small drop, not a laser */
         break;
     }
     default:
@@ -80,7 +84,7 @@ static void tek_defaults(romi_pattern_t *p)
         {  44,  84,  28,  70, 100,  64,   0,   0,  60},   /* KICK: TUNE DECAY (the tail) SWEEP DRIVE (q1 CLICK) */
         {  60,  80,  64,  48,  90,  64,  34,   8,  30},   /* ACID: CUTOFF RESO ENVMOD DECAY (q1 WAVE): the mids */
         {  28,  66,  58,  44,  54,  76,   8,  14,   0},   /* HAT: DECAY TONE METAL OPEN (q1 CHIP): less fizz */
-        {  44,  14,   8,  60,  70,  40,  16,  30,  64},   /* TRIBE: DECAY FM RATIO BEND (q1 B.TIME) */
+        {  54,  10,   4,  34,  78,  40,  16,  30,  64},   /* TRIBE: DECAY FM RATIO BEND (q1 B.TIME) */
     };
     static const uint8_t SC[4] = {0, 100, 60, 60};
     int t, i;
