@@ -123,6 +123,11 @@ static struct {
     stab_v stab[2];                     /* tracks 5 and 6, each its engine's own */
     click_v click[2];
     float slot_pan[2];                  /* tracks 5 and 6: where a click scattered to (0.5: the middle) */
+    float mf_low[2], mf_band[2], mb_lp[2];   /* the master filter (a state-variable a side), the bass shelf */
+    volatile int8_t br_req;             /* BEAT REPEAT: -1 off, 0..3 a length asked for (SEL + white key 1..4) */
+    int8_t br_on;                       /* the length repeating, -1 none */
+    uint32_t br_len, br_pos;            /* its length, its place (first recorded, then looped) */
+    float br_x;                         /* the crossfade into and out of the repeat */
     shape_t shape[ROMI_TRACKS];
     float duck_env;
     uint32_t dly_w;
@@ -240,6 +245,7 @@ static float lfo_wave(const romi_lfo_t *l, int t, int k)
 }
 
 #include "piip_voice.inc"
+#include "noise_voice.inc"
 
 /* the sum of the track's LFOs aimed at target, in 0..127 units */
 #if ROMI_SUOMI
@@ -257,7 +263,7 @@ static float voice_env(int t)           /* how loud a voice sounds now, 0..1: it
     if (t >= ROMI_STAB) {               /* tracks 5 and 6: their engine */
         int s = t - ROMI_STAB, en = PAT->tr[t].engine;
         e = en == ROMI_ENG_PIIP ? PI[s].amp * PI[s].vel : en == ROMI_ENG_STAB ? R.stab[s].amp * R.stab[s].vel
-                                                                              : R.click[s].amp * R.click[s].vel;
+          : en == ROMI_ENG_NOISE ? NZ[s].amp * NZ[s].vel : R.click[s].amp * R.click[s].vel;
         return e > 1.0f ? 1.0f : e;
     }
     switch (t) {
@@ -307,6 +313,7 @@ static void bus_update(int t)
 #endif
 
 static void slice_hit(int t);
+static float step_samples(void);
 
 /* lock: the step's own values for the four sound parameters (0: the track's), or NULL */
 static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
@@ -329,7 +336,8 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     /* SOUND 2: attack (hat, stab, click), drive (all but the kick: its own is on SOUND), crush (all) */
     {
         shape_t *sh = &R.shape[t];
-        int has_att = t >= ROMI_STAB ? PAT->tr[t].engine != ROMI_ENG_PIIP : !STYLE && t == ROMI_HAT;   /* (PIIP, HATTU:
+        int has_att = t >= ROMI_STAB ? PAT->tr[t].engine == ROMI_ENG_STAB || PAT->tr[t].engine == ROMI_ENG_CLICK
+                                     : !STYLE && t == ROMI_HAT;   /* (PIIP, HATTU:
                                                                                          * their own there) */
         float g = t == ROMI_KICK ? 1.0f : 1.0f + (float)q[2] * (6.0f / 127.0f);
         if (has_att && q[1]) {
@@ -355,6 +363,9 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
         int s = t - ROMI_STAB;
         if (tr->engine == ROMI_ENG_PIIP) {
             piip_trig(s, t, note, vel, acc, R.slide_now, p, q, root);
+            R.slot_pan[s] = 0.5f;
+        } else if (tr->engine == ROMI_ENG_NOISE) {
+            noise_trig(s, note, vel, p, q, step_samples());
             R.slot_pan[s] = 0.5f;
         } else if (tr->engine == ROMI_ENG_STAB) {
             stab_v *ST = &R.stab[s];
@@ -474,7 +485,7 @@ void romi_panic(void)
     uint32_t i, k;
     R.kick.amp = R.sub.amp = R.hat.amp = R.perc.amp = 0.0f;
     for (i = 0; i < 2; i++) {
-        R.stab[i].amp = R.click[i].amp = PI[i].amp = 0.0f;
+        R.stab[i].amp = R.click[i].amp = PI[i].amp = NZ[i].amp = 0.0f;
         R.slot_pan[i] = 0.5f;
     }
 #if ROMI_SUOMI
@@ -947,10 +958,102 @@ static float slice_run(int t, float x)
     return x * (1.0f - mix) + y * mix;
 }
 
+/* ---- the master: BEAT REPEAT, BASS, FILTER ----
+ * BEAT REPEAT (SEL held + white key 1..4): from the press the master is recorded for a beat, an eighth, a sixteenth
+ * or a thirty-second, then that piece loops until the key is let go; 4 ms crossfades in and out.
+ * BASS: a low shelf, the sum below about 100 Hz added again (up to about +9 dB). FILTER: a resonant state-variable
+ * filter a side, low-pass below the knob's middle, high-pass above, off around it. A few dozen instructions a
+ * sample together; the repeat's buffer (a beat at 90 BPM, stereo) in the pool. */
+#define BR_MAX 29440u
+static int16_t br_buf[2][BR_MAX] POOL;
+static const float BR_DIV[4] = {4.0f, 2.0f, 1.0f, 0.5f};   /* steps: a beat, an eighth, a sixteenth, a 32nd */
+static inline int16_t br_s(float x)
+{
+    x *= 16384.0f;
+    return (int16_t)(x > 32767.0f ? 32767.0f : x < -32768.0f ? -32768.0f : x);
+}
+static void master_block(float slen, float *mf, float *mq, int *mode)
+{
+    int8_t rq = R.br_req;
+    if (rq != R.br_on) {                /* a new repeat (or none): start recording it */
+        if (rq >= 0) {
+            float l = slen * BR_DIV[rq & 3];
+            R.br_len = l > (float)BR_MAX ? BR_MAX : l < 64.0f ? 64u : (uint32_t)l;
+            R.br_pos = 0;
+        }
+        R.br_on = rq;
+    }
+    *mode = 0;
+    if (R.prj.filter < 62 || R.prj.filter > 66) {
+        float fc, a;
+        if (R.prj.filter < 64) {        /* low-pass: 18 kHz at the middle down to about 50 Hz */
+            a = (float)(64 - R.prj.filter) * (1.0f / 64.0f);
+            fc = 18000.0f * fexp2(-a * 8.5f);
+            *mode = 1;
+        } else {                        /* high-pass: 20 Hz up to about 8 kHz */
+            a = (float)(R.prj.filter - 64) * (1.0f / 63.0f);
+            fc = 20.0f * fexp2(a * 8.6f);
+            *mode = 2;
+        }
+        *mf = 2.0f * fsin(fc * 0.5f * INV_SR);
+        if (*mf > 0.95f)
+            *mf = 0.95f;
+        *mq = 1.2f - a * 0.6f;          /* a little more resonance as it closes */
+    }
+}
+static inline void master_run(float *l, float *r, float mf, float mq, int mode)
+{
+    float in[2] = {*l, *r};
+    int c;
+    if (R.prj.bass) {                   /* BASS: the lows once more */
+        float g = (float)R.prj.bass * (1.8f / 127.0f);
+        for (c = 0; c < 2; c++) {
+            R.mb_lp[c] += (in[c] - R.mb_lp[c]) * 0.0142f;   /* about 100 Hz */
+            in[c] += R.mb_lp[c] * g;
+        }
+    }
+    if (mode)                           /* FILTER */
+        for (c = 0; c < 2; c++) {
+            float hp;
+            R.mf_low[c] += mf * R.mf_band[c];
+            hp = in[c] - R.mf_low[c] - mq * R.mf_band[c];
+            R.mf_band[c] += mf * hp;
+            in[c] = mode == 1 ? R.mf_low[c] : hp;
+        }
+    if (R.br_on >= 0 || R.br_x > 0.0f) {   /* BEAT REPEAT */
+        float rl = 0.0f, rr = 0.0f;
+        if (R.br_on >= 0) {
+            uint32_t p = R.br_pos;
+            if (p < R.br_len) {         /* the first time through: recorded, heard as it is */
+                br_buf[0][p] = br_s(in[0]);
+                br_buf[1][p] = br_s(in[1]);
+                rl = in[0];
+                rr = in[1];
+            } else {                    /* then looped, softly at the seam */
+                uint32_t q = (p - R.br_len) % R.br_len, e = q < 64u ? q : R.br_len - q < 64u ? R.br_len - q : 64u;
+                float w = (float)(e + 1u) * (1.0f / 65.0f);
+                rl = (float)br_buf[0][q] * (1.0f / 16384.0f) * w;
+                rr = (float)br_buf[1][q] * (1.0f / 16384.0f) * w;
+            }
+            R.br_pos = p + 1u < 0x7FFFFFFFu ? p + 1u : R.br_len;
+            R.br_x += (1.0f - R.br_x) * 0.02f;
+        } else {
+            R.br_x -= R.br_x * 0.02f + 1e-4f;
+            if (R.br_x < 0.0f)
+                R.br_x = 0.0f;
+        }
+        in[0] += (rl - in[0]) * R.br_x;
+        in[1] += (rr - in[1]) * R.br_x;
+    }
+    *l = in[0];
+    *r = in[1];
+}
+
 void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
 {
     uint32_t i, k, ramp, sl_any = 0;
-    float sl_step = step_samples();
+    float sl_step = step_samples(), mf = 0.0f, mq = 1.0f;
+    int mmode;
     float s16 = step_samples(), gain = (float)gain_q12 * (8388607.0f / 4096.0f);
     float duck_amt = (float)R.prj.duck * (0.9f / 127.0f), duck_c = decay_coef(pmap((float)R.prj.sc_rel, 0.03f, 3.7f));
     float sc[ROMI_TRACKS];
@@ -988,6 +1091,7 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         sl_any |= PAT->tr[k].sl_mode;
     if (sl_any)
         slice_block(sl_step);
+    master_block(sl_step, &mf, &mq, &mmode);
     for (k = 0; k < ROMI_TRACKS; k++) {
         bus_update((int)k);
         if (env_mix((int)k)) {          /* an ENV on the mix: from where it is to the target, across the block */
@@ -1110,7 +1214,8 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
         for (k = 0; k < 2; k++) {       /* tracks 5 and 6: their engines */
             uint8_t en = PAT->tr[ROMI_STAB + k].engine;
-            v[ROMI_STAB + k] = en == ROMI_ENG_PIIP ? piip_run((int)k) : en == ROMI_ENG_STAB ? stab_run((int)k) : click_run((int)k);
+            v[ROMI_STAB + k] = en == ROMI_ENG_PIIP ? piip_run((int)k) : en == ROMI_ENG_STAB ? stab_run((int)k)
+                             : en == ROMI_ENG_NOISE ? noise_run((int)k) : click_run((int)k);
         }
 
         /* SOUND 2 on each voice: attack, drive, crush (each skipped when off) */
@@ -1196,6 +1301,8 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
         l += dly_l + rl * duck;
         r += dly_r + rr * duck;
+        if (mmode || R.prj.bass || R.br_on >= 0 || R.br_x > 0.0f)
+            master_run(&l, &r, mf, mq, mmode);
 
         lr[2u * i] = (int32_t)(clip1(l * 0.62f) * gain);
         lr[2u * i + 1u] = (int32_t)(clip1(r * 0.62f) * gain);
@@ -1390,6 +1497,33 @@ static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const
 #endif
 #include "piip_gen.inc"
 
+/* NOISE's rules: a riser into the next four bars (bar four of four, a bar long, rising and swelling), a downlifter
+ * out of them (bar one of four, falling and fading), or hiss on the off-beats */
+static void noise_gen(romi_track_t *tr)
+{
+    uint32_t k = urand(3), i;
+    if (k == 0) {
+        set_step(tr, 0, 1, 0, 0);
+        tr->step[0].cond = 9;           /* 4:4 */
+        tr->p[0] = 64;                  /* a bar */
+        tr->p[1] = (uint8_t)(100 + urand(28));
+        tr->q[1] = 127;
+    } else if (k == 1) {
+        set_step(tr, 0, 1, 0, 0);
+        tr->step[0].cond = 6;           /* 1:4 */
+        tr->p[0] = 64;
+        tr->p[1] = (uint8_t)(urand(28));
+        tr->q[1] = 0;
+    } else {
+        for (i = 2; i < 16; i += 4)
+            set_step(tr, i, 0, (int)urand(2), 0);
+        tr->p[0] = 0;                   /* a sixteenth */
+        tr->p[1] = 64;
+        tr->q[1] = 30;
+    }
+    tr->p[2] = near(70, 20);            /* tone */
+}
+
 static void gen_track(int t)
 {
     romi_track_t *tr = &EDT->tr[t];
@@ -1404,8 +1538,11 @@ static void gen_track(int t)
     {
     int g = t;                          /* whose rules: tracks 5 and 6 by their engine (STAB, CLICK, PIIP) */
     if (t >= ROMI_STAB)
-        g = tr->engine == ROMI_ENG_STAB ? ROMI_STAB : tr->engine == ROMI_ENG_CLICK ? ROMI_CLICK : -1;
-    if (g < 0)
+        g = tr->engine == ROMI_ENG_STAB ? ROMI_STAB : tr->engine == ROMI_ENG_CLICK ? ROMI_CLICK
+          : tr->engine == ROMI_ENG_NOISE ? -2 : -1;
+    if (g == -2)
+        noise_gen(tr);
+    else if (g < 0)
         piip_gen(tr, t);
     else
 #if ROMI_SUOMI
@@ -1828,6 +1965,7 @@ static void engine_sound(romi_track_t *tr, int en)
         {  66,  60,  30,  40,  78,  64,  70,  60, 24, 38,  0,  0,  24},   /* STAB: decay bright chord detune */
         {  40,  78,  84,  90,  86,  64,  40,  30, 24,  0,  0,  0,   0},   /* CLICK: decay freq reso scatter */
         {  30,  46,  40,  30,  76,  80,  70,  40, 24, 64,  0,  0,   0},   /* PIIP: wave decay arp vibrato | SPEED */
+        {  64, 110,  50,  60,  70,  64,  40,  70, 24,127,  0,  0,   0},   /* NOISE: a bar, rising, swelling */
     };
     const uint8_t *d = D[en % ROMI_NENG];
     int i;
@@ -2059,6 +2197,8 @@ static uint32_t pack(int obj, uint8_t *d)   /* d holds ROMI_OBJ_MAX bytes; retur
         d[n++] = p->mode;
         d[n++] = p->order;
         d[n++] = p->style;
+        d[n++] = p->filter;
+        d[n++] = p->bass;
     } else {
         const romi_pattern_t *pt = &R.prj.pat[obj - 1];
         uint32_t nl = 0, at;
@@ -2133,11 +2273,12 @@ int romi_store_set(int obj, const void *src, uint32_t len)
     uint32_t ver = len > 3u ? b[3] : 0u, old = ver == 13u, v14 = ver == 14u, v15 = ver == 15u;
     uint32_t want = obj ? 5u + ROMI_TRACKS * (19u + 4u * ROMI_LFOS + 4u + (old ? 0u : 3u) + (old || v14 ? 0u : 5u) + (ver >= 18u ? 4u : 0u) + (ver >= 19u ? 5u : 0u) +
                                               (old ? 2u : v14 ? 3u : 4u) * ROMI_STEPS) + 1u
-                        : 5u + (ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the settings with the style) */
+                        : 5u + (ver >= 20u ? 26u : ver >= 16u ? 24u : 23u), n = 5, nl, j;   /* (16: the style; 20: the
+                                                                           * master's filter and bass) */
     int t, i, k;
     if (obj < 0 || obj >= ROMI_NOBJ || len < want + 4u || len > ROMI_OBJ_MAX)
         return -1;
-    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u && ver != 18u) ||
+    if (b[0] != 'R' || b[1] != 'M' || b[2] != (obj ? 'P' : 'S') || (b[3] != ROMI_VERSION && !old && !v14 && !v15 && ver != 16u && ver != 17u && ver != 18u && ver != 19u) ||
         b[4] != (obj ? obj - 1 : 0))
         return -2;
     if (obj)
@@ -2155,6 +2296,8 @@ int romi_store_set(int obj, const void *src, uint32_t len)
         p->mode = b[n++];
         p->order = b[n++];
         p->style = ver >= 16u ? b[n++] : 0u;    /* (before 16: ro:MINImal) */
+        p->filter = ver >= 20u ? b[n++] : 64u;
+        p->bass = ver >= 20u ? b[n++] : 0u;
     } else {
         for (t = 0; t < ROMI_TRACKS; t++) {
             romi_track_t *tr = &in.tr[t];
@@ -2324,6 +2467,9 @@ void romi_init(uint32_t seed)
     R.prj.style = ROMI_SUOMI ? ROMI_START_STYLE : 0;   /* the firmware ro:MINImal or suom1saundi */
     prj_style_defaults();
     R.prj.clock_out = 1;
+    R.prj.filter = 64;                  /* the master filter off, no bass shelf */
+    R.prj.bass = 0;
+    R.br_req = R.br_on = -1;
     R.prj.cur_pat = 0;                  /* A, and B..D made from it */
     pattern_defaults(BASE);
     gen_all();
@@ -2448,12 +2594,12 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT, F_P127 };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT, F_P127, F_NLEN, F_NSWEEP, F_FILT };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
                                                         {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "KLIKKI"}};
-static const char *const ENG_NAMES[2][ROMI_NENG] = {{"STAB", "CLICK", "8-BIT"}, {"STAB", "KLIKKI", "PIIP"}};   /* (PIIP
+static const char *const ENG_NAMES[2][ROMI_NENG] = {{"STAB", "CLICK", "8-BIT", "NOISE"}, {"STAB", "KLIKKI", "PIIP", "SUHINA"}};   /* (PIIP
                                                                                  * is called 8-BIT in ro:MINImal) */
 static const char *track_name(int t)    /* tracks 5 and 6 by their engine */
 {
@@ -2481,6 +2627,7 @@ static const char *const ENG_SOUND[ROMI_NENG][2][4] = {
     {{"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}},   /* STAB */
     {{"DECAY", "FREQ", "RESO", "SCATTER"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}},     /* CLICK */
     {{"WAVE", "DECAY", "ARP", "VIBRATO"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"}},       /* PIIP */
+    {{"LENGTH", "SWEEP", "TONE", "RESO"}, {"PITCH", "SWELL", "DRIVE", "CRUSH"}},       /* NOISE */
 };
 static const char *sound_name(int t, int i)
 {
@@ -2498,7 +2645,7 @@ static const char *sound2_name(int t, int i)
 static int slides(int t)
 {
     if (t >= ROMI_STAB)                 /* tracks 5 and 6: STAB and PIIP slide, a click does not */
-        return EDT->tr[t].engine != ROMI_ENG_CLICK;
+        return EDT->tr[t].engine == ROMI_ENG_STAB || EDT->tr[t].engine == ROMI_ENG_PIIP;
     return STYLE ? t == ROMI_SUB || t == ROMI_PERC : t == ROMI_SUB;
 }
 static const char *const NOTE_NAME[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
@@ -2532,6 +2679,9 @@ static int page_params(param_t p[4])
                 p[2].fmt = F_PARP;
             } else if (tr->engine == ROMI_ENG_STAB) {
                 p[2].fmt = F_CHORD;
+            } else if (tr->engine == ROMI_ENG_NOISE) {
+                p[0].fmt = F_NLEN;
+                p[1].fmt = F_NSWEEP;
             }
             break;
         }
@@ -2596,6 +2746,8 @@ static int page_params(param_t p[4])
     case ROMI_PG_ENGINE:                /* GROOVE 2 (HOME twice): what tracks 5 and 6 play, in either style */
         P(0, "TRACK 5", &EDT->tr[ROMI_STAB].engine, 0, ROMI_NENG - 1, F_ENGINE, 0);
         P(1, "TRACK 6", &EDT->tr[ROMI_CLICK].engine, 0, ROMI_NENG - 1, F_ENGINE, 0);
+        P(2, "FILTER", &R.prj.filter, 0, 127, F_FILT, 1);   /* the master: LP <- off -> HP */
+        P(3, "BASS", &R.prj.bass, 0, 127, F_P127, 1);       /* the master's low shelf */
         break;
     case ROMI_PG_SLFO:                  /* FX a fourth time: SLICE's own LFO */
         if (R.track >= SL_FIRST) {
@@ -2672,6 +2824,29 @@ static void param_text(const param_t *p, char *t)
     switch (p->fmt) {
     case F_PCT: cat_int(t, v); cat(t, "%"); break;
     case F_P127: cat_int(t, (v * 100 + 63) / 127); cat(t, "%"); break;   /* 0..127 as 0..100 % */
+    case F_NLEN: {
+        static const char *const L[8] = {"1/16", "1/8", "1/4", "1/2", "1 BAR", "2 BARS", "4 BARS", "8 BARS"};
+        cat(t, L[v * 8 / 128]);
+        break;
+    }
+    case F_NSWEEP:                      /* down, none, up */
+        if (v < 62 || v > 66) {
+            cat(t, v < 64 ? "DOWN " : "UP ");
+            cat_int(t, ((v < 64 ? 64 - v : v - 64) * 100 + 31) / 63);
+            cat(t, "%");
+        } else {
+            cat(t, "NONE");
+        }
+        break;
+    case F_FILT:                        /* the master filter: LP below the middle, HP above */
+        if (v < 62 || v > 66) {
+            cat(t, v < 64 ? "LP " : "HP ");
+            cat_int(t, ((v < 64 ? 64 - v : v - 64) * 100 + 31) / 63);
+            cat(t, "%");
+        } else {
+            cat(t, "OFF");
+        }
+        break;
     case F_PAN:
         if (v == 64) cat(t, "C");
         else { cat(t, v < 64 ? "L" : "R"); cat_int(t, v < 64 ? 64 - v : v - 64); }
@@ -3541,6 +3716,22 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
                 }
             }
     } else {
+        if (buttons & 1u << ROMI_B_SEL) {   /* SEL held: white keys 1..4 repeat the master (a beat .. a 32nd) */
+            int8_t rq = -1;
+            for (i = 0; i < 4; i++)
+                if (keys >> WK[i] & 1u)
+                    rq = (int8_t)i;
+            if (rq >= 0)
+                R.sel_used = R.step_edited = 1;   /* (no solo at SEL's release, no step toggled at the key's) */
+            if (rq != R.br_req) {
+                static const char *const BRN[4] = {"1/4", "1/8", "1/16", "1/32"};
+                R.br_req = rq;
+                if (rq >= 0)
+                    romi_message("REPEAT", BRN[rq]);
+            }
+        } else {
+            R.br_req = -1;              /* (SEL let go: the repeat ends) */
+        }
         for (i = 0; i < 16; i++)        /* a white key is a step: a tap toggles it */
             if (kup >> WK[i] & 1u) {
                 if (R.page == ROMI_PG_TIMING) {   /* on the timing page a key picks the step, and leaves it as it is */

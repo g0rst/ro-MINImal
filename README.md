@@ -69,7 +69,9 @@ Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
 | KLIKKI (Engine CLICK, Spur 6 ab Start) | DECAY, FREQ, RESO, SCATTER | PITCH, ATTACK, DRIVE, CRUSH |
 
 Die Spuren 5 und 6 wählen ihre Engine in beiden Stilen frei (HOME zweimal, Seite GROOVE 2): STAB, CLICK oder PIIP.
-In ro:MINImal heißt PIIP **8-BIT**, der Click bei suom1saundi KLIKKI.
+In ro:MINImal heißt PIIP **8-BIT**, der Click bei suom1saundi KLIKKI. Vierte Engine: **NOISE** (bei suom1saundi
+SUHINA): Rauschen durch ein resonantes Filter, dessen Cutoff über eine Sechzehntel bis acht Takte nach oben oder unten
+läuft (Riser, Downlifter, Zischen); SOUND LENGTH, SWEEP, TONE, RESO, SOUND 2 PITCH, SWELL, DRIVE, CRUSH.
 
 Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
 HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30). GLIDE von BASSO, HAPPO und PIIP
@@ -176,7 +178,8 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | ALGO | Looplänge der Spur |
 | PRESET | Pattern A bis D (wechselt zum nächsten Takt) |
 | HOME | Seite GROOVE: Tempo (90 bis 160), Swing, Drift, Duck |
-| HOME ein zweites Mal | Seite GROOVE 2: K1 Engine von Spur 5, K2 Engine von Spur 6 (beide Stile): STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI) oder PIIP (Soundchip); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, sie kommt **stumm** dazu (SEL holt sie rein), UNDO holt das alte zurück |
+| SEL halten + weiße Taste 1 bis 4 | BEAT REPEAT der Summe: Viertel, Achtel, Sechzehntel, Zweiunddreißigstel, ab dem Moment, bis zum Loslassen |
+| HOME ein zweites Mal | Seite GROOVE 2: K1 Engine von Spur 5, K2 Engine von Spur 6 (beide Stile): STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI), 8-BIT (bei suom1saundi PIIP, Soundchip) oder NOISE (bei suom1saundi SUHINA: Rauschen, Riser, Downlifter); K3 FILTER der Summe (links Tiefpass, rechts Hochpass, Mitte aus), K4 BASS (Tiefen unter 100 Hz, bis etwa +9 dB); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, sie kommt **stumm** dazu (SEL holt sie rein), UNDO holt das alte zurück |
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
 | EDIT ein zweites Mal | Seite SOUND 2: PITCH (±24 Halbtöne), dann je Spur CLICK (Kick), FM.TIME (Sub), B.TIME (Perc) oder ATTACK (Hat, Stab, Click), DRIVE (Kick: P.TIME), CRUSH. Lockbar pro Step, Ziel für LFOs |
 | ENV | Seite MIX: Pegel, Pan, Delay-Send, Reverb-Send |

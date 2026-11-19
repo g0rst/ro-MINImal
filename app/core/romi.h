@@ -46,7 +46,7 @@ typedef struct {
     uint8_t cond;                       /* the trig condition: 0 none, else ROMI_COND_* (held step + ALGORITHM) */
 } romi_step_t;
 /* the engines tracks 5 and 6 can play, in either style */
-enum { ROMI_ENG_STAB, ROMI_ENG_CLICK, ROMI_ENG_PIIP, ROMI_NENG };
+enum { ROMI_ENG_STAB, ROMI_ENG_CLICK, ROMI_ENG_PIIP, ROMI_ENG_NOISE, ROMI_NENG };
 /* trig conditions: 1..17 A:B (plays in bar A of every B: 1:2 2:2, 1:3..3:3, 1:4..4:4, 1:8..8:8), then: */
 enum { ROMI_COND_FILL = 18, ROMI_COND_NFILL, ROMI_COND_PRE, ROMI_COND_NPRE, ROMI_COND_FIRST, ROMI_COND_NFIRST,
        ROMI_NCOND };
@@ -112,6 +112,8 @@ typedef struct {
     uint8_t order;                      /* 0 LOOP (CHAIN decides), 1 A-D and round again, 2 RANDOM; four bars each */
     uint8_t mode;                       /* 0 LAZY: B..D are made from A; 1 HARD: four patterns of their own */
     uint8_t style;                      /* 0 ro:MINImal, 1 suom1saundi (its voices and its generator; ROMI_SUOMI) */
+    uint8_t filter;                     /* the master filter (GROOVE 2): 64 off, below a low-pass, above a high-pass */
+    uint8_t bass;                       /* the master's low shelf (GROOVE 2): 0 none .. 127 about +9 dB at 80 Hz */
     uint8_t sc_src;                     /* the track whose hits duck the others (muted, it still does) */
     uint8_t sc_rel;                     /* 0..127: how fast the ducking lets go */
     romi_pattern_t pat[ROMI_PATTERNS];
@@ -123,7 +125,7 @@ typedef struct {
 #define ROMI_SHIFT_MAX 7                /* a step's own shift (the track's: 8) */
 #define ROMI_NOTE_MIN (-32)
 #define ROMI_NOTE_MAX 31
-#define ROMI_VERSION 19u
+#define ROMI_VERSION 20u
 /* the style SUOMI (suom1saundi's voices and generator) is built in when ROMI_SUOMI is 1: the first thing to leave
  * (ROMI_SUOMI 0) or to become a firmware of its own, should the FM-1 run short of time. ROMI_START_STYLE: the style
  * a fresh start comes up in: 0 the firmware ro:MINImal (suom1saundi its bonus), 1 the firmware suom1saundi */

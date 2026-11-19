@@ -1551,6 +1551,80 @@ int main(int argc, char **argv)
         }
     }
 
+    /* NOISE (SUHINA): a riser swells; the master's FILTER and BASS (GROOVE 2) and BEAT REPEAT (SEL + white key) */
+    {
+        static int16_t pa[2 * 44100 * 2], pb[2 * 44100 * 2];
+        static uint8_t obj[ROMI_OBJ_MAX];
+        double r1, r2, e1 = 0, e2 = 0, lo1 = 0, lo2 = 0, hi1 = 0, hi2 = 0;
+        int k, t, i;
+        uint32_t n;
+        romi_track_t *nz;
+        /* a riser: quiet at the start of its bar, loud at the end */
+        romi_init(121);
+        romi_project()->drift = 0;
+        tap_button(ROMI_B_HOME);
+        turn(ROMI_E_K2, 3);                         /* track 6: CLICK -> NOISE */
+        nz = &romi_project()->pat[0].tr[ROMI_CLICK];
+        CHECK(nz->engine == ROMI_ENG_NOISE && nz->mute, "NOISE on track 6: engine %d mute %d", nz->engine, nz->mute);
+        for (t = 0; t < ROMI_TRACKS; t++) romi_project()->pat[0].tr[t].mute = t != ROMI_CLICK;
+        for (k = 0; k < 16; k++) { nz->step[k].flags = 0; nz->step[k].cond = 0; nz->step[k].chance = 0; }
+        nz->step[0].flags = ROMI_ST_ON; nz->len = 16; nz->p[0] = 64; nz->q[1] = 127; nz->dly = nz->rev = 0;
+        romi_project()->rev_size = 0;
+        tap_button(ROMI_B_PLAY);
+        run(60.0 * 4 / romi_project()->bpm, pa, 0, 0);   /* one bar */
+        n = (uint32_t)(44100.0 * 60.0 * 4 / romi_project()->bpm);
+        for (i = 0; i < (int)n / 4; i++) e1 += (double)pa[2 * i] * pa[2 * i];
+        for (i = (int)n * 3 / 4 - 2000; i < (int)n - 2000; i++) e2 += (double)pa[2 * i] * pa[2 * i];
+        printf("noise: riser energy first quarter %.3g, last %.3g\n", e1, e2);
+        CHECK(e2 > e1 * 4.0 && e2 > 0.0, "a riser that does not rise: %g -> %g", e1, e2);
+        /* FILTER low-pass and BASS on the whole groove */
+        for (k = 0; k < 3; k++) {
+            double hi = 0, lo = 0, lp = 0, prev = 0;
+            romi_init(122);
+            romi_project()->drift = 0;
+            romi_project()->filter = k == 1 ? 20 : 64;
+            romi_project()->bass = k == 2 ? 127 : 0;
+            tap_button(ROMI_B_PLAY);
+            run(2.0, pb, 0, 0);
+            for (i = 0; i < 2 * 44100; i++) {
+                double x = pb[2 * i];
+                lp += (x - lp) * 0.0142;
+                lo += lp * lp;
+                hi += (x - prev) * (x - prev);
+                prev = x;
+            }
+            if (k == 0) { lo1 = lo; hi1 = hi; } else if (k == 1) { hi2 = hi; } else { lo2 = lo; }
+        }
+        printf("master: high %.3g -> %.3g with the low-pass; low %.3g -> %.3g with the bass\n", hi1, hi2, lo1, lo2);
+        CHECK(hi2 < hi1 * 0.3, "FILTER LP: highs %g -> %g", hi1, hi2);
+        CHECK(lo2 > lo1 * 1.5, "BASS: lows %g -> %g", lo1, lo2);
+        /* BEAT REPEAT: SEL + white key 3 (a sixteenth): after one sixteenth the master repeats it */
+        romi_init(123);
+        romi_project()->drift = 0;
+        tap_button(ROMI_B_PLAY);
+        run(0.5, 0, 0, 0);
+        held_b = 1u << ROMI_B_SEL; frame(0);
+        held_k = 1u << 4; frame(0);                 /* white key 3 */
+        CHECK(romi_state(ROMI_Q_PATTERN) == 0, "(still A)");
+        run(0.5, pb, 0, &r1);
+        {
+            uint32_t L = (uint32_t)(44100.0 * 15.0 / romi_project()->bpm), same = 0, tot = 0;
+            for (i = (int)(2 * L + 200); i < (int)(2 * L + 200 + L / 2); i++, tot++)
+                same += abs(pb[2 * i] - pb[2 * (i - (int)L)]) < 40;
+            printf("beat repeat: %u of %u samples the same one sixteenth later\n", same, tot);
+            CHECK(same > tot * 9 / 10, "BEAT REPEAT: %u of %u the same", same, tot);
+        }
+        held_k = 0; frame(0); held_b = 0; frame(0);
+        CHECK(romi_state(ROMI_Q_SOLO) < 0, "SEL after a repeat: a solo");
+        run(0.3, 0, 0, &r2);
+        /* stored: FILTER, BASS; and the steps did not change under SEL */
+        romi_project()->filter = 30; romi_project()->bass = 77;
+        n = romi_store_get(0, obj, sizeof obj);
+        romi_init(124);
+        CHECK(romi_store_set(0, obj, n) == 0 && romi_project()->filter == 30 && romi_project()->bass == 77,
+              "FILTER, BASS not stored: %d %d", romi_project()->filter, romi_project()->bass);
+    }
+
     /* MIDI: channel 1 plays the kick */
     romi_init(3);
     romi_midi_note(0, 60, 127);
