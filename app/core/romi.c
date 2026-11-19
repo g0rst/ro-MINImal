@@ -242,7 +242,7 @@ static float voice_env(int t)           /* how loud a voice sounds now, 0..1: it
 {
     float e;
 #if ROMI_SUOMI
-    if (STYLE) {
+    if (STYLE && t != ROMI_CLICK) {
         e = su_env(t);
         return e > 1.0f ? 1.0f : e;
     }
@@ -316,7 +316,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     /* SOUND 2: attack (hat, stab, click), drive (all but the kick: its own is on SOUND), crush (all) */
     {
         shape_t *sh = &R.shape[t];
-        int has_att = !STYLE && (t == ROMI_HAT || t == ROMI_STAB || t == ROMI_CLICK);   /* (SUOMI: its own there) */
+        int has_att = t == ROMI_CLICK || (!STYLE && (t == ROMI_HAT || t == ROMI_STAB));   /* (SUOMI: its own there) */
         float g = t == ROMI_KICK ? 1.0f : 1.0f + (float)q[2] * (6.0f / 127.0f);
         if (has_att && q[1]) {
             if (t != ROMI_STAB || stab_quiet)
@@ -337,7 +337,7 @@ static void trig(int t, int note, float vel, int acc, const uint8_t *lock)
     if (t == (int)R.prj.sc_src)
         R.duck_env = 1.0f;
 #if ROMI_SUOMI
-    if (STYLE) {                        /* suom1saundi's voices */
+    if (STYLE && t != ROMI_CLICK) {     /* suom1saundi's voices (its click is ro:MINImal's) */
         su_trig(t, note, vel, acc, R.slide_now, p, q, root);
         return;
     }
@@ -895,7 +895,9 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
         v[ROMI_STAB] = x;
 
-        /* click: a grain of noise through a resonant band-pass, somewhere in the stereo field */
+        }
+        /* click (both styles: suom1saundi plays ro:MINImal's): a grain of noise through a resonant band-pass,
+         * somewhere in the stereo field */
         x = 0.0f;
         if (R.click.amp > 1e-4f) {
             float nz = brand(&R.rng) * R.click.amp, hp;
@@ -909,7 +911,6 @@ void romi_render(int32_t *lr, uint32_t n, uint32_t gain_q12)
         }
         v[ROMI_CLICK] = x;
 
-        }
         /* SOUND 2 on each voice: attack, drive, crush (each skipped when off) */
         for (k = 0; k < ROMI_TRACKS; k++) {
             float y = v[k];
@@ -1192,8 +1193,8 @@ static void gen_track(int t)
     tr->len = 16;
     tr->slide = 0;
 #if ROMI_SUOMI
-    if (STYLE)
-        su_gen(tr, t, d);               /* suom1saundi's rules */
+    if (STYLE && t != ROMI_CLICK)
+        su_gen(tr, t, d);               /* suom1saundi's rules (the clicks are ro:MINImal's) */
     else
 #endif
     switch (t) {
@@ -2160,11 +2161,11 @@ static void cat_int(char *d, int v)
 }
 
 /* ------------------------------------------------------------ parameters --- */
-enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_ORATIO };
+enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
 static const char *const TRACK_NAMES[2][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
-                                                        {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "OUTO"}};
+                                                        {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "KLIKKI"}};
 #define TRACK_NAME (TRACK_NAMES[STYLE ? 1 : 0])
 static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
                                                     "GLOBAL 2", "MOD"};
@@ -2173,14 +2174,14 @@ static const char *const SOUND_NAMES[2][ROMI_TRACKS][4] = {{
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
 }, {                                    /* suom1saundi */
     {"TUNE", "DECAY", "SWEEP", "DRIVE"}, {"CUTOFF", "RESO", "ENVMOD", "DECAY"}, {"DECAY", "TONE", "METAL", "OPEN"},
-    {"CUTOFF", "RESO", "ENVMOD", "DECAY"}, {"WAVE", "DECAY", "ARP", "VIBRATO"}, {"DECAY", "FM", "RATIO", "ZAP"},
+    {"CUTOFF", "RESO", "ENVMOD", "DECAY"}, {"WAVE", "DECAY", "ARP", "VIBRATO"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
 }};
 static const char *const SOUND2_NAMES[2][ROMI_TRACKS][4] = {{
     {"PITCH", "CLICK", "P.TIME", "CRUSH"}, {"PITCH", "FM.TIME", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
     {"PITCH", "B.TIME", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
 }, {
     {"PITCH", "CLICK", "SNAP", "CRUSH"}, {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "CHIP", "DRIVE", "CRUSH"},
-    {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"}, {"PITCH", "ZTIME", "DRIVE", "CRUSH"},
+    {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
 }};
 #define SOUND_NAME (SOUND_NAMES[STYLE ? 1 : 0])
 #define SOUND2_NAME (SOUND2_NAMES[STYLE ? 1 : 0])
@@ -2214,13 +2215,11 @@ static int page_params(param_t p[4])
     case ROMI_PG_SOUND:
         for (i = 0; i < 4; i++)
             P(i, SOUND_NAME[R.track][i], &tr->p[i], 0, 127, F_NUM, 1);
-        if (STYLE) {                    /* suom1saundi: PIIP's wave and arpeggio, OUTO's ratio */
+        if (STYLE) {                    /* suom1saundi: PIIP's wave and arpeggio */
             if (R.track == ROMI_STAB) {
                 p[0].fmt = F_PWAVE;
                 p[2].fmt = F_PARP;
             }
-            if (R.track == ROMI_CLICK)
-                p[2].fmt = F_ORATIO;
             break;
         }
         if (R.track == ROMI_SUB)
@@ -2369,11 +2368,7 @@ static void param_text(const param_t *p, char *t)
         cat(t, A[v * 7 / 128]);
         break;
     }
-    case F_ORATIO: {
-        static const char *const O[8] = {"0.5", "1", "1.5", "2", "2.76", "3.5", "5.33", "7.1"};
-        cat(t, O[v >> 4]);
-        break;
-    }
+
     case F_PITCH:                       /* semitones, 24 = none */
         if (v > 24)
             cat(t, "+");

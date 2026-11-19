@@ -54,8 +54,8 @@ eigene Firmware. Die Stimmen und der Generator von suom1saundi liegen deshalb ab
 `app/core/suomi_voices.inc` und `app/core/suomi_gen.inc`.
 
 Von suom1saundi übernommen: die sechs Stimmen (**POTKU** Psy-Kick mit Hold und Body, **BASSO** Filterbass,
-**HATTU** Hats mit 8-Bit-Rauschkanal, **HAPPO** Acid-Linie, **PIIP** Soundchip-Melodie mit Arpeggio, **OUTO**
-FM-Zaps), ihre Generator-Regeln, die Skala phrygisch-dominant (dazu harmonisch Moll, beide jetzt auch für
+**HATTU** Hats mit 8-Bit-Rauschkanal, **HAPPO** Acid-Linie, **PIIP** Soundchip-Melodie mit Arpeggio; statt der
+FM-Zaps OUTO spielt die sechste Spur **KLIKKI**, die Clicks von ro:MINImal), ihre Generator-Regeln, die Skala phrygisch-dominant (dazu harmonisch Moll, beide jetzt auch für
 ro:MINImal), Grün als Farbe. Alles andere ist ro:MINImal: Sequencer, Seiten, LAZY/HARD, die Spielarten B bis D,
 Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
 
@@ -66,10 +66,10 @@ Trig-Bedingungen, Slide und Glide, LINK, MOD, Bildschirmschoner.
 | HATTU | DECAY, TONE, METAL, OPEN | PITCH, CHIP, DRIVE, CRUSH |
 | HAPPO | CUTOFF, RESO, ENVMOD, DECAY | PITCH, WAVE, DRIVE, CRUSH |
 | PIIP | WAVE, DECAY, ARP, VIBRATO | PITCH, SPEED, DRIVE, CRUSH |
-| OUTO | DECAY, FM, RATIO, ZAP | PITCH, ZTIME, DRIVE, CRUSH |
+| KLIKKI (Click von ro:MINImal) | DECAY, FREQ, RESO, SCATTER | PITCH, ATTACK, DRIVE, CRUSH |
 
 Die übrigen Regler der zweiten Seite von suom1saundi bleiben auf dessen Werten (POTKU HOLD 20, BODY 10; BASSO SUB 40;
-HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30; OUTO FEEDBK 40, RANDOM 50). GLIDE von BASSO, HAPPO und PIIP
+HATTU SPREAD 20, CUT 50; HAPPO ACCENT 90; PIIP PWM 30). GLIDE von BASSO, HAPPO und PIIP
 sitzt auf TIMING (KNOB3), SLIDE pro Step auf KNOB3 beim gehaltenen Step.
 
 **Die Pattern-Regeln von suom1saundi:**
@@ -82,7 +82,7 @@ sitzt auf TIMING (KNOB3), SLIDE pro Step auf KNOB3 beim gehaltenen Step.
   Looplänge; große Sprünge gleiten.
 - **Melodie (PIIP):** Frage und Antwort über dem Akkord, sie lässt Platz, wo die Acid-Linie spielt.
 - **Hats:** der Offbeat, meist offen, dazu leise Sechzehntel.
-- **Zaps (OUTO):** selten, auf ungerader Länge, jeder anders (eigene Locks für FM, Ratio und Zap).
+- **Clicks (KLIKKI):** wie bei ro:MINImal, auf ungeraden Längen und mit geringer Chance.
 - **Spielarten:** wie bei ro:MINImal; in B bleibt der Bass-Puls stehen, stattdessen antwortet ein Ton der letzten
   Viertel eine Oktave höher mit Slide.
 

@@ -4,7 +4,7 @@
  * What makes a pattern suomisaundi here: the kick on every beat; under it the pumping bass of psytrance, three
  * sixteenths after each kick (the roll) or two (the gallop), on the root, jumping the octave at the end of the bar
  * and ducked hard by the kick; an acid line and a chip melody on loops of their own lengths that walk over the
- * chord; zaps that come seldom and never the same. The rest is ro:MINImal's: B, C and D made from A, the trig
+ * chord; ro:MINImal's clicks on odd lengths (KLIKKI). The rest is ro:MINImal's: B, C and D made from A, the trig
  * conditions, the links. */
 
 /* d degrees above the root, 7 and more an octave up */
@@ -147,21 +147,8 @@ static void su_gen(romi_track_t *tr, int t, uint32_t d)
         }
         break;
     }
-    default: {                          /* OUTO: a few zaps on an odd length, seldom, each with its own sound */
-        static const uint8_t LEN[5] = {16, 11, 13, 7, 9};
-        tr->len = LEN[urand(5)];
-        euclid(tr, 1 + urand(3), urand(tr->len));
-        for (i = 0; i < tr->len; i++)
-            if (tr->step[i].flags & ROMI_ST_ON) {
-                set_step(tr, i, (int)urand(2), 1 + (int)urand(3), su_motif(2 * (int)urand(4)) + 12 * ((int)urand(3) - 1));
-                tr->step[i].lock[1] = (uint8_t)(1u + urand(128));
-                tr->step[i].lock[2] = (uint8_t)(1u + urand(128));
-                tr->step[i].lock[3] = (uint8_t)(1u + urand(128));
-                if (urand(4) == 0)
-                    tr->step[i].flags |= (uint8_t)(1u + urand(3));   /* a stutter */
-            }
+    default:                            /* (KLIKKI: ro:MINImal's clicks, in gen_track) */
         break;
-    }
     }
 }
 
@@ -176,7 +163,7 @@ static void su_defaults(romi_pattern_t *p)
         {  40,  72,  70,  64,  84,  76,  14,  14,   0},   /* HATTU (q1 CHIP) */
         {  58,  96,  74,  44,  84,  52,  60,  20,   0},   /* HAPPO (q1 WAVE) */
         {  30,  46,  40,  30,  76,  80,  70,  40,  64},   /* PIIP (q1 SPEED) */
-        {  60,  80,  48, 100,  80,  64,  60,  50,  50},   /* OUTO (q1 ZTIME) */
+        {  40,  78,  84,  90,  86,  64,  40,  30,   0},   /* KLIKKI: ro:MINImal's click (q1 ATTACK) */
     };
     static const uint8_t GLIDE[ROMI_TRACKS] = {0, 50, 0, 60, 0, 0};
     int t, i;

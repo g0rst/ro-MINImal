@@ -603,27 +603,27 @@ table(T(["track", "sound", "sound 2"], ["spur", "sound", "sound 2"], ["pistă", 
                  "Soundchip: Pulse, 4-Bit-Dreieck, Säge, Rauschen; Arpeggio, Vibrato · WAVE DECAY ARP VIBRATO",
                  "cip de sunet: pulsuri, triunghi pe 4 biți, saw, zgomot; arpegiu, vibrato · WAVE DECAY ARP VIBRATO"),
        "PITCH SPEED DRIVE CRUSH"),
-      ("OUTO", T("FM pair with feedback and a zap: lasers, bubbles, never the same · DECAY FM RATIO ZAP",
-                 "FM-Paar mit Feedback und Zap: Laser, Blubbern, nie gleich · DECAY FM RATIO ZAP",
-                 "pereche FM cu feedback și zap: lasere, bule, niciodată la fel · DECAY FM RATIO ZAP"),
-       "PITCH ZTIME DRIVE CRUSH"))
+      ("KLIKKI", T("ro:MINImal's clicks (instead of suom1saundi's zaps) · DECAY FREQ RESO SCATTER",
+                   "die Clicks von ro:MINImal (statt der Zaps von suom1saundi) · DECAY FREQ RESO SCATTER",
+                   "click-urile lui ro:MINImal (în locul zap-urilor lui suom1saundi) · DECAY FREQ RESO SCATTER"),
+       "PITCH ATTACK DRIVE CRUSH"))
 p(T("The pump is the heart of it. The bass never plays on the kick but behind it: mostly the roll (kick, bass, "
     "bass, bass), else the gallop (kick, rest, bass, bass). On the root, the octave at the end of the bar, often on "
     "a slide; the sixteenth after the kick soft, the off-beat accented, a short decay, and the kick ducks it fully "
     "(SIDECHAIN AMOUNT 127). Over it the acid line walks a motif of eight notes on a loop of its own, the melody "
-    "answers where the acid rests, the hats sit on the off-beat, and the zaps come seldom, each one different. "
+    "answers where the acid rests, the hats sit on the off-beat, and the clicks run on odd loops of their own. "
     "GLIDE of BASSO, HAPPO and PIIP is on TIMING, their SLIDE on a held step's third knob.",
     "Das Pumpen ist das Herz. Der Bass spielt nie auf der Kick, sondern dahinter: meist der Roll (Kick, Bass, Bass, "
     "Bass), sonst der Gallop (Kick, Pause, Bass, Bass). Auf dem Grundton, die Oktave am Ende des Takts, oft mit "
     "Slide; die Sechzehntel nach der Kick leise, der Offbeat akzentuiert, kurzer Ausklang, und die Kick duckt ihn "
     "ganz (SIDECHAIN AMOUNT 127). Darüber geht die Acid-Linie ein Motiv aus acht Tönen auf eigener Looplänge, die "
-    "Melodie antwortet, wo die Acid ruht, die Hats sitzen auf dem Offbeat, die Zaps kommen selten und jeder anders. "
+    "Melodie antwortet, wo die Acid ruht, die Hats sitzen auf dem Offbeat, die Clicks laufen auf eigenen ungeraden Loops. "
     "GLIDE von BASSO, HAPPO und PIIP liegt auf TIMING, ihr SLIDE auf dem dritten Regler beim gehaltenen Step.",
     "Pompa e inima lui. Basul nu cântă niciodată pe kick, ci în spatele lui: de cele mai multe ori roll-ul (kick, "
     "bas, bas, bas), altfel galopul (kick, pauză, bas, bas). Pe fundamentală, octava la sfârșitul măsurii, des cu "
     "slide; șaisprezecimea de după kick încet, contratimpul accentuat, un decay scurt, iar kick-ul îl duck-uiește "
     "complet (SIDECHAIN AMOUNT 127). Deasupra, linia acid merge un motiv de opt note pe bucla ei, melodia răspunde "
-    "unde tace acid-ul, hat-urile stau pe contratimp, iar zap-urile vin rar, fiecare altfel. GLIDE pentru BASSO, "
+    "unde tace acid-ul, hat-urile stau pe contratimp, iar click-urile merg pe bucle impare proprii. GLIDE pentru BASSO, "
     "HAPPO și PIIP e pe TIMING, SLIDE-ul lor pe al treilea buton la pasul ținut."))
 note(T("suom1saundi is the first thing to go if the FM-1 runs short of time: it costs about 8 % more. Built "
        "without it (ROMI_SUOMI=0), ro:MINImal is exactly as before.",

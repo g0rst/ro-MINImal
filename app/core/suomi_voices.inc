@@ -3,7 +3,8 @@
  * Included by romi.c ahead of trig() when ROMI_SUOMI is 1. The first thing to go if the FM-1 runs short of time:
  * build with ROMI_SUOMI 0 (or make it a firmware of its own) and ro:MINImal is as it was.
  *
- *   track   0 POTKU  1 BASSO  2 HATTU  3 HAPPO  4 PIIP  5 OUTO   (ro:MINImal: KICK SUB HAT PERC STAB CLICK)
+ *   track   0 POTKU  1 BASSO  2 HATTU  3 HAPPO  4 PIIP  5 KLIKKI (ro:MINImal: KICK SUB HAT PERC STAB CLICK)
+ *   KLIKKI is ro:MINImal's click (suom1saundi's OUTO, the FM zaps, left out: it fits better).
  *
  * suom1saundi has eight sound parameters a track; here SOUND holds its first four, SOUND 2 keeps ro:MINImal's shape
  * (PITCH, one of the track's own, DRIVE, CRUSH) and the other three of suom1saundi's second page stay at its
@@ -23,10 +24,8 @@ static struct {
     struct { float ph, mph, ph2, mph2, f, amp, ac, metal, lp, vel, chip, cph, nz, att, atc, pan, cut; uint32_t lfsr; } hat;
     struct { float ph, ph2, nph, f, ft, gc, amp, ac, att, vph, vinc, vdep, pwm, bend, benv, bc, det, vel, nz, mul[3];
              int32_t arp_n, arp_i, arp_cnt, arp_len; uint32_t lfsr; uint8_t wave; } piip;
-    struct { float ph, mph, f, amp, ac, att, ienv, ic, idx, ratio, zap, zenv, zc, fb, last, wph, winc, wdep, pan, vel; } outo;
 } SU;
 
-static const float OUTO_RATIO[8] = {0.5f, 1.0f, 1.5f, 2.0f, 2.76f, 3.5f, 5.33f, 7.1f};
 /* PIIP's arpeggios, a note a frame as on a sound chip: none, octave, minor, major, sus4, fifth and octave, diminished */
 static const int8_t PIIP_ARP[7][3] = {{0, 0, 0}, {0, 12, 0}, {0, 3, 7}, {0, 4, 7}, {0, 5, 7}, {0, 7, 12}, {0, 3, 6}};
 static const uint8_t PIIP_ARP_N[7] = {1, 2, 3, 3, 3, 3, 3};
@@ -37,12 +36,12 @@ static const int16_t SU_EXTRA[ROMI_TRACKS][4] = {
     {-1, 0, 20, 50},                    /* HATTU: CHIP (SOUND 2), SHAKE, SPREAD, CUT */
     {-1, 90, -1, 60},                   /* HAPPO: WAVE (SOUND 2), ACCENT, GLIDE (TIMING), DRIVE */
     {-1, 30, 64, 0},                    /* PIIP: SPEED (SOUND 2), PWM, BEND, DETUNE */
-    {-1, 40, 0, 50},                    /* OUTO: ZTIME (SOUND 2), FEEDBK, WOBBLE, RANDOM */
+    {-1, -1, -1, -1},                   /* (KLIKKI: ro:MINImal's click) */
 };
 
 static void su_panic(void)
 {
-    SU.kick.amp = SU.basso.amp = SU.hat.amp = SU.happo.amp = SU.piip.amp = SU.outo.amp = 0.0f;
+    SU.kick.amp = SU.basso.amp = SU.hat.amp = SU.happo.amp = SU.piip.amp = 0.0f;
     if (!SU.hat.lfsr)
         SU.hat.lfsr = SU.piip.lfsr = 0x4321u;
 }
@@ -244,40 +243,8 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
         SU.piip.amp = 1.0f;
         break;
     }
-    default: {                          /* OUTO: DECAY FM RATIO ZAP | ZTIME FEEDBK WOBBLE RANDOM */
-        float rnd = (float)s[7] * (1.0f / 127.0f), zap = ((float)s[3] - 64.0f) * (1.0f / 63.0f);
-        int ri = (int)(s[2] >> 4);
-        float n = (float)note;
-        if (rnd > 0.0f) {               /* never the same twice */
-            ri = (ri + (int)(frand(&R.rng) * rnd * 7.99f)) & 7;
-            zap += brand(&R.rng) * rnd;
-            n += (float)(int)(brand(&R.rng) * rnd * 12.0f);
-            SU.outo.pan = 0.5f + brand(&R.rng) * rnd * 0.5f;
-        } else {
-            SU.outo.pan = 0.5f;
-        }
-        zap = zap < -1.0f ? -1.0f : zap > 1.0f ? 1.0f : zap;
-        SU.outo.f = note_hz(root + 24.0f + n);
-        SU.outo.ac = decay_coef(pmap(drifted(t, 0, s[0]), 0.015f, 6.0f));
-        SU.outo.idx = drifted(t, 1, s[1]) * (1.1f / 127.0f);
-        SU.outo.ic = decay_coef(pmap((float)s[0], 0.01f, 6.0f));
-        SU.outo.ienv = 1.0f;
-        SU.outo.ratio = OUTO_RATIO[ri];
-        SU.outo.zap = zap >= 0.0f ? zap * zap * 7.0f : -zap * -0.9f;   /* falls from up to three octaves above,
-                                                                      * or rises from more than three below */
-        SU.outo.zc = decay_coef(pmap((float)s[4], 0.004f, 7.0f));
-        SU.outo.zenv = 1.0f;
-        SU.outo.fb = (float)s[5] * (0.35f / 127.0f);
-        SU.outo.winc = s[6] ? pmap((float)s[6], 2.0f, 4.5f) * INV_SR : 0.0f;
-        SU.outo.wdep = (float)s[6] * (0.3f / 127.0f);
-        if (SU.outo.amp < 0.05f) {
-            SU.outo.att = 0.0f;
-            SU.outo.ph = SU.outo.mph = 0.0f;
-        }
-        SU.outo.amp = 1.0f;
-        SU.outo.vel = vel;
+    default:                            /* (KLIKKI: ro:MINImal's click, in trig) */
         break;
-    }
     }
 }
 
@@ -289,8 +256,7 @@ static float su_env(int t)
     case ROMI_SUB: return SU.basso.amp * SU.basso.vel;
     case ROMI_HAT: return SU.hat.amp * SU.hat.vel;
     case ROMI_PERC: return SU.happo.amp * SU.happo.vel;
-    case ROMI_STAB: return SU.piip.amp * SU.piip.vel;
-    default: return SU.outo.amp * SU.outo.vel;
+    default: return SU.piip.amp * SU.piip.vel;
     }
 }
 
@@ -411,28 +377,4 @@ static inline void su_voices(float *v)
         SU.piip.amp *= SU.piip.ac;
     }
     v[ROMI_STAB] = x;
-
-    /* OUTO: an FM pair with feedback whose pitch a zap envelope throws about: lasers, bubbles, squeaks */
-    x = 0.0f;
-    if (SU.outo.amp > 1e-4f) {
-        float f = SU.outo.f * (1.0f + SU.outo.zap * SU.outo.zenv) * INV_SR, m;
-        if (SU.outo.winc > 0.0f) {
-            SU.outo.wph += SU.outo.winc;
-            if (SU.outo.wph >= 1.0f)
-                SU.outo.wph -= 1.0f;
-            f *= 1.0f + SU.outo.wdep * fsin(SU.outo.wph);
-        }
-        SU.outo.ph += f;
-        SU.outo.mph += f * SU.outo.ratio;
-        if (SU.outo.ph >= 1.0f) SU.outo.ph -= (float)(int)SU.outo.ph;
-        if (SU.outo.mph >= 1.0f) SU.outo.mph -= (float)(int)SU.outo.mph;
-        m = fsin(SU.outo.mph + SU.outo.fb * SU.outo.last);
-        SU.outo.last = m;
-        x = fsin(SU.outo.ph + m * SU.outo.idx * (0.2f + 0.8f * SU.outo.ienv)) * SU.outo.amp * SU.outo.att * SU.outo.vel * 0.8f;
-        SU.outo.att += (1.0f - SU.outo.att) * 0.03f;
-        SU.outo.zenv *= SU.outo.zc;
-        SU.outo.ienv *= SU.outo.ic;
-        SU.outo.amp *= SU.outo.ac;
-    }
-    v[ROMI_CLICK] = x;
 }
