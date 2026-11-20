@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang='de'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>p5ydub</title><style>
+:root{--sand:#e9ddc3;--ink:#4a3426;--terra:#b5593c;--ochre:#c98f2b;--olive:#6b6b3a;--line:#d4c6a8}
+*{box-sizing:border-box}body{margin:0;background:var(--sand);color:var(--ink);font:17px/1.6 Georgia,'Noto Serif',serif}
+section.lang{display:none;max-width:720px;margin:0 auto;padding:40px 20px 80px}
+section.lang:target,body:not(:has(:target)) #de{display:block}
+h1{font:700 clamp(46px,14vw,84px)/1 Georgia,serif;letter-spacing:-.02em;margin:0}h1 span{color:var(--terra)}
+.sub{color:var(--olive);letter-spacing:.06em;margin:6px 0 0;text-transform:lowercase}
+.om{font-size:120px;line-height:1;margin:18px 0 0;color:var(--ochre);text-shadow:0 0 0 var(--ink)}
+h2{margin:34px 0 8px;font-size:22px;border-bottom:2px solid var(--line);padding-bottom:4px}
+table{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--olive);font-weight:400;text-transform:lowercase}i{color:var(--terra);font-style:normal;font-weight:700}
+a{color:var(--terra)}.small{font-size:14px;color:var(--olive)}
+</style></head><body>
+<section class="lang" id="de" lang="de">
+<h1>p<span>5</span>ydub</h1>
+<p class='sub'>psytrance + dub · 138 bpm · der fünfte stil in ro:MINImal</p>
+<p class='om' aria-hidden='true'>ॐ</p>
+<h2>Der Weg hinein</h2><ol>
+<li>Nur aus <b>suom1saundi</b>: dort <b>HOME</b> 2 Sekunden halten. (suom1saundi erreichst du aus ro:MINImal mit GLO 2 s; FRE3tek mit HOME 2 s bleibt ro:MINImal.)</li>
+<li>Die Röhre zieht sich zusammen, ein Om wird Strich für Strich in Erdtönen auf Sand gezeichnet, die Sonne dahinter und Ringe, die im Takt atmen; der Name kommt, sein letztes B hallt nach. Jingle: eine angeschlagene Klangschale mit ihrem Dub-Echo (punktierte Achtel) über einem runden Bassschlag.</li>
+<li><b>HOME</b> 2 Sekunden: zurück zu suom1saundi. <b>GLO</b> 2 Sekunden: heim zu ro:MINImal. Jeder Druck überspringt die Show. Gute Nacht (SAVE halten): „SHANTI“.</li></ol>
+<h2>Die sechs Spuren</h2>
+<table><thead><tr><th>taste</th><th>spur</th><th>rolle</th></tr></thead><tbody><tr><td>1 (schwarz)</td><td><b>KICK</b></td><td>suom1saundis POTKU, rund: vier auf den Boden, vor dem Takt manchmal ein Geist</td></tr><tr><td>2 (schwarz)</td><td><b>DUB</b></td><td>der Dub-Bass (BASSO): lange Wurzeltöne auf den Offbeats, ab und zu ein Schritt der Pentatonik (Terz, Quarte, Quinte, kleine Septime), gleitend; die Kick drückt ihn nur sanft (Duck 90 statt 127): er atmet, er pumpt nicht</td></tr><tr><td>3 (schwarz)</td><td><b>HAT</b></td><td>offener Hat auf dem Offbeat, wenige geschlossene dazwischen; fast alles geht ins Delay</td></tr><tr><td>4 (schwarz)</td><td><b>BUBBLE</b></td><td>die Blase (HAPPO): eine Pentatonik-Phrase auf eigener Länge (12, 14, 15 oder 16), sparsam, durch das Echo</td></tr><tr><td>5 (schwarz)</td><td><b>CHORD</b></td><td>Moll-Dreiklänge als kurze Stabs auf dem Offbeat; der Rest ist Delay (Send 110) und Hall (84)</td></tr><tr><td>6 (schwarz)</td><td><b>PING</b></td><td>ein Glockenton (Sinus, PIIP) durch das Echo, leise</td></tr></tbody></table>
+<h2>Die Regler</h2>
+<table><thead><tr><th></th><th>K1</th><th>K2</th><th>K3</th><th>K4</th></tr></thead><tbody><tr><td><b>KICK</b></td><td>TUNE <i>48</i></td><td>DECAY <i>64</i></td><td>SWEEP <i>58</i></td><td>DRIVE <i>26</i></td></tr><tr><td><b>DUB</b></td><td>CUTOFF <i>36</i></td><td>RESO <i>30</i></td><td>ENVMOD <i>44</i></td><td>DECAY <i>74</i></td></tr><tr><td><b>HAT</b></td><td>DECAY <i>46</i></td><td>TONE <i>66</i></td><td>METAL <i>64</i></td><td>OPEN <i>78</i></td></tr><tr><td><b>BUBBLE</b></td><td>CUTOFF <i>50</i></td><td>RESO <i>52</i></td><td>ENVMOD <i>58</i></td><td>DECAY <i>60</i></td></tr></tbody></table>
+<p class='small'>Werkseinstellung kursiv. Spur 5 und 6 starten als CHORD (Engine STAB) und PING (Engine PIIP); die Engines lassen sich auf GROOVE 2 (HOME zweimal) wechseln: CHORD, DROP, PING, WIND.</p>
+<h2>Mischung und Start</h2>
+<table><thead><tr><th>spur</th><th>pegel</th><th>pan</th><th>delay</th><th>hall</th></tr></thead><tbody><tr><td><b>KICK</b></td><td>72 %</td><td>C</td><td>0 %</td><td>4 %</td></tr><tr><td><b>DUB</b></td><td>88 %</td><td>C</td><td>12 %</td><td>6 %</td></tr><tr><td><b>HAT</b></td><td>59 %</td><td>R12</td><td>44 %</td><td>26 %</td></tr><tr><td><b>BUBBLE</b></td><td>58 %</td><td>L24</td><td>61 %</td><td>40 %</td></tr></tbody></table>
+<p>Start: 138 BPM, Swing 52 %, Drift 55 %, Duck 62 %, Grundton D, Skala phrygian, Delay-Feedback 61 %, Hall 72 % (Dämpfung 37 %), Delay 3/16.</p>
+<h2>Warum es so klingt</h2><ul>
+<li><b>Tempo:</b> um 138 BPM (Dub-Techno liegt bei 145, Dubstep bei 140); einstellbar von 90 bis 160.</li>
+<li><b>Skala:</b> Moll-Pentatonik für Bass und Blase; die meiste Dub-Musik beruht auf ihr, sagt die Faustregel in den Foren. Die Grundskala ist phrygisch: die ♭2 gibt die dunkle Spannung, und eine ♭II-Fläche (i – ♭II – ♭VII – i) ist der Standardzug.</li>
+<li><b>Akkorde:</b> schlichte Moll-Dreiklänge, kurz, auf dem Offbeat. Die Länge machen Delay und Hall.</li>
+<li><b>Delay:</b> der eigentliche Klang. Punktierte Achtel (3/16), Feedback 78 %, abgedunkelt; zwei bis drei Sends verschiedener Länge sind der klassische Weg. Hier: HAT, BUBBLE, CHORD und PING schicken stark hinein.</li>
+<li><b>Hall:</b> groß und gedämpft, als Federhall gedacht (Lee Perrys Perkussion lief durch einen).</li>
+</ul>
+<h2>Bildschirmschoner</h2><p>Nach 2 Minuten ohne Berührung: wie in allen Stilen pumpt der Name mit der Kick, und mit 30 % Chance pumpt stattdessen das Maskottchen des Stils: hier das Om, bei schr4nz die Gasmaske, bei FRE3tek ein Lautsprecher, bei suom1saundi das UFO, bei ro:MINImal ein Konus.</p>
+<h2>Quellen</h2><ul>
+<li><a href='https://www.kvraudio.com/forum/viewtopic.php?p=8146770'>KVR: making dub basslines</a></li>
+<li><a href='https://forum.ableton.com/viewtopic.php?p=401548'>Ableton-Forum: Tips and Tricks, Making Dub with Live</a></li>
+<li><a href='https://www.attackmagazine.com/technique/beat-dissected/basic-channel-style-dub-techno/'>Attack Magazine: Basic Channel style dub techno</a></li>
+<li><a href='https://www.production-expert.com/production-expert-1/6-dub-production-tips'>Production Expert: 6 dub production tips</a></li>
+</ul>
+<p class='small'>Gebaut aus dem Code: d9f57f6 2026-11-20. <a href='index.html'>ro:MINImal</a> · <a href='#en'>english</a></p>
+</section>
+<section class="lang" id="en" lang="en">
+<h1>p<span>5</span>ydub</h1>
+<p class='sub'>psytrance + dub · 138 bpm · the fifth style inside ro:MINImal</p>
+<p class='om' aria-hidden='true'>ॐ</p>
+<h2>The way in</h2><ol>
+<li>Only from <b>suom1saundi</b>: there, hold <b>HOME</b> for 2 seconds. (You reach suom1saundi from ro:MINImal with GLO 2 s; FRE3tek, with HOME 2 s, stays ro:MINImal's.)</li>
+<li>The tube collapses, an Om is drawn stroke by stroke in earth tones on sand, the sun behind it and rings that breathe in time; the name comes, its last B echoing on. Jingle: a struck singing bowl with its dub echo (a dotted eighth) over a round bass thud.</li>
+<li><b>HOME</b> 2 seconds: back to suom1saundi. <b>GLO</b> 2 seconds: home to ro:MINImal. Any touch skips the show. Good night (SAVE held): “SHANTI”.</li></ol>
+<h2>The six tracks</h2>
+<table><thead><tr><th>key</th><th>track</th><th>role</th></tr></thead><tbody><tr><td>1 (black)</td><td><b>KICK</b></td><td>suom1saundi's POTKU, round: four on the floor, now and then a ghost before the bar</td></tr><tr><td>2 (black)</td><td><b>DUB</b></td><td>the dub bass (BASSO): long root notes on the off-beats, now and then a step of the pentatonic (third, fourth, fifth, flat seventh), sliding; the kick ducks it only softly (duck 90, not 127): it breathes, it does not pump</td></tr><tr><td>3 (black)</td><td><b>HAT</b></td><td>open hat on the off-beat, a few closed ones between; nearly all of it goes into the delay</td></tr><tr><td>4 (black)</td><td><b>BUBBLE</b></td><td>the bubble (HAPPO): a pentatonic phrase on a loop of its own (12, 14, 15 or 16), sparse, through the echo</td></tr><tr><td>5 (black)</td><td><b>CHORD</b></td><td>minor triads as short stabs on the off-beat; the rest is delay (send 110) and reverb (84)</td></tr><tr><td>6 (black)</td><td><b>PING</b></td><td>a bell tone (sine, PIIP) through the echo, quiet</td></tr></tbody></table>
+<h2>The knobs</h2>
+<table><thead><tr><th></th><th>K1</th><th>K2</th><th>K3</th><th>K4</th></tr></thead><tbody><tr><td><b>KICK</b></td><td>TUNE <i>48</i></td><td>DECAY <i>64</i></td><td>SWEEP <i>58</i></td><td>DRIVE <i>26</i></td></tr><tr><td><b>DUB</b></td><td>CUTOFF <i>36</i></td><td>RESO <i>30</i></td><td>ENVMOD <i>44</i></td><td>DECAY <i>74</i></td></tr><tr><td><b>HAT</b></td><td>DECAY <i>46</i></td><td>TONE <i>66</i></td><td>METAL <i>64</i></td><td>OPEN <i>78</i></td></tr><tr><td><b>BUBBLE</b></td><td>CUTOFF <i>50</i></td><td>RESO <i>52</i></td><td>ENVMOD <i>58</i></td><td>DECAY <i>60</i></td></tr></tbody></table>
+<p class='small'>Factory values in italics. Tracks 5 and 6 start as CHORD (engine STAB) and PING (engine PIIP); the engines can be changed on GROOVE 2 (HOME twice): CHORD, DROP, PING, WIND.</p>
+<h2>Mix and start</h2>
+<table><thead><tr><th>track</th><th>level</th><th>pan</th><th>delay</th><th>reverb</th></tr></thead><tbody><tr><td><b>KICK</b></td><td>72 %</td><td>C</td><td>0 %</td><td>4 %</td></tr><tr><td><b>DUB</b></td><td>88 %</td><td>C</td><td>12 %</td><td>6 %</td></tr><tr><td><b>HAT</b></td><td>59 %</td><td>R12</td><td>44 %</td><td>26 %</td></tr><tr><td><b>BUBBLE</b></td><td>58 %</td><td>L24</td><td>61 %</td><td>40 %</td></tr></tbody></table>
+<p>Start: 138 BPM, swing 52 %, drift 55 %, duck 62 %, root D, scale phrygian, delay feedback 61 %, reverb 72 % (damping 37 %), delay 3/16.</p>
+<h2>Why it sounds like this</h2><ul>
+<li><b>Tempo:</b> about 138 BPM (dub techno sits at 145, dubstep at 140); settable from 90 to 160.</li>
+<li><b>Scale:</b> the minor pentatonic for the bass and the bubble; most dub is built on it, as the forums put it. The base scale is phrygian: its flat second is the dark tension, and an i – ♭II – ♭VII – i turn is the stock move.</li>
+<li><b>Chords:</b> plain minor triads, short, on the off-beat. The length is made by the delay and the reverb.</li>
+<li><b>Delay:</b> the sound itself. A dotted eighth (3/16), feedback 78 %, darkened; two or three sends of different lengths are the classic way. Here HAT, BUBBLE, CHORD and PING send hard into it.</li>
+<li><b>Reverb:</b> big and damped, meant as a spring (Lee Perry ran his percussion through one).</li>
+</ul>
+<h2>Screensaver</h2><p>After 2 minutes untouched: as in every style the name pumps with the kick, and with a 30 % chance the style's mascot pumps instead: here the Om, in schr4nz the gas mask, in FRE3tek a speaker, in suom1saundi the UFO, in ro:MINImal a cone.</p>
+<h2>Sources</h2><ul>
+<li><a href='https://www.kvraudio.com/forum/viewtopic.php?p=8146770'>KVR: making dub basslines</a></li>
+<li><a href='https://forum.ableton.com/viewtopic.php?p=401548'>Ableton-Forum: Tips and Tricks, Making Dub with Live</a></li>
+<li><a href='https://www.attackmagazine.com/technique/beat-dissected/basic-channel-style-dub-techno/'>Attack Magazine: Basic Channel style dub techno</a></li>
+<li><a href='https://www.production-expert.com/production-expert-1/6-dub-production-tips'>Production Expert: 6 dub production tips</a></li>
+</ul>
+<p class='small'>Built from the code: d9f57f6 2026-11-20. <a href='index.html'>ro:MINImal</a> · <a href='#de'>deutsch</a></p>
+</section>
+</body></html>

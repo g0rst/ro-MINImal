@@ -1238,6 +1238,41 @@ int main(int argc, char **argv)
         CHECK(romi_dirty() != 0, "woken: nothing redrawn");
     }
 
+    /* the screensaver's mascot: in 30 % of the savers the style's own picture pumps with the kick instead of its
+     * name (ro:MINImal a cone, suom1saundi the UFO, FRE3tek a speaker, schr4nz the gas mask, p5ydub the Om) */
+    {
+        static const char *const NM[5] = {"romi", "suomi", "tek", "sch", "psy"};
+        int st, k, n, mascots = 0, tries = 300;
+        romi_init(72);
+        frame(0);
+        tap_key(3);
+        tap_button(ROMI_B_PLAY);
+        for (k = 0; k < tries; k++) {
+            now_ms += 121000u;
+            frame(0);
+            mascots += romi_state(ROMI_Q_MASCOT);
+            tap_key(3);
+        }
+        CHECK(mascots > tries * 22 / 100 && mascots < tries * 38 / 100, "mascot: %d of %d savers (30 %%)", mascots, tries);
+        for (st = 0; st < 5; st++) {
+            int shot = 0;
+            romi_project()->style = (uint8_t)st;
+            for (n = 0; n < 80 && !shot; n++) {
+                now_ms += 121000u;
+                frame(0);
+                if (romi_state(ROMI_Q_MASCOT)) {
+                    for (k = 0; k < 40; k++) { frame(0); run(0.017, 0, 0, 0); }
+                    snprintf(path, sizeof path, "%s/screen-mascot-%s.ppm", out, NM[st]);
+                    write_screen(path);
+                    shot = 1;
+                }
+                tap_key(3);
+            }
+            CHECK(shot, "mascot: none shown for style %d in 80 savers", st);
+        }
+        romi_project()->style = 0;
+    }
+
     /* the links of version 15: trig conditions, FILL on ARP held, accents from another track, the LFOs restarted
      * by a track's hits, the ENV follower; and a version 14 pattern still loads */
     {
@@ -1592,6 +1627,64 @@ int main(int argc, char **argv)
         CHECK(romi_state(ROMI_Q_UFO) == 2, "HOME held in FRE3tek: back with the fly-in (%d)", romi_state(ROMI_Q_UFO));
         for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) frame(0);
         CHECK(romi_project()->style == 0, "back from FRE3tek: style %d", romi_project()->style);
+    }
+
+    /* psydub (HOME held 2 s in suom1saundi): the tube collapses, an Om is drawn in earth tones on sand, the name
+     * arrives with its echoes; psytrance and dub at 138, D phrygian, KICK DUB HAT BUBBLE CHORD PING. HOME held again
+     * goes back to suom1saundi, GLO held home to ro:MINImal. From ro:MINImal HOME still leads to FRE3tek. */
+    {
+        int k, f, i, kicks = 0, dub = 0, bub = 0;
+        double peak, rms;
+        romi_init(160);
+        frame(0);
+        tap_key(3);                                 /* (the intro away) */
+        held_b |= 1u << ROMI_B_GLO;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_GLO);
+        for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) frame(0);
+        CHECK(romi_project()->style == 1, "psydub test: suom1saundi first (style %d)", romi_project()->style);
+        held_b |= 1u << ROMI_B_HOME;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_HOME);
+        CHECK(romi_state(ROMI_Q_UFO) == 5, "HOME held in suom1saundi: no psydub show (%d)", romi_state(ROMI_Q_UFO));
+        for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) {
+            frame(0);
+            if (f == 100 || f == 130 || f == 160 || f == 185) {
+                snprintf(path, sizeof path, "%s/screen-psy-%03d.ppm", out, f);
+                write_screen(path);
+            }
+        }
+        CHECK(romi_project()->style == 4 && romi_project()->bpm == 138 && romi_project()->scale == 2,
+              "psydub: style %d bpm %d scale %d", romi_project()->style, romi_project()->bpm, romi_project()->scale);
+        for (k = 0; k < 40; k++) frame(0);
+        snprintf(path, sizeof path, "%s/screen-psy.ppm", out);
+        write_screen(path);
+        {
+            const romi_pattern_t *a = &romi_project()->pat[0];
+            for (i = 0; i < 16; i++) {
+                kicks += (a->tr[ROMI_KICK].step[i].flags & ROMI_ST_ON) && (i & 3) == 0;
+                dub += (a->tr[ROMI_SUB].step[i].flags & ROMI_ST_ON) != 0;
+                bub += (a->tr[ROMI_PERC].step[i].flags & ROMI_ST_ON) != 0;
+                if (a->tr[ROMI_SUB].step[i].flags & ROMI_ST_ON)
+                    CHECK((i & 3) != 0, "psydub: the dub bass sits on the kick (step %d)", i + 1);
+            }
+            CHECK(kicks == 4 && dub >= 3 && dub <= 7 && bub >= 3, "psydub: kicks %d dub %d bubble %d", kicks, dub, bub);
+            CHECK(a->tr[ROMI_STAB].engine == ROMI_ENG_STAB && a->tr[ROMI_CLICK].engine == ROMI_ENG_PIIP,
+                  "psydub engines: %d %d", a->tr[ROMI_STAB].engine, a->tr[ROMI_CLICK].engine);
+            CHECK(a->tr[ROMI_STAB].dly > 100 && a->tr[ROMI_SUB].sc == 90, "psydub: chord send %d, bass duck %d",
+                  a->tr[ROMI_STAB].dly, a->tr[ROMI_SUB].sc);
+        }
+        tap_button(ROMI_B_PLAY);
+        run(5.0, 0, &peak, &rms);
+        printf("psydub: peak %.3f rms %.3f\n", peak, rms);
+        CHECK(peak > 0.15 && peak < 1.01 && rms > 0.02, "psydub sound: peak %g rms %g", peak, rms);
+        tap_button(ROMI_B_PLAY);
+        held_b |= 1u << ROMI_B_HOME;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_HOME);
+        CHECK(romi_state(ROMI_Q_UFO) == 1, "HOME held in psydub: back with suom1saundi's show (%d)", romi_state(ROMI_Q_UFO));
+        for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) frame(0);
+        CHECK(romi_project()->style == 1, "back from psydub: style %d", romi_project()->style);
     }
 
     /* the mixer (ENV held 0.6 s, in every style): the six levels on K1..K4, ALGO, SELECT; a black key a track in or

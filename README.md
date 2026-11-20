@@ -2,7 +2,7 @@
 
 Firmware für den **M-VAVE FM-1**: ein Groove-Synthesizer für Rominimal und Microhouse.
 Sechs feste Stimmen, ein polymetrischer Step-Sequencer mit Chance pro Step, Swing, Drift und ein
-Groove-Generator. Dazu Tempo-Delay, Reverb und Kick-Ducking.
+Groove-Generator. Dazu Tempo-Delay, Reverb und Kick-Ducking. Fünf Stile in einem Kern (ro:MINImal, suom1saundi, FRE3tek, schr4nz, p5ydub).
 
 ![Display](docs/screen.png)
 
@@ -78,8 +78,9 @@ auf und atmet im Takt (Gläser blitzen gelb, der Filter pufft), dann presst sich
 Jingle: Atemzug durch die Maske, vier verzerrte Kicks, ein gecrushter Schlag. In schr4nz: GLO 2 s zurück zu FRE3tek,
 HOME 2 s heim zu ro:MINImal. Hintergrund Stahlgrau, Akzent Warngelb, Gute Nacht „GUTE NACHT“.
 
-Wege zwischen den Stilen: ro:MINImal ⇄ suom1saundi (GLO), ro:MINImal und suom1saundi → FRE3tek (HOME), FRE3tek ⇄
-schr4nz (GLO), FRE3tek und schr4nz → ro:MINImal (HOME). suom1saundi lädt nur aus ro:MINImal.
+Wege zwischen den Stilen: ro:MINImal ⇄ suom1saundi (GLO), ro:MINImal → FRE3tek (HOME), FRE3tek ⇄ schr4nz (GLO),
+FRE3tek und schr4nz → ro:MINImal (HOME), suom1saundi ⇄ p5ydub (HOME), p5ydub → ro:MINImal (GLO). suom1saundi lädt nur aus
+ro:MINImal und p5ydub, schr4nz nur aus FRE3tek, p5ydub nur aus suom1saundi.
 
 | Spur | Stimme | Regeln |
 |---|---|---|
@@ -95,6 +96,33 @@ Klang: die Summe durch memeteks Master wie in FRE3tek, aber Drive ×5 statt ×3,
 Instruktionen pro Sample (mit dem Hall des Rumble 2 198), mit GRAIN auf zwei Spuren etwa 2 730. Eigenes Handbuch im Stil eines Sicherheitsdatenblatts
 (Stahl, Warnstreifen, Gasmaske), Deutsch und Englisch: https://g0rst.github.io/ro-MINImal/schr4nz.html
 (`manual/schr4nz.py`).
+
+## Fünfter Stil: p5ydub (in suom1saundi HOME 2 s halten)
+
+**p5ydub** ist Psytrance und Dub: 138 BPM, D phrygisch, die Pentatonik für Bass und Melodie, kleine Moll-Akkorde, die das
+Delay zum Klang macht. Man kommt **nur aus suom1saundi** hin: dort **HOME 2 s halten** (in ro:MINImal führt HOME weiter
+zu FRE3tek). Show: Röhre zieht sich zusammen, ein **Om** wird Strich für Strich in Erdtönen auf beigem Grund gezeichnet
+(Sonne dahinter, Ringe, die im Takt atmen), der Name **p5ydub** (die 5 in Terrakotta) kommt, sein letztes B hallt nach.
+Jingle: eine Klangschale mit Dub-Echo (punktierte Achtel) über einem runden Bassschlag. In p5ydub: HOME 2 s zurück zu
+suom1saundi, GLO 2 s heim zu ro:MINImal. Hintergrund Sand, Akzent Terrakotta, Gute Nacht „SHANTI“.
+
+| Spur | Stimme | Regeln |
+|---|---|---|
+| KICK | POTKU von suom1saundi, rund | vier auf den Boden, vor dem Takt manchmal ein Geist |
+| DUB | BASSO als Dub-Bass: Cutoff 36, Decay 74, von der Kick nur sanft geduckt (Duck 90) | lange Wurzeltöne auf den Offbeats, ab und zu Terz, Quarte, Quinte oder kleine Septime, gleitend; eine von fünf Linien |
+| HAT | HATTU | offen auf dem Offbeat, wenige geschlossene dazwischen; fast alles ins Delay |
+| BUBBLE | HAPPO | eine Pentatonik-Phrase (Random Walk) auf eigener Länge 12, 14, 15 oder 16, sparsam |
+| CHORD | Engine STAB, dunkel, Send 110, Hall 84 | Moll-Dreiklänge auf dem Offbeat (Regeln der Engine) |
+| PING | Engine PIIP als Sinus-Glocke durch das Echo | Regeln der Engine |
+
+Start: Delay punktierte Achtel mit Feedback 78 %, Hall 92 (Dämpfung 48), Swing 52, Drift 55, Duck 62. Die Theorie dahinter
+(Pentatonik, ♭II, Delay-Sends, Federhall) steht aus Foren und Guides zusammengetragen im Handbuch
+(`manual/p5ydub.py`, https://g0rst.github.io/ro-MINImal/p5ydub.html). Last im Simulator: in `tests/run_tests.sh`
+(Stil p5ydub) geprüft, Klang 5 s mit Peak und RMS.
+
+**Bildschirmschoner in allen Stilen:** mit 30 % Chance pumpt statt des Namens das Maskottchen des Stils mit der Kick:
+bei p5ydub das Om, bei schr4nz die Gasmaske (die Gläser blitzen gelb), bei FRE3tek ein Lautsprecher, bei suom1saundi das
+UFO, bei ro:MINImal ein Lautsprecher-Konus.
 
 ## Zwei Stile, zwei Firmwares: ro:MINImal und suom1saundi
 

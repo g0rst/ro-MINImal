@@ -149,12 +149,14 @@ jobs:
           python3 manual/suomi.py
           python3 manual/fre3tek.py
           python3 manual/schr4nz.py
+          python3 manual/p5ydub.py
           mkdir -p _site
           cp site/index.html _site/
           cp docs/manual.html _site/manual.html
           cp docs/suomi.html _site/suomi.html
           cp docs/fre3tek.html _site/fre3tek.html
           cp docs/schr4nz.html _site/schr4nz.html
+          cp docs/p5ydub.html _site/p5ydub.html
           cp docs/index.html _site/testseite.html
           cp dist/rominimal.fwsc dist/firmware.json _site/
           cp dist-suomi/suom1saundi.fwsc _site/

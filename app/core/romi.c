@@ -212,6 +212,7 @@ static struct {
     uint32_t sv_hits[ROMI_TRACKS];      /* hits seen: they light the dots, the kick's swell the name */
     uint8_t sv_glow[ROMI_TRACKS][16];   /* each dot's light, fading */
     uint8_t sv_env;                     /* the swell, 255 on a kick, settling */
+    uint8_t sv_mascot;                  /* the screensaver shows the style's mascot instead of its name (30 %) */
     int16_t sv_x, sv_y, sv_dx, sv_dy;   /* the name's middle, drifting (in 1/16 px) */
     uint8_t density;                    /* the generator's: 0 sparse, 1 medium, 2 busy (set by a whole NEW) */
     uint8_t eu_armed;                   /* the next turn on the EUCLID page keeps an undo first */
@@ -266,14 +267,16 @@ static const float PERC_RATIO[8] = {1.0f, 1.41f, 1.73f, 2.0f, 2.76f, 3.5f, 4.07f
 
 #define PAT (&R.prj.pat[R.prj.cur_pat])   /* the pattern playing */
 #if ROMI_SUOMI
-#define STYLE (R.prj.style)                 /* 0 ro:MINImal, 1 suom1saundi, 2 FRE3tek (suom1saundi's voices, tekk rules) */
+#define STYLE (R.prj.style)                 /* 0 ro:MINImal, 1 suom1saundi, 2 FRE3tek, 3 schr4nz, 4 psydub */
 #else
 #define STYLE 0
 #endif
 #define SUOMI (STYLE == 1)
 #define TEK (STYLE == 2)
 #define SCH (STYLE == 3)                /* schr4nz (GLO held 2 s in FRE3tek) */
-#define TEKV (STYLE >= 2)               /* memetek's voices and master: FRE3tek and schr4nz */
+#define TEKV (STYLE == 2 || STYLE == 3)   /* memetek's voices and master: FRE3tek and schr4nz */
+#define PSY (STYLE == 4)                /* psydub (HOME held 2 s in suom1saundi) */
+#define SUOK (STYLE == 1 || STYLE == 4) /* suom1saundi's voices and variation rules: it and psydub */
 #ifndef SCH_IN
 #define SCH_IN 0.15f                    /* schr4nz: the sum into the drive, the drive, out of the compressor */
 #endif
@@ -1159,14 +1162,31 @@ static inline void master_run(float *l, float *r, float mf, float mq, int mode)
  * screen zooms, the bang: noise and a low square, dying away. A square at a quarter duty, as a sound chip */
 #define JG_S(t) ((uint32_t)((t) * (float)ROMI_SR))
 #define JG_UFO 0.462f                   /* the UFO starts after the collapse: 14 frames */
+#define JG_LONG(m) ((m) == 1u || (m) == 5u || (m) == 7u || (m) == 9u)   /* the shows with a sound of their own */
+/* psydub's bowl: a struck bowl, partials at 1, 2.76, 5.4, 8.9 times 196 Hz, each dying at its own rate; t seconds since the strike */
+static float psy_bowl(float t)
+{
+    static const float R_[4] = {1.0f, 2.76f, 5.4f, 8.93f}, A_[4] = {1.0f, 0.5f, 0.28f, 0.14f}, D_[4] = {1.6f, 2.6f, 4.0f, 6.0f};
+    float o = 0.0f, ph;
+    int k;
+    if (t < 0.0f)
+        return 0.0f;
+    for (k = 0; k < 4; k++) {
+        ph = 196.0f * R_[k] * t;
+        ph -= (float)(int)ph;
+        o += fsin(ph) * A_[k] * fexp2(-t * D_[k] * 1.4427f);
+    }
+    return o * (t < 0.004f ? t * 250.0f : 1.0f);
+}
 static float jingle(void)
 {
     static const float ARP[4] = {659.3f, 784.0f, 1046.5f, 1318.5f};
     float t, f, a, o;
     uint32_t n;
     if (R.jg_want) {                    /* (4: the UFO at power-on, without the tube) */
-        R.jg_n = R.jg_want == 3u ? 0u : R.jg_want == 4u || R.jg_want == 6u || R.jg_want == 8u ? JG_S(JG_UFO) + 1u : 1u;
-        R.jg_mode = R.jg_want == 4u ? 1u : R.jg_want == 6u ? 5u : R.jg_want == 8u ? 7u : R.jg_want;
+        R.jg_n = R.jg_want == 3u ? 0u : R.jg_want == 4u || R.jg_want == 6u || R.jg_want == 8u || R.jg_want == 10u
+                 ? JG_S(JG_UFO) + 1u : 1u;
+        R.jg_mode = R.jg_want == 4u ? 1u : R.jg_want == 6u ? 5u : R.jg_want == 8u ? 7u : R.jg_want == 10u ? 9u : R.jg_want;
                                         /* (5: FRE3tek's kicks, 6 at power-on; 7: schr4nz's breath and press, 8) */
         R.jg_want = 0;
         R.jg_ph = 0.0f;
@@ -1184,12 +1204,30 @@ static float jingle(void)
         if (u < 0.1f)                   /* and the wet click at its front */
             o += (float)(int32_t)xs32(&R.jg_rng) * (1.0f / 2147483648.0f) * 0.35f * (1.0f - u * 10.0f);
         return o;
-    } else if ((R.jg_mode != 1u && R.jg_mode != 5u && R.jg_mode != 7u) || n < JG_S(JG_UFO)) {
-        if (R.jg_mode != 1u && R.jg_mode != 5u && R.jg_mode != 7u && n >= JG_S(0.38f))
+    } else if (!JG_LONG(R.jg_mode) || n < JG_S(JG_UFO)) {
+        if (!JG_LONG(R.jg_mode) && n >= JG_S(0.38f))
             R.jg_n = 0;
         if (n == JG_S(0.30f) - 1u)
             R.jg_ph = 0.0f;
         return 0.0f;
+    } else if (R.jg_mode == 9u) {      /* psydub: a bowl struck, its dub echo (a dotted eighth at 138: 0.326 s, each
+                                         * repeat fainter), under it a round kick that falls to a thud */
+        float u;
+        n -= JG_S(JG_UFO);
+        t = (float)n * (1.0f / (float)ROMI_SR);
+        if (t >= 2.6f) {
+            R.jg_n = 0;
+            return 0.0f;
+        }
+        o = (psy_bowl(t - 0.12f) + 0.55f * psy_bowl(t - 0.446f) + 0.30f * psy_bowl(t - 0.772f) + 0.16f * psy_bowl(t - 1.098f)) * 0.26f;
+        if (t < 0.5f) {
+            u = t;
+            R.jg_ph += (46.0f + 110.0f * fexp2(-u * 38.0f)) * (1.0f / (float)ROMI_SR);
+            if (R.jg_ph >= 1.0f)
+                R.jg_ph -= 1.0f;
+            o += fsin(R.jg_ph) * 0.42f * fexp2(-u * 9.0f);
+        }
+        return o;
     } else if (R.jg_mode == 7u) {      /* schr4nz: the gas mask breathes in and out (noise, low-passed, swelling), four
                                          * ground kicks at 150, the last one the press as the name comes down */
         float u, e, br;
@@ -1776,6 +1814,7 @@ static uint32_t pick_steps(uint32_t *out, uint32_t n, const uint8_t *cand, const
 #include "suomi_gen.inc"
 #include "tek_gen.inc"
 #include "sch_gen.inc"
+#include "psy_gen.inc"
 #endif
 #include "piip_gen.inc"
 
@@ -1865,7 +1904,9 @@ static void gen_track(int t)
         piip_gen(tr, t);
     else
 #if ROMI_SUOMI
-    if (SCH && g < ROMI_STAB)
+    if (PSY && g < ROMI_STAB)
+        psy_gen(tr, g, d);              /* psydub's rules for its own four */
+    else if (SCH && g < ROMI_STAB)
         sch_gen(tr, g, d);              /* schr4nz's rules for its own four */
     else if (TEK && g < ROMI_STAB)
         tek_gen(tr, g, d);              /* FRE3tek's rules for its own four */
@@ -2017,7 +2058,7 @@ static void gen_all(void)
     else if (R.prj.bpm <= 116 && R.density < 2 && urand(2))
         R.density++;
     for (k = 0; k < ROMI_TRACKS; k++)
-        gen_track(ORDER[SUOMI ? 1 : 0][k]);   /* (SUOMI: the melody after the acid line, to answer it) */
+        gen_track(ORDER[SUOK ? 1 : 0][k]);   /* (SUOMI, psydub: the melody after the acid line, to answer it) */
 }
 
 /* ---- the variations: B, C and D are made from A, always ----
@@ -2096,7 +2137,7 @@ static void slot_rules(romi_pattern_t *d, int which)
             if (which == 1) {
                 turn_loop(tr, 1 + vrand(3));
                 tr->p[1] = nudge(tr->p[1], 10);
-            } else if (SUOMI) {
+            } else if (SUOK) {
                 if (tr->len == 16)
                     tr->step[15].flags = (uint8_t)(ROMI_ST_ON | 1u);
             } else if (tr->len == 16) {
@@ -2154,7 +2195,7 @@ static void vary(romi_pattern_t *d)
     for (i = 0; i < sb->len; i++)                   /* the sub: one hit beside itself, never on a quarter */
         if (sb->step[i].flags & ROMI_ST_ON)
             on[non++] = i;
-    if (SUOMI && non) {                             /* SUOMI: the pump stays; a bass note of the last beat answers
+    if (SUOK && non) {                             /* SUOMI: the pump stays; a bass note of the last beat answers
                                                      * an octave up, sliding there */
         for (i = 12; i < 16 && i < sb->len; i++)
             if ((sb->step[i].flags & ROMI_ST_ON) && vrand(2)) {
@@ -2195,8 +2236,8 @@ static void rolls(romi_pattern_t *d)
     if (h->len == 16 && vrand(4) == 0) {            /* the hats roll up to the bar, one C in four, the rolls at a
                                                      * chance (not every time: the "dring dring" wears) */
         for (i = 12; i < 16; i++) {
-            h->step[i].flags = (uint8_t)(ROMI_ST_ON | RATCH[SUOMI ? 1 : 0][i - 12] | (i == 15 ? ROMI_ST_ACC : 0u));
-            h->step[i].chance = RATCH[SUOMI ? 1 : 0][i - 12] ? 50u : 0u;
+            h->step[i].flags = (uint8_t)(ROMI_ST_ON | RATCH[SUOK ? 1 : 0][i - 12] | (i == 15 ? ROMI_ST_ACC : 0u));
+            h->step[i].chance = RATCH[SUOK ? 1 : 0][i - 12] ? 50u : 0u;
             h->step[i].note = (int8_t)(i - 12);
         }
     } else if (h->len == 16) {                      /* else a last sixteenth before the bar, doubled at a chance */
@@ -2204,8 +2245,8 @@ static void rolls(romi_pattern_t *d)
         h->step[15].flags = (uint8_t)(ROMI_ST_ON | ROMI_ST_ACC | 1u);
         h->step[15].chance = 40;
     }
-    if (SUOMI) {
-        /* suom1saundi: fewer rolls; the acid line keeps its own phrase */
+    if (SUOK) {
+        /* suom1saundi, psydub: fewer rolls; the acid line keeps its own phrase */
     } else if (pc->len == 16) {                            /* the percussion with them, rising */
         for (i = 13; i < 16; i++) {
             pc->step[i].flags = (uint8_t)(ROMI_ST_ON | (i == 15 ? 2u | ROMI_ST_ACC : 1u));
@@ -2447,16 +2488,20 @@ static void pattern_defaults(romi_pattern_t *p)
         tek_defaults(p);
     else if (SCH)
         sch_defaults(p);
+    else if (PSY)
+        psy_defaults(p);
 #endif
     /* tracks 5 and 6: ro:MINImal starts with STAB and CLICK, suom1saundi with PIIP and CLICK, FRE3tek with PIIP and
      * NOISE, schr4nz with NOISE (a clap) and PIIP */
-    engine_sound(&p->tr[ROMI_STAB], SCH ? ROMI_ENG_NOISE : STYLE ? ROMI_ENG_PIIP : ROMI_ENG_STAB);
-    engine_sound(&p->tr[ROMI_CLICK], TEK ? ROMI_ENG_NOISE : SCH ? ROMI_ENG_PIIP : ROMI_ENG_CLICK);
+    engine_sound(&p->tr[ROMI_STAB], SCH ? ROMI_ENG_NOISE : STYLE && !PSY ? ROMI_ENG_PIIP : ROMI_ENG_STAB);
+    engine_sound(&p->tr[ROMI_CLICK], TEK ? ROMI_ENG_NOISE : SCH || PSY ? ROMI_ENG_PIIP : ROMI_ENG_CLICK);
 #if ROMI_SUOMI
     if (TEK)
         tek_engines(p);                 /* the screech and the sirens */
     else if (SCH)
         sch_engines(p);                 /* the clap and the alarm */
+    else if (PSY)
+        psy_engines(p);                 /* the dub chord and the ping */
 #endif
 }
 
@@ -2479,7 +2524,7 @@ static void prj_sanitize(romi_project_t *p)
     LIM(p->cur_pat, 0, ROMI_PATTERNS - 1);
     LIM(p->chain, 0, 4);
     LIM(p->mode, 0, 1);
-    LIM(p->style, 0, ROMI_SUOMI ? 3 : 0);
+    LIM(p->style, 0, ROMI_SUOMI ? 4 : 0);
     LIM(p->work, 0, 1);
     LIM(p->air, 0, 127);
     LIM(p->order, 0, 2);
@@ -2844,7 +2889,20 @@ static void prj_style_defaults(void)
     p->sc_src = ROMI_KICK;
     p->dly_time = 2;
     p->air = 40;                        /* a little presence and air (+2.4 dB): the hats and the clicks forward */
-    if (SCH) {                          /* schr4nz: 150 BPM, straight as a press, G minor; the rumble under the kick,
+    if (PSY) {                          /* psydub: 138 BPM, a little loose, D phrygian; the delay long and dark (a dotted
+                                         * eighth, feedback 78), a big reverb, the kick ducking the others only softly */
+        p->bpm = 138;
+        p->swing = 52;
+        p->drift = 55;
+        p->duck = 62;
+        p->sc_rel = 60;
+        p->root = 26;                   /* D1 */
+        p->scale = 2;                   /* phrygian */
+        p->dly_fb = 78;
+        p->rev_size = 92;
+        p->rev_damp = 48;
+        p->air = 26;
+    } else if (SCH) {                   /* schr4nz: 150 BPM, straight as a press, G minor; the rumble under the kick,
                                          * ducked hard by it (the pump), a dry room */
         p->bpm = 150;
         p->swing = 50;
@@ -2932,12 +2990,12 @@ void romi_init(uint32_t seed)
 
 /* ---------------------------------------------------------------- canvas --- */
 #define RGB(r, g, b) ((uint16_t)((((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)))
-#define C_BG (SCH ? RGB(26, 29, 32) : 0x0000u)   /* black; schr4nz on steel */
-#define C_FG RGB(228, 224, 212)         /* warm white: what is set */
-#define C_MID RGB(150, 147, 138)
-#define C_DIM RGB(92, 90, 84)
-#define C_LINE RGB(44, 43, 40)          /* empty steps, rules */
-#define C_ACC (SCH ? RGB(255, 204, 0) : TEK ? RGB(178, 22, 34) : STYLE ? RGB(170, 255, 60) : RGB(255, 98, 44))
+#define C_BG (PSY ? RGB(233, 221, 195) : SCH ? RGB(26, 29, 32) : 0x0000u)   /* black; schr4nz on steel; psydub on sand */
+#define C_FG (PSY ? RGB(74, 52, 38) : RGB(228, 224, 212))   /* warm white: what is set (psydub: dark brown) */
+#define C_MID (PSY ? RGB(128, 104, 82) : RGB(150, 147, 138))
+#define C_DIM (PSY ? RGB(176, 157, 126) : RGB(92, 90, 84))
+#define C_LINE (PSY ? RGB(212, 198, 168) : RGB(44, 43, 40))   /* empty steps, rules */
+#define C_ACC (PSY ? RGB(181, 89, 60) : SCH ? RGB(255, 204, 0) : TEK ? RGB(178, 22, 34) : STYLE ? RGB(170, 255, 60) : RGB(255, 98, 44))
                                         /* the one colour: orange; suom1saundi's acid green; FRE3tek's dark red;
                                          * schr4nz's warning yellow */
 
@@ -3065,12 +3123,14 @@ static void cat_int(char *d, int v)
 enum { F_NUM, F_BPM, F_PCT, F_PAN, F_ROOT, F_SCALE, F_DTIME, F_ONOFF, F_SUBRATIO, F_PRATIO, F_CHORD, F_CHAIN, F_EPROB, F_EACC, F_TRACK, F_DEPSRC, F_DEPMODE, F_SHIFT, F_LRATE, F_LDEPTH, F_LTARGET, F_LSHAPE, F_PITCH, F_MODE, F_ORDER, F_RST, F_STYLE, F_PWAVE, F_PARP, F_SLMODE, F_SLRATE, F_ENGINE, F_SLTGT, F_P127, F_NLEN, F_NSWEEP, F_FILT, F_WORK };
 typedef struct { const char *name; uint8_t *v; uint8_t lo, hi, fmt, big; } param_t;
 
-static const char *const TRACK_NAMES[4][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
+static const char *const TRACK_NAMES[5][ROMI_TRACKS] = {{"KICK", "SUB", "HAT", "PERC", "STAB", "CLICK"},
                                                         {"POTKU", "BASSO", "HATTU", "HAPPO", "PIIP", "KLIKKI"},
                                                         {"KICK", "ACID", "HAT", "TRIBE", "SCREAM", "SIREN"},
-                                                        {"KICK", "RUMBLE", "HAT", "METAL", "CLAP", "ALARM"}};
-static const char *const ENG_NAMES[4][ROMI_NENG] = {{"STAB", "CLICK", "8-BIT", "NOISE"}, {"STAB", "KLIKKI", "PIIP", "SUHINA"},
-                                                    {"STAB", "CLICK", "SCREAM", "SIREN"}, {"STAB", "CLICK", "ALARM", "CLAP"}};   /* (PIIP
+                                                        {"KICK", "RUMBLE", "HAT", "METAL", "CLAP", "ALARM"},
+                                                        {"KICK", "DUB", "HAT", "BUBBLE", "CHORD", "PING"}};
+static const char *const ENG_NAMES[5][ROMI_NENG] = {{"STAB", "CLICK", "8-BIT", "NOISE"}, {"STAB", "KLIKKI", "PIIP", "SUHINA"},
+                                                    {"STAB", "CLICK", "SCREAM", "SIREN"}, {"STAB", "CLICK", "ALARM", "CLAP"},
+                                                    {"CHORD", "DROP", "PING", "WIND"}};   /* (PIIP
                                                                                  * is called 8-BIT in ro:MINImal) */
 static const char *track_name(int t)    /* tracks 5 and 6 by their engine */
 {
@@ -3080,7 +3140,7 @@ static const char *track_name(int t)    /* tracks 5 and 6 by their engine */
 }
 static const char *const PAGE_NAME[ROMI_NPAGES] = {"GROOVE", "SOUND", "MIX", "FX", "GLOBAL", "EUCLID", "SIDECHAIN", "LINK", "TIMING", "LFO 1", "LFO 2", "SOUND 2",
                                                     "GLOBAL 2", "MOD", "SLICE", "GROOVE 2", "SLICE LFO"};
-static const char *const SOUND_NAMES[4][ROMI_TRACKS][4] = {{
+static const char *const SOUND_NAMES[5][ROMI_TRACKS][4] = {{
     {"TUNE", "DECAY", "PUNCH", "DRIVE"}, {"DECAY", "FM", "RATIO", "GLIDE"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
 }, {                                    /* suom1saundi */
@@ -3092,8 +3152,11 @@ static const char *const SOUND_NAMES[4][ROMI_TRACKS][4] = {{
 }, {                                    /* schr4nz: memetek's kick and hat, the rumble, ro:MINImal's percussion as metal */
     {"TUNE", "DECAY", "SWEEP", "DRIVE"}, {"TONE", "SMEAR", "GRIT", "DECAY"}, {"DECAY", "TONE", "METAL", "OPEN"},
     {"DECAY", "FM", "RATIO", "BEND"}, {"LENGTH", "SWEEP", "TONE", "RESO"}, {"WAVE", "DECAY", "ARP", "VIBRATO"},
+}, {                                    /* psydub: suom1saundi's kick, bass, hat and acid, the bass a dub bass */
+    {"TUNE", "DECAY", "SWEEP", "DRIVE"}, {"CUTOFF", "RESO", "ENVMOD", "DECAY"}, {"DECAY", "TONE", "METAL", "OPEN"},
+    {"CUTOFF", "RESO", "ENVMOD", "DECAY"}, {"WAVE", "DECAY", "ARP", "VIBRATO"}, {"DECAY", "FREQ", "RESO", "SCATTER"},
 }};
-static const char *const SOUND2_NAMES[4][ROMI_TRACKS][4] = {{
+static const char *const SOUND2_NAMES[5][ROMI_TRACKS][4] = {{
     {"PITCH", "CLICK", "P.TIME", "CRUSH"}, {"PITCH", "FM.TIME", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
     {"PITCH", "B.TIME", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
 }, {
@@ -3105,6 +3168,9 @@ static const char *const SOUND2_NAMES[4][ROMI_TRACKS][4] = {{
 }, {
     {"PITCH", "CLICK", "SNAP", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}, {"PITCH", "CHIP", "DRIVE", "CRUSH"},
     {"PITCH", "B.TIME", "DRIVE", "CRUSH"}, {"PITCH", "SWELL", "DRIVE", "CRUSH"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"},
+}, {
+    {"PITCH", "CLICK", "SNAP", "CRUSH"}, {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "CHIP", "DRIVE", "CRUSH"},
+    {"PITCH", "WAVE", "DRIVE", "CRUSH"}, {"PITCH", "SPEED", "DRIVE", "CRUSH"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"},
 }};
 static const char *const ENG_SOUND[ROMI_NENG][2][4] = {
     {{"DECAY", "BRIGHT", "CHORD", "DETUNE"}, {"PITCH", "ATTACK", "DRIVE", "CRUSH"}},   /* STAB */
@@ -3129,7 +3195,7 @@ static int slides(int t)
 {
     if (t >= ROMI_STAB)                 /* tracks 5 and 6: STAB and PIIP slide, a click does not */
         return EDT->tr[t].engine == ROMI_ENG_STAB || EDT->tr[t].engine == ROMI_ENG_PIIP;
-    return SUOMI ? t == ROMI_SUB || t == ROMI_PERC : t == ROMI_SUB;   /* (FRE3tek: its ACID) */
+    return SUOK ? t == ROMI_SUB || t == ROMI_PERC : t == ROMI_SUB;   /* (FRE3tek: its ACID) */
 }
 static const char *const NOTE_NAME[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
@@ -3368,7 +3434,7 @@ static void param_text(const param_t *p, char *t)
     case F_MODE: cat(t, v ? "HARD" : "LAZY"); break;
     case F_ORDER: cat(t, v == 1 ? "A-D" : v == 2 ? "RANDOM" : "LOOP"); break;
     case F_RST: cat(t, v && v <= ROMI_TRACKS ? track_name(v - 1) : "FREE"); break;
-    case F_STYLE: cat(t, v == 3 ? "SCHR4" : v == 2 ? "FRE3" : v ? "SUOM1" : "ROMI"); break;
+    case F_STYLE: cat(t, v == 4 ? "P5YD" : v == 3 ? "SCHR4" : v == 2 ? "FRE3" : v ? "SUOM1" : "ROMI"); break;
     case F_WORK: cat(t, v ? "PROD" : "LIVE"); break;
     case F_ENGINE: cat(t, ENG_NAMES[STYLE][v % ROMI_NENG]); break;
     case F_SLTGT: cat(t, v == 1 ? "RANDOM" : v == 2 ? "MIX" : "RATE"); break;
@@ -3462,15 +3528,78 @@ static int glyph(int ch)
  * than the edges) and settles; grey, and on every step the next letter orange, one at a time. Behind it, dimmed,
  * the sequencer's dots light with what plays. The name drifts and bounces off the edges. Drawn in the main loop, 30 frames a
  * second; nothing of the audio path. */
-#define SV_NAME (SCH ? "SCHR4NZ" : TEK ? "FRE3TEK" : STYLE ? "SUOM1SAUNDI" : "ro:MINImal")
-#define SV_PX (TEKV ? 3.2f : STYLE ? 2.2f : 2.6f)   /* a font pixel, at rest (the longer name smaller) */
+#define SV_NAME (PSY ? "P5YDUB" : SCH ? "SCHR4NZ" : TEK ? "FRE3TEK" : STYLE ? "SUOM1SAUNDI" : "ro:MINImal")
+#define SV_PX (TEKV || PSY ? 3.2f : STYLE ? 2.2f : 2.6f)   /* a font pixel, at rest (the longer name smaller) */
 static int sv_len(void) { const char *s = SV_NAME; int n = 0; while (s[n]) n++; return n; }
 #define SV_PUMP 0.22f                   /* how much a kick swells all of it */
 #define SV_SWELL 0.14f                  /* and the middle more: the ball */
+/* a filled ellipse, clipped to the strip being drawn */
+static void fill_ell(int cx, int cy, int rx, int ry, uint16_t c)
+{
+    int j;
+    if (cy + ry < cv_y0 || cy - ry >= cv_y0 + ROMI_STRIP_H)
+        return;
+    for (j = -ry; j <= ry; j++) {
+        int w = 0;
+        if (cy + j < cv_y0 || cy + j >= cv_y0 + ROMI_STRIP_H)
+            continue;
+        while ((w + 1) * (w + 1) * ry * ry + j * j * rx * rx <= rx * rx * ry * ry)
+            w++;
+        rect(cx - w, cy + j, 2 * w + 1, 1, c);
+    }
+}
+static void fill_disc(int cx, int cy, int r, uint16_t c) { fill_ell(cx, cy, r, r, c); }
+static void psy_stroke(int k, float u1, int ox, int oy, float s, int r, uint16_t c);
+
+/* The screensaver's mascot (30 % of the time in place of the name): what each style shows in its own show, small, in
+ * the saver's greys with the one colour, pumping with the kick: ro:MINImal a speaker's cone, suom1saundi the UFO,
+ * FRE3tek the speaker wall's cone with its LED, schr4nz the gas mask (its lenses flash), p5ydub the Om */
+static void draw_mascot(int cx, int cy, float env)
+{
+    float k = 1.0f + env * (SV_PUMP + SV_SWELL * 0.5f);
+    int hit = env > 0.45f, j;
+#define MS(v) ((int)((float)(v) * k + 0.5f))
+    if (PSY) {                          /* the Om, in brown, its crescent and dot terracotta on the beat */
+        int i;
+        for (i = 0; i < 7; i++)
+            psy_stroke(i, 1.0f, cx - 3, cy, 0.92f * k, 3, i == 6 && hit ? C_ACC : C_FG);
+        fill_disc(cx - 3 + MS(-18 * 0.92f + 19 * 0.92f), cy + MS(-48 * 0.92f + 3), MS(4), hit ? C_ACC : C_MID);
+    } else if (SCH) {                   /* the gas mask */
+        fill_ell(cx, cy, MS(30), MS(40), C_DIM);
+        for (j = -1; j <= 1; j += 2) {
+            fill_disc(cx + j * MS(14), cy - MS(10), MS(10), C_MID);
+            fill_disc(cx + j * MS(14), cy - MS(10), MS(7), hit ? C_ACC : C_LINE);
+        }
+        rect(cx - MS(7), cy + MS(2), MS(14), MS(12), C_MID);
+        fill_disc(cx, cy + MS(26), MS(12), C_MID);
+        fill_disc(cx, cy + MS(26), MS(8), C_DIM);
+        for (j = -1; j <= 1; j++)
+            rect(cx - MS(6), cy + MS(26) + j * MS(4), MS(12), hit ? 2 : 1, C_LINE);
+    } else if (TEK) {                   /* a speaker: its box, the cone, the dust cap, the LED */
+        rect(cx - MS(40), cy - MS(40), MS(80), MS(80), C_DIM);
+        rect(cx - MS(37), cy - MS(37), MS(74), MS(74), C_LINE);
+        fill_disc(cx, cy, MS(28), C_MID);
+        fill_disc(cx, cy, MS(18), C_DIM);
+        fill_disc(cx, cy, MS(7), C_LINE);
+        rect(cx + MS(28), cy - MS(34), MS(5), MS(5), hit ? C_ACC : C_DIM);
+    } else if (SUOMI) {                 /* the UFO: a dome, the saucer, three lamps */
+        fill_ell(cx, cy - MS(10), MS(15), MS(13), C_FG);
+        fill_ell(cx, cy + MS(4), MS(42), MS(13), C_MID);
+        fill_ell(cx, cy + MS(11), MS(26), MS(5), C_DIM);
+        for (j = -1; j <= 1; j++)
+            fill_disc(cx + j * MS(22), cy + MS(4), MS(3), hit ? C_ACC : C_LINE);
+    } else {                            /* ro:MINImal: a speaker cone alone, a ring and a dot */
+        fill_disc(cx, cy, MS(34), C_MID);
+        fill_disc(cx, cy, MS(26), C_LINE);
+        fill_disc(cx, cy, MS(9), hit ? C_ACC : C_FG);
+    }
+#undef MS
+}
+
 static void draw_saver(void)
 {
     const char *name = SV_NAME;
-    int k, n, letters = TEKV ? 7 : STYLE ? 11 : 9, lit = R.playing ? (int)(R.gstep_ui % (uint32_t)letters) : -1;   /* the step's
+    int k, n, letters = PSY ? 6 : TEKV ? 7 : STYLE ? 11 : 9, lit = R.playing ? (int)(R.gstep_ui % (uint32_t)letters) : -1;   /* the step's
                                                                                  * letter (not the colon) */
     float hw = (float)(6 * sv_len() - 1) * 0.5f;   /* half the name's width, in font pixels */
     float cx = (float)R.sv_x * (1.0f / 16.0f), cy = (float)R.sv_y * (1.0f / 16.0f), env = (float)R.sv_env * (1.0f / 255.0f);
@@ -3493,6 +3622,11 @@ static void draw_saver(void)
                 rect(x + 4 - sz / 2, y + 4 - sz / 2, sz, sz, c);
             }
         }
+    }
+    if (R.sv_mascot) {
+        if (!(cv_y0 > (int)cy + 56 || cv_y0 + ROMI_STRIP_H < (int)cy - 56))
+            draw_mascot((int)cx, (int)cy, env);
+        return;
     }
     if (cv_y0 > (int)cy + 24 || cv_y0 + ROMI_STRIP_H < (int)cy - 24)
         return;
@@ -3520,6 +3654,8 @@ static void saver_frame(void)
 {
     int k, w = (int)((float)(6 * sv_len()) * 0.5f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2;
     int h = (int)(4.0f * SV_PX * (1.0f + SV_PUMP + SV_SWELL)) + 2;
+    if (R.sv_mascot)                    /* the mascot is a box of about 100 x 100 */
+        w = h = 56;
     R.sv_env = (uint8_t)(R.sv_env * 3 / 4);   /* settles in about 150 ms */
     for (k = 0; k < ROMI_TRACKS; k++) {
         uint32_t h = R.hits[k], i;
@@ -3552,8 +3688,11 @@ static void saver_frame(void)
 #define FLY_FRAMES 46
 #define TEK_FRAMES 66
 #define SCH_FRAMES 70
+#define PSY_FRAMES 86
+#define FADE_OF(u) ((u) == 3u ? 4u : (u) == 4u ? 5u : (u) == 5u ? 6u : (u))   /* the show's name faded into the pages */
+#define JG_OF(u) ((u) == 3u ? 5u : (u) == 4u ? 7u : (u) == 5u ? 9u : (u))   /* the show's sound */
 #define CHANGE_MS(m) ((uint32_t)(CRT_FRAMES + ((m) == 1u ? UFO_FRAMES : (m) == 3u ? TEK_FRAMES : (m) == 4u ? SCH_FRAMES \
-                                                 : FLY_FRAMES)) * 33u)
+                                                 : (m) == 5u ? PSY_FRAMES : FLY_FRAMES)) * 33u)
 #define GREY(v) RGB(v, v, v)
 static float uf_fx, uf_fy, uf_z;        /* the focus, in world pixels; a world pixel, in screen pixels */
 static void wpx(float x, float y, float w, float h, uint16_t c)
@@ -3846,6 +3985,90 @@ static void draw_sch(int f)
     }
 }
 
+/* psydub: an Om, drawn stroke by stroke in earth tones on sand, a warm sun behind it and rings that breathe at 138 (a
+ * beat each 13 frames); then the name arrives, and its echoes after it (a dotted eighth apart, each fainter: dub) */
+#define PSY_BROWN RGB(74, 52, 38)
+#define PSY_TERRA RGB(181, 89, 60)
+#define PSY_OCHRE RGB(201, 143, 43)
+#define PSY_OLIVE RGB(107, 107, 58)
+#define PSY_SAND RGB(233, 221, 195)
+static void draw_psy_name(int sc, int y, int echoes)
+{
+    int w = 6 * 6 * sc - sc, x0, x, k;
+    if (echoes > 2)
+        echoes = 2;
+    x0 = 120 - w / 2 - echoes * 6 * sc / 2;
+    x = text(x0, y, "P", PSY_BROWN, sc);
+    x = text(x, y, "5", PSY_TERRA, sc);
+    x = text(x, y, "YDUB", PSY_BROWN, sc);
+    for (k = 1; k <= echoes; k++)       /* the last letter goes on, fainter each time: the delay's repeats */
+        x = text(x, y, "B", mix565(PSY_SAND, PSY_BROWN, 150u - (uint32_t)k * 55u), sc);
+}
+#define psy_disc fill_disc
+/* the Om as seven cubic strokes in a 100 x 100 box: the two lobes of the "3", the curl under them, the tail that
+ * rises from the waist and turns down, the crescent; and the dot above it */
+static const int8_t PSY_OM[7][8] = {
+    {22, 26, 20, 6, 60, 4, 60, 28},
+    {60, 28, 60, 46, 40, 46, 28, 44},
+    {28, 44, 74, 40, 80, 70, 60, 80},
+    {60, 80, 44, 96, 16, 90, 20, 70},
+    {52, 43, 74, 30, 98, 36, 94, 60},
+    {94, 60, 92, 78, 74, 76, 74, 66},
+    {64, 12, 70, 32, 86, 32, 90, 12},
+};
+static void psy_stroke(int k, float u1, int ox, int oy, float s, int r, uint16_t c)
+{
+    const int8_t *q = PSY_OM[k];
+    int i, n = 24;
+    if (u1 <= 0.0f)
+        return;
+    for (i = 0; i <= n; i++) {
+        float u = u1 * (float)i * (1.0f / (float)n), v = 1.0f - u;
+        float b0 = v * v * v, b1 = 3.0f * v * v * u, b2 = 3.0f * v * u * u, b3 = u * u * u;
+        float x = b0 * q[0] + b1 * q[2] + b2 * q[4] + b3 * q[6], y = b0 * q[1] + b1 * q[3] + b2 * q[5] + b3 * q[7];
+        psy_disc(ox + (int)((x - 58.0f) * s + 1000.5f) - 1000, oy + (int)((y - 50.0f) * s + 1000.5f) - 1000, r, c);
+    }
+}
+static void draw_psy(int f)
+{
+    static const uint8_t RINGC[4][3] = {{222, 207, 174}, {214, 198, 160}, {206, 190, 150}, {198, 182, 142}};
+    int k, i, beat = f % 13 < 3, pulse = beat ? 4 : 0, cx = 120, cy = 100;
+    rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, PSY_SAND);
+    for (k = 0; k < 4; k++) {           /* rings, breathing outward */
+        int r = 52 + k * 20 + pulse + (f < 20 ? (20 - f) * (k + 1) : 0);
+        for (i = 0; i < 72; i++) {
+            float a = (float)i * (1.0f / 72.0f);
+            int px_ = cx + (int)(fsin(a + 0.25f) * (float)r + 1000.5f) - 1000, py_ = cy + (int)(fsin(a) * (float)r + 1000.5f) - 1000;
+            if (py_ >= cv_y0 && py_ < cv_y0 + ROMI_STRIP_H)
+                rect(px_ - 1, py_ - 1, 3, 3, RGB(RINGC[k][0], RINGC[k][1], RINGC[k][2]));
+        }
+    }
+    psy_disc(cx, cy, 58 + pulse, RGB(226, 196, 138));   /* the sun, two shades */
+    psy_disc(cx, cy, 46 + pulse, RGB(218, 176, 104));
+    {                                   /* the strokes, one after the other: ochre at the edge, brown in the middle */
+        static const uint16_t COL[7] = {RGB(74, 52, 38), RGB(74, 52, 38), RGB(107, 62, 40), RGB(107, 62, 40),
+                                        RGB(107, 107, 58), RGB(107, 107, 58), RGB(181, 89, 60)};
+        for (k = 0; k < 7; k++) {
+            float u = (float)(f - 5 - k * 6) * (1.0f / 10.0f);
+            u = u < 0.0f ? 0.0f : u > 1.0f ? 1.0f : u;
+            psy_stroke(k, u, cx - 4, cy, 1.72f, 5, COL[k]);
+        }
+        {                               /* the dot, last: it drops in */
+            int e = f - 50;
+            if (e >= 0) {
+                int dy = e < 6 ? (6 - e) * 5 : 0;
+                psy_disc(cx + (int)((77.0f - 58.0f) * 1.72f) - 4, cy + (int)((2.0f - 50.0f) * 1.72f) - dy, 6, PSY_TERRA);
+            }
+        }
+    }
+    if (f >= 56) {                      /* the name, its echoes following one by one */
+        int e = f - 56, n = e / 4 > 3 ? 3 : e / 4;
+        draw_psy_name(4, 188, n);
+        if (e >= 14)
+            text(120 - text_w("SHANTI", 1) / 2, 222, "SHANTI", PSY_OLIVE, 1);
+    }
+}
+
 static void draw_flyin(int f)
 {
     static const char NAME[] = "ro:MINImal";
@@ -3892,7 +4115,7 @@ static int text_dia(int x, int y, const char *s, uint16_t c, int sc)
 static void draw_night(uint16_t *px, int strip)
 {
     int f = (int)((R.now - R.night_t) / 33u), lv;
-    const char *w = SCH ? "GUTE NACHT" : TEK ? "DOBROU NOC" : STYLE ? "HYV\1\1 Y\2T\1" : "NOAPTE BUN\3";
+    const char *w = PSY ? "SHANTI" : SCH ? "GUTE NACHT" : TEK ? "DOBROU NOC" : STYLE ? "HYV\1\1 Y\2T\1" : "NOAPTE BUN\3";
     if (R.night == 1u && f < CRT_FRAMES) {
         draw_crt(px, strip, f);
         return;
@@ -3914,7 +4137,7 @@ static void draw_night(uint16_t *px, int strip)
         const char *p;
         for (p = w; *p; p++)
             n++;
-        text_dia(120 - (6 * n - 1) * 3 / 2, 112, w, STYLE ? mix565(0u, C_ACC, (uint32_t)lv) : RGB(v, v, v * 15 / 16), 3);
+        text_dia(120 - (6 * n - 1) * 3 / 2, 112, w, STYLE ? mix565(PSY ? C_BG : 0u, C_ACC, (uint32_t)lv) : RGB(v, v, v * 15 / 16), 3);
     }
 }
 
@@ -3933,7 +4156,7 @@ void romi_draw(uint16_t *px, int strip)
         if (al > 256u)
             al = 256u;
         for (i = 0; i < (uint32_t)(ROMI_W * ROMI_STRIP_H); i++)   /* the pages come up out of black */
-            px[i] = mix565(0u, px[i], al);
+            px[i] = mix565(PSY ? C_BG : 0u, px[i], al);
         cv_alpha = 256u - al;           /* and the name goes */
         if (R.fade == 1u)
             draw_suomi_name();
@@ -3945,6 +4168,9 @@ void romi_draw(uint16_t *px, int strip)
         } else if (R.fade == 5u) {
             rect(0, 120 - 14 - 8, ROMI_W, 28 + 16, C_BG);
             draw_sch_name(4, 120 - 14);
+        } else if (R.fade == 6u) {
+            rect(0, 120 - 14 - 8, ROMI_W, 28 + 16, C_BG);
+            draw_psy_name(4, 120 - 14, 3);
         }
         cv_alpha = 256u;
         return;
@@ -3967,6 +4193,8 @@ void romi_draw(uint16_t *px, int strip)
         draw_tek(f - CRT_FRAMES);
     else if (R.ufo == 4u)
         draw_sch(f - CRT_FRAMES);
+    else if (R.ufo == 5u)
+        draw_psy(f - CRT_FRAMES);
     else
         draw_flyin(f - CRT_FRAMES);
 }
@@ -4031,7 +4259,11 @@ static void draw_main(uint16_t *px, int strip)
     }
 
     /* header: the name, the pattern, the tempo, the transport */
-    if (SCH) {                          /* schr4nz, the 4 in its yellow */
+    if (PSY) {                          /* p5ydub, the 5 in terracotta */
+        i = text(4, 5, "P", C_FG, 2);
+        i = text(i, 5, "5", C_ACC, 2);
+        text(i, 5, "YDUB", C_FG, 2);
+    } else if (SCH) {                   /* schr4nz, the 4 in its yellow */
         i = text(4, 5, "SCHR", C_FG, 2);
         i = text(i, 5, "4", C_ACC, 2);
         text(i, 5, "NZ", C_FG, 2);
@@ -4089,7 +4321,8 @@ static void draw_main(uint16_t *px, int strip)
             int x = CELL_X + i * CELL_W, on, play;
             const romi_step_t *sp = &tr->step[i];
             uint8_t f = sp->flags;
-            static const uint16_t SHADE[4] = {C_FG, RGB(176, 173, 163), RGB(124, 122, 114), RGB(84, 82, 77)};
+            const uint16_t SHADE[4] = {C_FG, PSY ? RGB(116, 90, 68) : RGB(176, 173, 163), PSY ? RGB(152, 126, 98) : RGB(124, 122, 114),
+                                       PSY ? RGB(184, 163, 132) : RGB(84, 82, 77)};
             uint16_t c;
             if (i >= tr->len) {
                 rect(x + 4, y + 8, 2, 2, C_LINE);
@@ -4106,7 +4339,7 @@ static void draw_main(uint16_t *px, int strip)
             if (on)                     /* microtiming: the cell sits a pixel or two off its place */
                 x += sp->shift / 3;
             if (!on)
-                rect(x, y + 6, 10, 10, (i & 3) == 0 ? RGB(60, 58, 54) : C_LINE);
+                rect(x, y + 6, 10, 10, (i & 3) == 0 ? (PSY ? RGB(194, 178, 146) : RGB(60, 58, 54)) : C_LINE);
             else if (f & ROMI_ST_ACC)
                 rect(x, y, 10, 16, c);  /* an accent stands taller */
             else
@@ -4552,11 +4785,11 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
     if (R.boot) {                       /* power-on: the style's own show, without the tube's collapse */
         R.boot = 0;
         if (ROMI_SUOMI || !STYLE) {
-            R.ufo = SUOMI ? 1u : TEK ? 3u : SCH ? 4u : 2u;
+            R.ufo = SUOMI ? 1u : TEK ? 3u : SCH ? 4u : PSY ? 5u : 2u;
             R.intro = 1;
             R.ufo_t = now_ms - (uint32_t)CRT_FRAMES * 33u;
             R.ufo_ms = now_ms;
-            R.jg_want = SUOMI ? 4u : TEK ? 6u : SCH ? 8u : 0u;
+            R.jg_want = SUOMI ? 4u : TEK ? 6u : SCH ? 8u : PSY ? 10u : 0u;
             R.dirty |= STRIP_ALL;
         }
     }
@@ -4568,10 +4801,10 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         if (ROMI_SUOMI) {               /* the other style, with its show: ro:MINImal and suom1saundi one to the other,
                                          * FRE3tek and schr4nz one to the other (schr4nz only from FRE3tek, suom1saundi
                                          * only from ro:MINImal) */
-            R.ufo = SCH ? 3u : TEK ? 4u : SUOMI ? 2u : 1u;
-            R.show_to = SCH ? 2u : TEK ? 3u : SUOMI ? 0u : 1u;
+            R.ufo = SCH ? 3u : TEK ? 4u : SUOMI || PSY ? 2u : 1u;
+            R.show_to = SCH ? 2u : TEK ? 3u : SUOMI || PSY ? 0u : 1u;   /* (psydub: GLO held goes home too) */
             R.ufo_t = R.ufo_ms = now_ms;
-            R.jg_want = R.ufo == 3u ? 5u : R.ufo == 4u ? 7u : R.ufo;
+            R.jg_want = JG_OF(R.ufo);
             R.mus_on = 0;               /* the music goes with the picture */
             R.dirty |= STRIP_ALL;
         }
@@ -4585,12 +4818,18 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
             if (TEKV) {                 /* FRE3tek or schr4nz: home to ro:MINImal */
                 R.show_to = 0;
                 R.ufo = 2;
-            } else {
+            } else if (PSY) {           /* psydub: back to suom1saundi, where it came from */
+                R.show_to = 1;
+                R.ufo = 1;
+            } else if (SUOMI) {         /* suom1saundi: into psydub */
+                R.show_to = 4;
+                R.ufo = 5;
+            } else {                    /* ro:MINImal: into FRE3tek */
                 R.show_to = 2;
                 R.ufo = 3;
             }
             R.ufo_t = R.ufo_ms = now_ms;
-            R.jg_want = R.ufo == 3u ? 5u : R.ufo;
+            R.jg_want = JG_OF(R.ufo);
             R.mus_on = 0;
             R.dirty |= STRIP_ALL;
         }
@@ -4613,7 +4852,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         if (any || now_ms - R.ufo_t >= CHANGE_MS(R.ufo)) {
             if (any)
                 R.jg_want = 3;
-            R.fade = any ? 0u : R.ufo == 3u ? 4u : R.ufo == 4u ? 5u : R.ufo;
+            R.fade = any ? 0u : FADE_OF(R.ufo);
             R.fade_t = R.fade_ms = now_ms;
             R.ufo = 0;
             R.intro = 0;
@@ -4641,7 +4880,7 @@ void romi_input(uint32_t buttons, uint32_t keys, const int32_t enc[ROMI_NE], uin
         if (any || now_ms - R.ufo_t >= CHANGE_MS(R.ufo)) {   /* at its end the style changes: a new groove in it */
             if (any)
                 R.jg_want = 3;
-            R.fade = R.ufo == 3u ? 4u : R.ufo == 4u ? 5u : R.ufo;   /* a few frames of fade into the pages */
+            R.fade = FADE_OF(R.ufo);          /* a few frames of fade into the pages */
             R.mus_on = 1;               /* and the music back with it, from the top of the new groove */
             if (R.playing)
                 R.want_play = 1;
@@ -5179,6 +5418,7 @@ mixer_end:
                 R.sv_glow[t][k] = 0;
         }
         R.sv_env = 0;
+        R.sv_mascot = urand(100) < 30u;
         R.sv_x = (int16_t)((110 + urand(20)) << 4);
         R.sv_y = (int16_t)((60 + urand(120)) << 4);
         R.sv_dx = (int16_t)(urand(2) ? 3 : -3);
@@ -5304,6 +5544,7 @@ int romi_state(int what)
     case ROMI_Q_UFO: return R.ufo;
     case ROMI_Q_NIGHT: return R.night;
     case ROMI_Q_MIXER: return R.mixer;
+    case ROMI_Q_MASCOT: return R.saver && R.sv_mascot;
     case ROMI_Q_FILL: return R.fill;
     case ROMI_Q_LFO_PAGE: return R.page == ROMI_PG_LFO1 ? 1 : R.page == ROMI_PG_LFO2 ? 2 : 0;
     case ROMI_Q_HITS + 0: case ROMI_Q_HITS + 1: case ROMI_Q_HITS + 2: case ROMI_Q_HITS + 3: case ROMI_Q_HITS + 4:

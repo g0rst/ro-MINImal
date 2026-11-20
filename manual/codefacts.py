@@ -2,7 +2,7 @@
 """What the manuals read from the firmware's code, so their tables cannot drift from it: the tracks' names, the knobs'
 names, the factory values of both styles and of the engines of tracks 5 and 6, the pages, the scales, the start
 settings. Standard library only; used by manual/build.py (ro:MINImal), manual/suomi.py (suom1saundi),
-manual/fre3tek.py and manual/schr4nz.py."""
+manual/fre3tek.py, manual/schr4nz.py and manual/p5ydub.py."""
 import pathlib
 import re
 import subprocess
@@ -40,10 +40,11 @@ def _rows(block):
 
 def facts():
     romi, gen, tek, sch = _src("romi.c"), _src("suomi_gen.inc"), _src("tek_gen.inc"), _src("sch_gen.inc")
-    tracks = _strings(_block(romi, "TRACK_NAMES[4][ROMI_TRACKS] ="))
-    engines = _strings(_block(romi, "ENG_NAMES[4][ROMI_NENG] ="))
-    sound = _strings(_block(romi, "SOUND_NAMES[4][ROMI_TRACKS][4] ="))
-    sound2 = _strings(_block(romi, "SOUND2_NAMES[4][ROMI_TRACKS][4] ="))
+    psy = _src("psy_gen.inc")
+    tracks = _strings(_block(romi, "TRACK_NAMES[5][ROMI_TRACKS] ="))
+    engines = _strings(_block(romi, "ENG_NAMES[5][ROMI_NENG] ="))
+    sound = _strings(_block(romi, "SOUND_NAMES[5][ROMI_TRACKS][4] ="))
+    sound2 = _strings(_block(romi, "SOUND2_NAMES[5][ROMI_TRACKS][4] ="))
     eng_sound = _strings(_block(romi, "ENG_SOUND[ROMI_NENG][2][4] ="))
     pages = _strings(_block(romi, "PAGE_NAME[ROMI_NPAGES] ="))
     romi_def = _rows(_block(romi, "static const uint8_t DEF[ROMI_TRACKS][8] ="))
@@ -55,14 +56,16 @@ def facts():
     tek_sc = _rows(_block(tek, "static const uint8_t SC[4] ="))[0]
     sch_def = _rows(_block(sch, "static const uint8_t DEF[4][9] ="))
     sch_sc = _rows(_block(sch, "static const uint8_t SC[4] ="))[0]
+    psy_def = _rows(_block(psy, "static const uint8_t DEF[ROMI_TRACKS][9] ="))
+    psy_glide = _rows(_block(psy, "static const uint8_t GLIDE[ROMI_TRACKS] ="))[0]
     scales = re.findall(r"/\*\s*([a-z ]+?)(?::[^*]*)?\s*\*/", _block(romi, "static const uint8_t SCALES[NSCALES][7] ="))
     style = {}
-    m = re.search(r"if \(SCH\) \{\s*/\*.*?\*/(.*?)\} else if \(TEK\) \{\s*/\*[^*]*\*/(.*?)\} else if \(STYLE\) \{\s*/\*[^*]*\*/(.*?)\} else \{(.*?)\}",
+    m = re.search(r"if \(PSY\) \{\s*/\*.*?\*/(.*?)\} else if \(SCH\) \{\s*/\*.*?\*/(.*?)\} else if \(TEK\) \{\s*/\*[^*]*\*/(.*?)\} else if \(STYLE\) \{\s*/\*[^*]*\*/(.*?)\} else \{(.*?)\}",
                   _block(romi, "static void prj_style_defaults(void)"), re.S)
-    for k, part in (("sch", m.group(1)), ("tek", m.group(2)), ("suomi", m.group(3)), ("romi", m.group(4))):
+    for k, part in (("psy", m.group(1)), ("sch", m.group(2)), ("tek", m.group(3)), ("suomi", m.group(4)), ("romi", m.group(5))):
         style[k] = {a: int(b) for a, b in re.findall(r"p->(\w+)\s*=\s*(\d+);", part)}
     n = 6
-    S = ("romi", "suomi", "tek", "sch")
+    S = ("romi", "suomi", "tek", "sch", "psy")
     try:
         rev = subprocess.run(["git", "-C", str(ROOT), "log", "-1", "--format=%h %cs"], capture_output=True,
                              text=True, check=True).stdout.split()
@@ -75,6 +78,7 @@ def facts():
         "sound": {k: [sound[(j * n + i) * 4:(j * n + i) * 4 + 4] for i in range(n)] for j, k in enumerate(S)},
         "sound2": {k: [sound2[(j * n + i) * 4:(j * n + i) * 4 + 4] for i in range(n)] for j, k in enumerate(S)},
         "tek_def": tek_def, "tek_sc": tek_sc, "sch_def": sch_def, "sch_sc": sch_sc,
+        "psy_def": psy_def, "psy_glide": psy_glide,
         "eng_sound": [[eng_sound[e * 8:e * 8 + 4], eng_sound[e * 8 + 4:e * 8 + 8]] for e in range(len(eng_sound) // 8)],
         "pages": pages,
         "romi_def": romi_def, "romi_q": romi_q, "eng_def": eng_def,
