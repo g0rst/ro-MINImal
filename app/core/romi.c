@@ -1210,16 +1210,16 @@ static float jingle(void)
         if (n == JG_S(0.30f) - 1u)
             R.jg_ph = 0.0f;
         return 0.0f;
-    } else if (R.jg_mode == 9u) {      /* psydub: a bowl struck, its dub echo (a dotted eighth at 138: 0.326 s, each
+    } else if (R.jg_mode == 9u) {      /* psydub: a bowl struck, its dub echo (a dotted eighth at 100: 0.45 s, each
                                          * repeat fainter), under it a round kick that falls to a thud */
         float u;
         n -= JG_S(JG_UFO);
         t = (float)n * (1.0f / (float)ROMI_SR);
-        if (t >= 2.6f) {
+        if (t >= 3.0f) {
             R.jg_n = 0;
             return 0.0f;
         }
-        o = (psy_bowl(t - 0.12f) + 0.55f * psy_bowl(t - 0.446f) + 0.30f * psy_bowl(t - 0.772f) + 0.16f * psy_bowl(t - 1.098f)) * 0.26f;
+        o = (psy_bowl(t - 0.12f) + 0.55f * psy_bowl(t - 0.57f) + 0.30f * psy_bowl(t - 1.02f) + 0.16f * psy_bowl(t - 1.47f)) * 0.26f;
         if (t < 0.5f) {
             u = t;
             R.jg_ph += (46.0f + 110.0f * fexp2(-u * 38.0f)) * (1.0f / (float)ROMI_SR);
@@ -2510,7 +2510,7 @@ static void prj_sanitize(romi_project_t *p)
 {
     int a, t, i;
 #define LIM(v, lo, hi) do { if ((v) < (lo)) (v) = (lo); if ((v) > (hi)) (v) = (hi); } while (0)
-    LIM(p->bpm, 90, 200);
+    LIM(p->bpm, 70, 200);
     LIM(p->swing, 50, 75);
     LIM(p->drift, 0, 127);
     LIM(p->duck, 0, 127);
@@ -2889,9 +2889,10 @@ static void prj_style_defaults(void)
     p->sc_src = ROMI_KICK;
     p->dly_time = 2;
     p->air = 40;                        /* a little presence and air (+2.4 dB): the hats and the clicks forward */
-    if (PSY) {                          /* psydub: 138 BPM, a little loose, D phrygian; the delay long and dark (a dotted
+    if (PSY) {                          /* psydub: 100 BPM (the genre: 70..110, often 80..100), a little loose, D
+                                         * phrygian; the delay long and dark (a dotted
                                          * eighth, feedback 78), a big reverb, the kick ducking the others only softly */
-        p->bpm = 138;
+        p->bpm = 100;
         p->swing = 52;
         p->drift = 55;
         p->duck = 62;
@@ -3214,7 +3215,7 @@ static int page_params(param_t p[4])
 #define P(i, n, ptr, l, h, f, b) (p[i].name = (n), p[i].v = (ptr), p[i].lo = (l), p[i].hi = (h), p[i].fmt = (f), p[i].big = (b))
     switch (R.page) {
     case ROMI_PG_HOME:
-        P(0, "TEMPO", &R.prj.bpm, 90, 200, F_BPM, 0);
+        P(0, "TEMPO", &R.prj.bpm, 70, 200, F_BPM, 0);
         P(1, "SWING", &R.prj.swing, 50, 75, F_PCT, 0);
         P(2, "DRIFT", &R.prj.drift, 0, 127, F_NUM, 1);
         P(3, "DUCK", &R.prj.duck, 0, 127, F_NUM, 1);
@@ -3985,8 +3986,8 @@ static void draw_sch(int f)
     }
 }
 
-/* psydub: an Om, drawn stroke by stroke in earth tones on sand, a warm sun behind it and rings that breathe at 138 (a
- * beat each 13 frames); then the name arrives, and its echoes after it (a dotted eighth apart, each fainter: dub) */
+/* psydub: an Om, drawn stroke by stroke in earth tones on sand, a warm sun behind it and rings that breathe at 100 (a
+ * beat each 18 frames); then the name arrives, and its echoes after it (a dotted eighth apart, each fainter: dub) */
 #define PSY_BROWN RGB(74, 52, 38)
 #define PSY_TERRA RGB(181, 89, 60)
 #define PSY_OCHRE RGB(201, 143, 43)
@@ -4032,7 +4033,7 @@ static void psy_stroke(int k, float u1, int ox, int oy, float s, int r, uint16_t
 static void draw_psy(int f)
 {
     static const uint8_t RINGC[4][3] = {{222, 207, 174}, {214, 198, 160}, {206, 190, 150}, {198, 182, 142}};
-    int k, i, beat = f % 13 < 3, pulse = beat ? 4 : 0, cx = 120, cy = 100;
+    int k, i, beat = f % 18 < 4, pulse = beat ? 4 : 0, cx = 120, cy = 100;
     rect(0, cv_y0, ROMI_W, ROMI_STRIP_H, PSY_SAND);
     for (k = 0; k < 4; k++) {           /* rings, breathing outward */
         int r = 52 + k * 20 + pulse + (f < 20 ? (20 - f) * (k + 1) : 0);

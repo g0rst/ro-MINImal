@@ -37,8 +37,8 @@ ROLE = [
 ]
 
 THEORY = [
-    ("<b>Tempo:</b> um 138 BPM (Dub-Techno liegt bei 145, Dubstep bei 140); einstellbar von 90 bis 160.",
-     "<b>Tempo:</b> about 138 BPM (dub techno sits at 145, dubstep at 140); settable from 90 to 160."),
+    ("<b>Tempo:</b> um 100 BPM (Psydub liegt meist bei 70 bis 110, oft 80 bis 100, mit Half-Time-Gefühl; Psytrance und Dubstep sind mit 128 bis 144 die schnellen Nachbarn); einstellbar von 70 bis 200.",
+     "<b>Tempo:</b> about 100 BPM (psydub mostly sits at 70 to 110, often 80 to 100, with a half-time feel; psytrance and dubstep are the fast neighbours at 128 to 144); settable from 70 to 200."),
     ("<b>Skala:</b> Moll-Pentatonik für Bass und Blase; die meiste Dub-Musik beruht auf ihr, sagt die "
      "Faustregel in den Foren. Die Grundskala ist phrygisch: die ♭2 gibt die dunkle Spannung, und eine ♭II-Fläche "
      "(i – ♭II – ♭VII – i) ist der Standardzug.",

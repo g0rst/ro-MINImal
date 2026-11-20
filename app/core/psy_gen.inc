@@ -2,7 +2,8 @@
  * ro:MINImal, style psydub (HOME held 2 s in suom1saundi): psytrance and dub. Included by romi.c after sch_gen.inc
  * (ROMI_SUOMI 1: it plays suom1saundi's kick, bass, hat and acid voices; the rest is its own rules).
  *
- * What the forums and the guides agree on, and what is built from it: about 138 BPM, minor keys (D, A, C), the
+ * What the forums and the guides agree on, and what is built from it: about 100 BPM (psydub is slow: 70 to 110, often 80 to 100, a half-time feel; psytrance and dubstep are the fast
+ * neighbours), minor keys (D, A, C), the
  * minor pentatonic as the bass's and the melody's scale with the phrygian flat second kept as the dark colour; a bass
  * that keeps to the root and leaves air (a dub bass is slow, long, sub-heavy); the chords small minor triads, stabbed
  * on the off-beat and left to the echo (the delay is the instrument: two or three sends, the time a dotted eighth, the
@@ -13,7 +14,7 @@
  *           2 HAT     HATTU: the off-beat open, a few closed ones between, very sparse
  *           3 BUBBLE  HAPPO: a pentatonic phrase on a loop of its own (12, 14, 15 or 16 steps) that bubbles through the delay
  *           4 CHORD   STAB: minor triads on the off-beat (the engine's rules)       5 PING  PIIP: a bell through the echo
- * 138 BPM, D phrygian (the bass and the bubble keep to the pentatonic's degrees). */
+ * 100 BPM, D phrygian (the bass and the bubble keep to the pentatonic's degrees). */
 
 static void psy_gen(romi_track_t *tr, int t, uint32_t d)
 {

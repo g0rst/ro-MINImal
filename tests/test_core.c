@@ -1630,7 +1630,7 @@ int main(int argc, char **argv)
     }
 
     /* psydub (HOME held 2 s in suom1saundi): the tube collapses, an Om is drawn in earth tones on sand, the name
-     * arrives with its echoes; psytrance and dub at 138, D phrygian, KICK DUB HAT BUBBLE CHORD PING. HOME held again
+     * arrives with its echoes; psytrance and dub at 100, D phrygian, KICK DUB HAT BUBBLE CHORD PING. HOME held again
      * goes back to suom1saundi, GLO held home to ro:MINImal. From ro:MINImal HOME still leads to FRE3tek. */
     {
         int k, f, i, kicks = 0, dub = 0, bub = 0;
@@ -1654,7 +1654,7 @@ int main(int argc, char **argv)
                 write_screen(path);
             }
         }
-        CHECK(romi_project()->style == 4 && romi_project()->bpm == 138 && romi_project()->scale == 2,
+        CHECK(romi_project()->style == 4 && romi_project()->bpm == 100 && romi_project()->scale == 2,
               "psydub: style %d bpm %d scale %d", romi_project()->style, romi_project()->bpm, romi_project()->scale);
         for (k = 0; k < 40; k++) frame(0);
         snprintf(path, sizeof path, "%s/screen-psy.ppm", out);

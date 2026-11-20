@@ -99,7 +99,7 @@ Instruktionen pro Sample (mit dem Hall des Rumble 2 198), mit GRAIN auf zwei Spu
 
 ## Fünfter Stil: p5ydub (in suom1saundi HOME 2 s halten)
 
-**p5ydub** ist Psytrance und Dub: 138 BPM, D phrygisch, die Pentatonik für Bass und Melodie, kleine Moll-Akkorde, die das
+**p5ydub** ist Psytrance und Dub: 100 BPM (Psydub liegt bei 70 bis 110), D phrygisch, die Pentatonik für Bass und Melodie, kleine Moll-Akkorde, die das
 Delay zum Klang macht. Man kommt **nur aus suom1saundi** hin: dort **HOME 2 s halten** (in ro:MINImal führt HOME weiter
 zu FRE3tek). Show: Röhre zieht sich zusammen, ein **Om** wird Strich für Strich in Erdtönen auf beigem Grund gezeichnet
 (Sonne dahinter, Ringe, die im Takt atmen), der Name **p5ydub** (die 5 in Terrakotta) kommt, sein letztes B hallt nach.
@@ -286,7 +286,7 @@ Soft-Clipper in der Summe. 44,1 kHz, Blöcke zu 256 Frames.
 | SELECT, OCT−, OCT+ | Spur wählen |
 | ALGO | Looplänge der Spur |
 | PRESET | Pattern A bis D (wechselt zum nächsten Takt) |
-| HOME | Seite GROOVE: Tempo (90 bis 160), Swing, Drift, Duck |
+| HOME | Seite GROOVE: Tempo (70 bis 200), Swing, Drift, Duck |
 | SEL halten + weiße Taste 1 bis 4 | BEAT REPEAT der Summe: Viertel, Achtel, Sechzehntel, Zweiunddreißigstel, ab dem Moment, bis zum Loslassen |
 | HOME ein zweites Mal | Seite GROOVE 2: K1 Engine von Spur 5, K2 Engine von Spur 6 (beide Stile): STAB (FM-Akkorde), CLICK (Rauschkörner, bei suom1saundi KLIKKI), 8-BIT (bei suom1saundi PIIP, Soundchip) oder NOISE (bei suom1saundi SUHINA: Rauschen, Riser, Downlifter); K3 FILTER der Summe (links Tiefpass, rechts Hochpass, Mitte aus), K4 BASS (Tiefen unter 100 Hz, bis etwa +9 dB); auch zweimal dasselbe. Neue Engine: ihr Klang und ein Pattern nach ihren Regeln, sie kommt **stumm** dazu (SEL holt sie rein), UNDO holt das alte zurück. Die Spur wechselt in allen vier Patterns (LAZY: B bis D folgen A; HARD + WORK LIVE: die Spur wird in die anderen drei übernommen; HARD + WORK PROD: nur im bearbeiteten Pattern, jede Spur kann je Pattern eine andere Engine spielen) |
 | EDIT | Seite SOUND: die vier Klangparameter der Spur |
