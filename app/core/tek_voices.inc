@@ -13,11 +13,12 @@
  *         7.5 kHz; two voices, so an open hat rings under the next closed one until that one chokes it
  *         DECAY TONE METAL OPEN | PITCH CHIP DRIVE CRUSH
  *
- * schr4nz plays the kick and the hats, and on track 1 the RUMBLE instead of the bass: the hard-techno rumble, a ghost
- * of the kick (a sine on the key, falling a little, its attack soft) and some low noise into a short feedback delay
- * (the smear, where a producer would put a long reverb), a resonant low-pass (TONE, 40 to 450 Hz), a tanh (GRIT), an
- * octave over the kick and high-passed at 60 Hz, so the sub stays the kick's.
- * The kick's sidechain ducks it hard: the pump. TONE SMEAR GRIT DECAY | PITCH ATTACK DRIVE CRUSH */
+ * schr4nz plays the kick and the hats, and on track 1 the RUMBLE instead of the bass, made as hard-techno producers
+ * make it: the kick copied without its attack (a sine on the kick's own note, a little bend, faded in), into a reverb
+ * 100 % wet (three combs and an allpass, at a quarter of the rate: it only has to carry the lows), retriggered on the
+ * sixteenths by the sequencer, low-passed (TONE, 40 to 450 Hz) and high-passed at 30 Hz, saturated; over it a second
+ * layer, band-passed above TONE and distorted hard, for the grit in the mids (GRIT). The kick's sidechain ducks it:
+ * the pump. TONE SMEAR (the reverb's length) GRIT DECAY (the copy's length) | PITCH ATTACK DRIVE CRUSH */
 
 typedef struct { float g, k, a1, a2, a3, ic1, ic2; } tsvf_t;
 
@@ -64,10 +65,15 @@ static const float TK_SSD[7] = {-0.110f, -0.063f, -0.020f, 0.0f, 0.020f, 0.062f,
 
 typedef struct { float amp, kd, vel, metal, chip, sh, shc, shr, ph[6], inc[6]; int on; tsvf_t bp, hp; } tk_hat_t;
 
-#define TK_RDL 1024                     /* the rumble's smear: 21 ms at 48 kHz, 23 at 44.1 */
+#define TK_RC0 337                      /* the rumble's reverb at a quarter rate: three combs, an allpass */
+#define TK_RC1 373
+#define TK_RC2 401
+#define TK_RAP 113
+#define TK_RDL (TK_RC0 + TK_RC1 + TK_RC2 + TK_RAP)
 
 static struct {
-    struct { float ph, f, fend, amp, ka, att, ainc, fb, grit, k, nk, lpn, hp, vel; uint32_t pos; tsvf_t lp; float dl[TK_RDL]; } rum;
+    struct { float ph, f, fend, amp, ka, att, ainc, fb, grit, k, nk, hp, vel, acc, wet, wet0, damp[3]; uint32_t dec, rp[4];
+             tsvf_t lp, bp; float dl[TK_RDL]; } rum;
     struct { float ph, f, fend, kf, amp, ka, click, kc, hpx, hpy, k, nk, vel; int32_t hold; } kick;
     struct { float ph[7], phs, f, ft, gc, amp, peak, ka, cut, kc, floorc, cut0, q, vel, k, nk, sub; int32_t att; uint32_t cr;
              int wave, on; tsvf_t lp; } bass;
@@ -112,18 +118,22 @@ static void tk_trig(int t, int note, float vel, int acc, int slide, const uint8_
     case ROMI_SUB:
         if (SCH) {                      /* schr4nz: the RUMBLE. TONE SMEAR GRIT DECAY | ATTACK */
             float g = (float)p[2] * (1.0f / 127.0f), at = pmap((float)q[1], 0.001f, 5.3f);   /* 1 to 40 ms */
-            TK.rum.fend = note_hz(root + 12.0f + (float)note);   /* an octave over the kick: its sub stays the kick's */
-            TK.rum.f = TK.rum.fend * 1.5f;
+            TK.rum.fend = note_hz(root + (float)note);   /* the kick's own note */
+            TK.rum.f = TK.rum.fend * 1.25f;             /* (the bend left of the kick, not its click) */
             TK.rum.ka = decay_coef(pmap(drifted(t, 1, p[3]), 0.03f, 5.0f) / 6.9078f);
             TK.rum.att = 0.0f;
             TK.rum.ainc = 1.0f / (at * (float)ROMI_SR);
             TK.rum.amp = 1.0f;
-            TK.rum.fb = (float)p[1] * (0.82f / 127.0f);
+            TK.rum.fb = 0.6f + (float)p[1] * (0.32f / 127.0f);   /* SMEAR: the reverb, 0.2 to 2 s */
             TK.rum.grit = g;
             TK.rum.k = 1.5f + g * 4.5f;
             TK.rum.nk = 1.0f / ttanh(TK.rum.k);
             TK.rum.vel = vel * (acc ? 1.2f : 1.0f);
-            tsvf_set(&TK.rum.lp, pmap(drifted(t, 0, p[0]), 40.0f, 3.5f), 1.4f);
+            {
+                float fc = pmap(drifted(t, 0, p[0]), 40.0f, 3.5f);
+                tsvf_set(&TK.rum.lp, fc, 1.1f);
+                tsvf_set(&TK.rum.bp, fc * 2.5f > 900.0f ? 900.0f : fc * 2.5f, 1.6f);   /* the second layer, above */
+            }
             break;
         }
         {                               /* CUTOFF RESO ENVMOD DECAY | WAVE */
@@ -242,14 +252,13 @@ static inline void tk_voices(float *v)
 
     x = 0.0f;
     if (SCH) {                          /* RUMBLE: the ghost kick and low noise, smeared, filtered, ground */
-        float src = 0.0f, d;
-        if (TK.rum.amp > 5e-4f) {
+        float src = 0.0f, y, m;
+        if (TK.rum.amp > 5e-4f) {       /* the kick, copied without its attack */
             TK.rum.f = TK.rum.fend + (TK.rum.f - TK.rum.fend) * 0.9985f;
             TK.rum.ph += TK.rum.f * INV_SR;
             if (TK.rum.ph >= 1.0f)
                 TK.rum.ph -= 1.0f;
-            TK.rum.lpn += (brand(&R.rng) - TK.rum.lpn) * 0.02f;   /* noise, low (about 150 Hz) */
-            src = (fsin(TK.rum.ph) + TK.rum.lpn * (1.0f + 6.0f * TK.rum.grit)) * TK.rum.amp * TK.rum.att;
+            src = fsin(TK.rum.ph) * TK.rum.amp * TK.rum.att;
             if (TK.rum.att < 1.0f) {
                 TK.rum.att += TK.rum.ainc;
                 if (TK.rum.att > 1.0f)
@@ -258,12 +267,37 @@ static inline void tk_voices(float *v)
                 TK.rum.amp *= TK.rum.ka;
             }
         }
-        d = TK.rum.dl[TK.rum.pos];      /* the smear: a feedback delay, a long reverb's poor cousin */
-        TK.rum.dl[TK.rum.pos] = src + d * TK.rum.fb;
-        TK.rum.pos = (TK.rum.pos + 1u) % (uint32_t)TK_RDL;
-        x = tsvf_run(&TK.rum.lp, src * 0.6f + d * 0.7f, 0);
-        x = ttanh(TK.rum.k * x) * TK.rum.nk * TK.rum.vel;
-        TK.rum.hp += (x - TK.rum.hp) * 0.0085f;   /* under 60 Hz out: the sub is the kick's */
+        TK.rum.acc += src;              /* the reverb, 100 % wet, every fourth sample on their mean */
+        if ((++TK.rum.dec & 3u) == 0u) {
+            static const uint16_t LEN[4] = {TK_RC0, TK_RC1, TK_RC2, TK_RAP}, OFF[4] = {0, TK_RC0, TK_RC0 + TK_RC1,
+                                                                                    TK_RC0 + TK_RC1 + TK_RC2};
+            float in = TK.rum.acc * 0.25f, w = 0.0f, a;
+            int c;
+            TK.rum.acc = 0.0f;
+            for (c = 0; c < 3; c++) {
+                float *d = &TK.rum.dl[OFF[c] + TK.rum.rp[c]], o = *d;
+                TK.rum.damp[c] += (o - TK.rum.damp[c]) * 0.6f;   /* (each comb a little darker each time round) */
+                *d = in + TK.rum.damp[c] * TK.rum.fb;
+                if (++TK.rum.rp[c] >= LEN[c])
+                    TK.rum.rp[c] = 0;
+                w += o;
+            }
+            {
+                float *d = &TK.rum.dl[OFF[3] + TK.rum.rp[3]];
+                a = *d;
+                *d = w * 0.33f + a * 0.6f;
+                w = a - 0.6f * *d;
+                if (++TK.rum.rp[3] >= LEN[3])
+                    TK.rum.rp[3] = 0;
+            }
+            TK.rum.wet0 = TK.rum.wet;
+            TK.rum.wet = w;
+        }
+        y = TK.rum.wet0 + (TK.rum.wet - TK.rum.wet0) * (float)(TK.rum.dec & 3u) * 0.25f;   /* (back to the rate) */
+        x = tsvf_run(&TK.rum.lp, y, 0);
+        m = tsvf_run(&TK.rum.bp, y, 1); /* the second layer: band-passed above, ground hard */
+        x = ttanh(TK.rum.k * (x + ttanh(6.0f * m) * 0.6f * TK.rum.grit)) * TK.rum.nk * TK.rum.vel;
+        TK.rum.hp += (x - TK.rum.hp) * 0.0043f;   /* under 30 Hz out */
         x -= TK.rum.hp;
     } else if (TK.bass.on) {            /* ACID: memetek's 8-bit bass */
         float f, o, s;

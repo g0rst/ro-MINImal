@@ -84,7 +84,7 @@ schr4nz (GLO), FRE3tek und schr4nz → ro:MINImal (HOME). suom1saundi lädt nur 
 | Spur | Stimme | Regeln |
 |---|---|---|
 | KICK | TEK-KICK von memetek, kurz (0,3 s) und hart verzerrt (DRIVE 112) | jede Viertel, gestimmt; jedes vierte Mal ein Doppel auf Step 16 |
-| RUMBLE | neue Stimme (`tek_voices.inc`): Geist der Kick (Sinus eine Oktave über der Kick, weicher Einsatz) und tiefes Rauschen in ein kurzes Rückkopplungs-Delay (das Verschmieren, statt langem Hall), resonanter Tiefpass 40–450 Hz (TONE), tanh (GRIT), unter 60 Hz leer; SMEAR die Rückkopplung, ATTACK auf SOUND 2; Duck 100 % von der Kick | pro Viertel die drei Sechzehntel nach der Kick (sonst eine von vier Figuren), Offbeat betont |
+| RUMBLE | neue Stimme (`tek_voices.inc`) nach der klassischen Technik: die Kick kopiert ohne Attack (Sinus auf dem Ton der Kick, etwas Bend, eingeblendet: ATTACK auf SOUND 2), in einen Hall 100 % nass (drei Kammfilter und ein Allpass bei einem Viertel der Rate; SMEAR seine Länge, 0,2 bis 2 s), auf jeder Sechzehntel neu angestoßen, Tiefpass 40–450 Hz (TONE), Hochpass 30 Hz, Sättigung; darüber eine zweite Schicht, Bandpass über TONE und hart verzerrt, für Druck in den Mitten (GRIT); Duck 100 % von der Kick | pro Viertel die drei Sechzehntel nach der Kick (sonst eine von vier Figuren), Offbeat betont |
 | HAT | 808-Hats von memetek | geschlossen auf den Sechzehnteln neben der Kick, offen auf dem Offbeat |
 | METAL | FM-Percussion von ro:MINImal, Verhältnis 4,07 (Blech) | einer von vier Schranz-Loops (3-3-3-3-2-2, dagegen, dicht, 3-3-2 vom Offbeat), Grundton/Grundton/Quinte |
 | CLAP | Engine NOISE als Clap, DRIVE 40 | 2 und 4 |
@@ -92,7 +92,7 @@ schr4nz (GLO), FRE3tek und schr4nz → ro:MINImal (HOME). suom1saundi lädt nur 
 
 Klang: die Summe durch memeteks Master wie in FRE3tek, aber Drive ×5 statt ×3,65 und Crusher 12 Bit bei halber Rate
 (mahlt statt zu zischen). Duck 90, Release kurz: das Rumpeln pumpt. Last im Simulator (schlimmster Fall) 2 137
-Instruktionen pro Sample, mit GRAIN auf zwei Spuren 2 671. Eigenes Handbuch im Stil eines Sicherheitsdatenblatts
+Instruktionen pro Sample (mit dem Hall des Rumble 2 198), mit GRAIN auf zwei Spuren etwa 2 730. Eigenes Handbuch im Stil eines Sicherheitsdatenblatts
 (Stahl, Warnstreifen, Gasmaske), Deutsch und Englisch: https://g0rst.github.io/ro-MINImal/schr4nz.html
 (`manual/schr4nz.py`).
 
@@ -319,8 +319,8 @@ einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Fla
 | suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 230 (geschätzt heute ~2 420) | 44 / 60 / 82 % (heute ~47 / 65 / 89 %) |
 | FRE3tek (memeteks Stimmen und Master), schlimmster Fall | 2 057 | 40 / 55 / 76 % |
 | FRE3tek, schlimmster Fall, dazu GRAIN auf zwei Spuren | 2 598 | 51 / 70 / 95 % |
-| schr4nz, schlimmster Fall | 2 137 | 42 / 58 / 79 % |
-| schr4nz, schlimmster Fall, dazu GRAIN auf zwei Spuren | 2 671 | 52 / 72 / 98 % |
+| schr4nz, schlimmster Fall | 2 198 | 43 / 59 / 81 % |
+| schr4nz, schlimmster Fall, dazu GRAIN auf zwei Spuren | ~2 730 | 54 / 74 / 100 % |
 
 SLICE: GATE kostet fast nichts, STUTTER wenig, GRAIN etwa 170 Instruktionen pro Sample und Spur. Deshalb höchstens
 zwei Spuren mit GRAIN, und GRAIN ist nach suom1saundi das Erste, was rausfliegt, wenn es am Gerät eng wird.
