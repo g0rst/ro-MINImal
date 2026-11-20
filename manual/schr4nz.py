@@ -41,8 +41,8 @@ UI = {
 ROLE = [
     L("memeteks TEK-KICK, kurz und hart verzerrt: vier auf den Boden, manchmal ein Doppel in den Takt",
       "memetek's TEK-KICK, short and driven hard: four on the floor, now and then a double into the bar"),
-    L("das Rumpeln: der Geist der Kick auf den Sechzehnteln danach, verschmiert, tiefpassgefiltert, von der Kick gepumpt",
-      "the rumble: the kick's ghost on the sixteenths after it, smeared, low-passed, pumped by the kick"),
+    L("das Rumpeln: die Kick ohne Attack durch einen Hall, auf den Sechzehnteln danach, gefiltert, gesättigt, von der Kick gepumpt",
+      "the rumble: the kick without its attack through a reverb, on the sixteenths after it, filtered, saturated, pumped by the kick"),
     L("das Maschinengewehr: geschlossen auf jeder Sechzehntel neben der Kick, offen auf dem Offbeat",
       "the machine gun: closed on every sixteenth beside the kick, open on the off-beat"),
     L("der Schranz-Loop: FM-Percussion auf unharmonischem Verhältnis, 3-3-2 gegen die Vier",
@@ -79,11 +79,12 @@ sec("Musiktheorie, kurz", "Theory, briefly",
               "(×5) und der Crusher feiner (12 Bit, halbe Rate) als in FRE3tek: es mahlt, es zischt nicht.",
               "<b>Loops</b>: heavily compressed, filtered, distorted. Here: the sum through memetek's master, the drive harder "
               "(×5) and the crusher finer (12 bits, half the rate) than FRE3tek's: it grinds, it does not fizz."),
-            L("<b>Das Rumpeln</b>: im harten Techno der Hall der Kick, tiefpassgefiltert, auf den Offbeats, von der Kick "
-              "weggeduckt. Hier eine eigene Stimme: eine Oktave über der Kick und unter 60 Hz leer, damit der Sub der Kick "
-              "gehört.",
-              "<b>The rumble</b>: in hard techno the kick's reverb, low-passed, on the off-beats, ducked by the kick. Here a "
-              "voice of its own: an octave over the kick and empty below 60 Hz, so the sub stays the kick's."),
+            L("<b>Das Rumpeln</b>, wie Produzenten es bauen: die Kick kopieren, den Attack weg, durch einen Hall 100 % "
+              "nass, auf Sechzehntel legen, Tief- und Hochpass, Sättigung, Sidechain von der Kick. Darüber eine zweite "
+              "Schicht mit Bandpass und Verzerrung für die Mitten. Genau so macht es RUMBLE, in Echtzeit statt gerendert.",
+              "<b>The rumble</b>, as producers build it: copy the kick, take off its attack, through a reverb 100 % wet, "
+              "onto the sixteenths, low- and high-pass, saturation, sidechain from the kick. Over it a second layer, "
+              "band-passed and distorted, for the mids. RUMBLE does just that, live instead of rendered."),
             L("<b>3-3-2</b>: der Loop setzt Gruppen von drei Sechzehnteln gegen die Vier. Das reibt, und es treibt.",
               "<b>3-3-2</b>: the loop sets groups of three sixteenths against the four. It grinds, and it drives.")]))
 
@@ -114,11 +115,12 @@ sec("Die sechs Spuren", "The six tracks", ("gen", "tracks"))
 sec("Klänge ab Werk", "Factory sounds",
     ("p", L("Aus dem Code gelesen. <b>EDIT</b> öffnet SOUND, nochmal <b>EDIT</b> SOUND 2. Kick und Hats sind memeteks Stimmen, "
             "die Kick kürzer und härter gefahren als in FRE3tek. RUMBLE: TONE ist der Tiefpass (40 bis 450 Hz), SMEAR die "
-            "Rückkopplung des Verschmierens, GRIT Rauschen und Verzerrung, DECAY die Länge; ATTACK auf SOUND 2 macht den "
-            "Einsatz weich. METAL ist die FM-Percussion von ro:MINImal auf dem Verhältnis 4,07: kein Ton, Blech.",
+            "Länge des Halls (0,2 bis 2 s), GRIT die verzerrte zweite Schicht in den Mitten, DECAY die Länge der Kick-Kopie; "
+            "ATTACK auf SOUND 2 blendet sie ein (ohne Attack). METAL ist die FM-Percussion von ro:MINImal auf dem Verhältnis 4,07: kein Ton, Blech.",
             "Read from the code. <b>EDIT</b> opens SOUND, <b>EDIT</b> again SOUND 2. Kick and hats are memetek's voices, the "
-            "kick shorter and harder than in FRE3tek. RUMBLE: TONE is the low-pass (40 to 450 Hz), SMEAR the smear's "
-            "feedback, GRIT noise and drive, DECAY the length; ATTACK on SOUND 2 softens the onset. METAL is ro:MINImal's FM "
+            "kick shorter and harder than in FRE3tek. RUMBLE: TONE is the low-pass (40 to 450 Hz), SMEAR the "
+            "reverb's length (0.2 to 2 s), GRIT the distorted second layer in the mids, DECAY the kick copy's length; ATTACK "
+            "on SOUND 2 fades it in (no attack). METAL is ro:MINImal's FM "
             "percussion at ratio 4.07: no note, sheet metal.")),
     ("gen", "knobs"), ("gen", "mix"),
     ("p", L("CLAP ist die Engine NOISE ganz links (CLAP), ALARM die Engine 8-BIT als Rechteck mit viel VIBRATO. Auf GROOVE 2 "
