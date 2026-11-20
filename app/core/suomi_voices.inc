@@ -156,7 +156,7 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
     const romi_track_t *tr = &PAT->tr[t];
     uint8_t s[8];
     int i;
-    if (TEK && t < ROMI_PERC) {         /* FRE3tek: memetek's kick, bass and hats (tek_voices.inc) */
+    if (TEKV && t < ROMI_PERC) {        /* FRE3tek, schr4nz: memetek's kick, bass and hats (tek_voices.inc) */
         tk_trig(t, note, vel, acc, slide, p, q, root, tr->glide);
         return;
     }
@@ -218,7 +218,7 @@ static void su_trig(int t, int note, float vel, int acc, int slide, const uint8_
 /* how loud a voice sounds now, 0..1 (the ENV follower) */
 static float su_env(int t)
 {
-    if (TEK)
+    if (TEKV)
         return tk_env(t);
     switch (t) {
     case ROMI_KICK: return SU.kick.amp * SU.kick.vel;
@@ -232,7 +232,7 @@ static float su_env(int t)
 static inline void su_voices(float *v)
 {
     float x;
-    if (TEK) {
+    if (TEKV) {
         tk_voices(v);
         return;
     }

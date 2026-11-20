@@ -76,8 +76,12 @@ sec("Rein und raus", "In and out",
               "The picture collapses like an old tube, the music smacks out. A wall of speakers pumps four times, then the name "
               "slams in, its 3 dark red."),
             L("Neuer Groove in FRE3tek. Die Musik startet mit dem Überblenden von vorn.", "A new groove in FRE3tek. The music starts again with the fade."),
-            L("<b>HOME</b> 2 Sekunden halten: zurück in den Stil, aus dem du kamst. Jeder Druck überspringt die Show.",
-              "Hold <b>HOME</b> 2 seconds: back to the style you came from. Any touch skips the show.")]))
+            L("<b>HOME</b> 2 Sekunden halten: heim zu ro:MINImal. Jeder Druck überspringt die Show.",
+              "Hold <b>HOME</b> 2 seconds: home to ro:MINImal. Any touch skips the show."),
+            L("<b>GLO</b> 2 Sekunden halten, nur hier in FRE3tek: weiter zu <b>schr4nz</b>, Schranz mit Gasmaske "
+              "(eigenes Handbuch). Dort führt GLO halten zurück hierher, HOME halten heim.",
+              "Hold <b>GLO</b> 2 seconds, only here in FRE3tek: on to <b>schr4nz</b>, Schranz in a gas mask (a manual "
+              "of its own). There, holding GLO comes back here, holding HOME goes home.")]))
 
 sec("Warnung", "Warning",
     ("ul", [L("Lief bisher nur im Simulator und Emulator, <b>nicht auf einem echten FM-1</b>.", "Has run in the simulator and emulator only, <b>not on a real FM-1</b>."),
@@ -178,7 +182,7 @@ def gen(name, lang):
         out = []
         for t in range(4):
             d = F["tek_def"][t]
-            q = [24, d[8], 50 if t == 0 else 0, 0]
+            q = [24, d[8], 82 if t == 0 else 0, 0]
             rows = [(f"EDIT K{k + 1}", f"<b>{n}</b>", str(v)) for k, (n, v) in enumerate(zip(F["sound"]["tek"][t], d[:4]))]
             rows += [(f"EDIT² K{k + 1}", f"<b>{n}</b>", str(v - 24 if n == "PITCH" else v))
                      for k, (n, v) in enumerate(zip(F["sound2"]["tek"][t], q))]

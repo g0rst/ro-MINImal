@@ -11,7 +11,13 @@
  *         CUTOFF RESO ENVMOD DECAY | PITCH WAVE DRIVE CRUSH; an accent opens it, a slide glides (GLIDE)
  *   HAT   memetek's hats: six detuned squares (the 808's) and noise through a band-pass at 10 kHz and a high-pass at
  *         7.5 kHz; two voices, so an open hat rings under the next closed one until that one chokes it
- *         DECAY TONE METAL OPEN | PITCH CHIP DRIVE CRUSH */
+ *         DECAY TONE METAL OPEN | PITCH CHIP DRIVE CRUSH
+ *
+ * schr4nz plays the kick and the hats, and on track 1 the RUMBLE instead of the bass: the hard-techno rumble, a ghost
+ * of the kick (a sine on the key, falling a little, its attack soft) and some low noise into a short feedback delay
+ * (the smear, where a producer would put a long reverb), a resonant low-pass (TONE, 40 to 450 Hz), a tanh (GRIT), an
+ * octave over the kick and high-passed at 60 Hz, so the sub stays the kick's.
+ * The kick's sidechain ducks it hard: the pump. TONE SMEAR GRIT DECAY | PITCH ATTACK DRIVE CRUSH */
 
 typedef struct { float g, k, a1, a2, a3, ic1, ic2; } tsvf_t;
 
@@ -58,7 +64,10 @@ static const float TK_SSD[7] = {-0.110f, -0.063f, -0.020f, 0.0f, 0.020f, 0.062f,
 
 typedef struct { float amp, kd, vel, metal, chip, sh, shc, shr, ph[6], inc[6]; int on; tsvf_t bp, hp; } tk_hat_t;
 
+#define TK_RDL 1024                     /* the rumble's smear: 21 ms at 48 kHz, 23 at 44.1 */
+
 static struct {
+    struct { float ph, f, fend, amp, ka, att, ainc, fb, grit, k, nk, lpn, hp, vel; uint32_t pos; tsvf_t lp; float dl[TK_RDL]; } rum;
     struct { float ph, f, fend, kf, amp, ka, click, kc, hpx, hpy, k, nk, vel; int32_t hold; } kick;
     struct { float ph[7], phs, f, ft, gc, amp, peak, ka, cut, kc, floorc, cut0, q, vel, k, nk, sub; int32_t att; uint32_t cr;
              int wave, on; tsvf_t lp; } bass;
@@ -69,7 +78,9 @@ static struct {
 static void tk_panic(void)
 {
     int i;
-    TK.kick.amp = TK.bass.amp = 0.0f;
+    TK.kick.amp = TK.bass.amp = TK.rum.amp = 0.0f;
+    for (i = 0; i < TK_RDL; i++)
+        TK.rum.dl[i] = 0.0f;
     TK.bass.on = 0;
     TK.bass.att = 0;
     for (i = 0; i < TK_NHAT; i++) {
@@ -98,7 +109,24 @@ static void tk_trig(int t, int note, float vel, int acc, int slide, const uint8_
         TK.kick.vel = vel;
         break;
     }
-    case ROMI_SUB: {                    /* CUTOFF RESO ENVMOD DECAY | WAVE */
+    case ROMI_SUB:
+        if (SCH) {                      /* schr4nz: the RUMBLE. TONE SMEAR GRIT DECAY | ATTACK */
+            float g = (float)p[2] * (1.0f / 127.0f), at = pmap((float)q[1], 0.001f, 5.3f);   /* 1 to 40 ms */
+            TK.rum.fend = note_hz(root + 12.0f + (float)note);   /* an octave over the kick: its sub stays the kick's */
+            TK.rum.f = TK.rum.fend * 1.5f;
+            TK.rum.ka = decay_coef(pmap(drifted(t, 1, p[3]), 0.03f, 5.0f) / 6.9078f);
+            TK.rum.att = 0.0f;
+            TK.rum.ainc = 1.0f / (at * (float)ROMI_SR);
+            TK.rum.amp = 1.0f;
+            TK.rum.fb = (float)p[1] * (0.82f / 127.0f);
+            TK.rum.grit = g;
+            TK.rum.k = 1.5f + g * 4.5f;
+            TK.rum.nk = 1.0f / ttanh(TK.rum.k);
+            TK.rum.vel = vel * (acc ? 1.2f : 1.0f);
+            tsvf_set(&TK.rum.lp, pmap(drifted(t, 0, p[0]), 40.0f, 3.5f), 1.4f);
+            break;
+        }
+        {                               /* CUTOFF RESO ENVMOD DECAY | WAVE */
         float hz = note_hz(root + 12.0f + (float)note), ln = pmap(drifted(t, 1, p[3]), 0.02f, 5.0f), fenv, endf, upd;
         int w = q[1] * 5 / 128, k;
         TK.bass.ft = hz;
@@ -174,7 +202,7 @@ static float tk_env(int t)
 {
     switch (t) {
     case ROMI_KICK: return TK.kick.amp * TK.kick.vel;
-    case ROMI_SUB: return TK.bass.amp * TK.bass.vel * 1.25f;
+    case ROMI_SUB: return SCH ? TK.rum.amp * TK.rum.att * TK.rum.vel : TK.bass.amp * TK.bass.vel * 1.25f;
     default: {
         float e = 0.0f;
         int v;
@@ -213,7 +241,31 @@ static inline void tk_voices(float *v)
     v[ROMI_KICK] = x;
 
     x = 0.0f;
-    if (TK.bass.on) {                   /* ACID: memetek's 8-bit bass */
+    if (SCH) {                          /* RUMBLE: the ghost kick and low noise, smeared, filtered, ground */
+        float src = 0.0f, d;
+        if (TK.rum.amp > 5e-4f) {
+            TK.rum.f = TK.rum.fend + (TK.rum.f - TK.rum.fend) * 0.9985f;
+            TK.rum.ph += TK.rum.f * INV_SR;
+            if (TK.rum.ph >= 1.0f)
+                TK.rum.ph -= 1.0f;
+            TK.rum.lpn += (brand(&R.rng) - TK.rum.lpn) * 0.02f;   /* noise, low (about 150 Hz) */
+            src = (fsin(TK.rum.ph) + TK.rum.lpn * (1.0f + 6.0f * TK.rum.grit)) * TK.rum.amp * TK.rum.att;
+            if (TK.rum.att < 1.0f) {
+                TK.rum.att += TK.rum.ainc;
+                if (TK.rum.att > 1.0f)
+                    TK.rum.att = 1.0f;
+            } else {
+                TK.rum.amp *= TK.rum.ka;
+            }
+        }
+        d = TK.rum.dl[TK.rum.pos];      /* the smear: a feedback delay, a long reverb's poor cousin */
+        TK.rum.dl[TK.rum.pos] = src + d * TK.rum.fb;
+        TK.rum.pos = (TK.rum.pos + 1u) % (uint32_t)TK_RDL;
+        x = tsvf_run(&TK.rum.lp, src * 0.6f + d * 0.7f, 0);
+        x = ttanh(TK.rum.k * x) * TK.rum.nk * TK.rum.vel;
+        TK.rum.hp += (x - TK.rum.hp) * 0.0085f;   /* under 60 Hz out: the sub is the kick's */
+        x -= TK.rum.hp;
+    } else if (TK.bass.on) {            /* ACID: memetek's 8-bit bass */
         float f, o, s;
         if ((TK.bass.cr++ & 15u) == 0u) {
             float fc = TK.bass.cut0 * TK.bass.cut;

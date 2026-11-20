@@ -43,7 +43,7 @@ zurückkommt (Installer von fm1-base, `base/README.md`).
 
 **FRE3tek** ist Free Tekno: Acid, Mental, Tribe, 180 BPM, F phrygisch. **HOME 2 Sekunden halten** schaltet hinein
 (Röhre zieht sich zusammen, eine Pixel-Boxenwand pumpt viermal im Takt, der Name knallt rein, die 3 in Dunkelrot, vier
-Tekno-Kicks als Jingle); nochmal 2 s halten führt zurück in den Stil, aus dem man kam. Ein kurzer Tipp auf HOME blättert
+Tekno-Kicks als Jingle); nochmal 2 s halten führt heim zu ro:MINImal. Ein kurzer Tipp auf HOME blättert
 wie immer (jetzt beim Loslassen). Akzentfarbe Dunkelrot, Gute Nacht „DOBROU NOC“.
 
 | Spur | Stimme | Regeln |
@@ -68,6 +68,33 @@ genau (vorher bis zu einem Viertelton daneben, gemessen −18 Cent in FRE3tek).
 Last im Simulator (schlimmster Fall): 2 057 Instruktionen pro Sample (ro:MINImal 1 914); mit GRAIN auf zwei
 Spuren 2 598. Braucht den Teil von suom1saundi: ohne sie gebaut (ROMI_SUOMI=0) gibt es FRE3tek nicht. Eigenes
 Handbuch im Flyer-Look, Deutsch und Englisch: https://g0rst.github.io/ro-MINImal/fre3tek.html (`manual/fre3tek.py`).
+
+## Vierter Stil: schr4nz (in FRE3tek GLO 2 s halten)
+
+**schr4nz** ist Schranz: harter deutscher Techno um 2000 (der Name stammt von Chris Liebing), 150 BPM, gerade, G-Moll,
+fast keine Melodie, alles Percussion, komprimiert und verzerrt. Man kommt **nur aus FRE3tek** hin: dort **GLO 2 s
+halten**. Show: Röhre zieht sich zusammen, gelb-schwarze Warnstreifen fahren ein, eine Gasmaske taucht aus dem Dunkel
+auf und atmet im Takt (Gläser blitzen gelb, der Filter pufft), dann presst sich der Name herunter, die 4 in Gelb.
+Jingle: Atemzug durch die Maske, vier verzerrte Kicks, ein gecrushter Schlag. In schr4nz: GLO 2 s zurück zu FRE3tek,
+HOME 2 s heim zu ro:MINImal. Hintergrund Stahlgrau, Akzent Warngelb, Gute Nacht „GUTE NACHT“.
+
+Wege zwischen den Stilen: ro:MINImal ⇄ suom1saundi (GLO), ro:MINImal und suom1saundi → FRE3tek (HOME), FRE3tek ⇄
+schr4nz (GLO), FRE3tek und schr4nz → ro:MINImal (HOME). suom1saundi lädt nur aus ro:MINImal.
+
+| Spur | Stimme | Regeln |
+|---|---|---|
+| KICK | TEK-KICK von memetek, kurz (0,3 s) und hart verzerrt (DRIVE 112) | jede Viertel, gestimmt; jedes vierte Mal ein Doppel auf Step 16 |
+| RUMBLE | neue Stimme (`tek_voices.inc`): Geist der Kick (Sinus eine Oktave über der Kick, weicher Einsatz) und tiefes Rauschen in ein kurzes Rückkopplungs-Delay (das Verschmieren, statt langem Hall), resonanter Tiefpass 40–450 Hz (TONE), tanh (GRIT), unter 60 Hz leer; SMEAR die Rückkopplung, ATTACK auf SOUND 2; Duck 100 % von der Kick | pro Viertel die drei Sechzehntel nach der Kick (sonst eine von vier Figuren), Offbeat betont |
+| HAT | 808-Hats von memetek | geschlossen auf den Sechzehnteln neben der Kick, offen auf dem Offbeat |
+| METAL | FM-Percussion von ro:MINImal, Verhältnis 4,07 (Blech) | einer von vier Schranz-Loops (3-3-3-3-2-2, dagegen, dicht, 3-3-2 vom Offbeat), Grundton/Grundton/Quinte |
+| CLAP | Engine NOISE als Clap, DRIVE 40 | 2 und 4 |
+| ALARM | Engine 8-BIT als Rechteck mit Sirenen-Vibrato, stumm | Melodie auf den Akkordtönen |
+
+Klang: die Summe durch memeteks Master wie in FRE3tek, aber Drive ×5 statt ×3,65 und Crusher 12 Bit bei halber Rate
+(mahlt statt zu zischen). Duck 90, Release kurz: das Rumpeln pumpt. Last im Simulator (schlimmster Fall) 2 137
+Instruktionen pro Sample, mit GRAIN auf zwei Spuren 2 671. Eigenes Handbuch im Stil eines Sicherheitsdatenblatts
+(Stahl, Warnstreifen, Gasmaske), Deutsch und Englisch: https://g0rst.github.io/ro-MINImal/schr4nz.html
+(`manual/schr4nz.py`).
 
 ## Zwei Stile, zwei Firmwares: ro:MINImal und suom1saundi
 
@@ -292,6 +319,8 @@ einem RISC-Kern, Takte pro Instruktion, Cache-Misses beim Ausführen aus dem Fla
 | suom1saundi, schlimmster Fall, dazu SLICE: GATE, STUTTER und GRAIN auf zwei Spuren | 2 230 (geschätzt heute ~2 420) | 44 / 60 / 82 % (heute ~47 / 65 / 89 %) |
 | FRE3tek (memeteks Stimmen und Master), schlimmster Fall | 2 057 | 40 / 55 / 76 % |
 | FRE3tek, schlimmster Fall, dazu GRAIN auf zwei Spuren | 2 598 | 51 / 70 / 95 % |
+| schr4nz, schlimmster Fall | 2 137 | 42 / 58 / 79 % |
+| schr4nz, schlimmster Fall, dazu GRAIN auf zwei Spuren | 2 671 | 52 / 72 / 98 % |
 
 SLICE: GATE kostet fast nichts, STUTTER wenig, GRAIN etwa 170 Instruktionen pro Sample und Spur. Deshalb höchstens
 zwei Spuren mit GRAIN, und GRAIN ist nach suom1saundi das Erste, was rausfliegt, wenn es am Gerät eng wird.
@@ -337,7 +366,7 @@ einem SMK-37: vollständige Flash-Sicherung, wie im Playbook beschrieben.
     base/                     fm1-base als Submodul (darin felucca-bsp): Plattform, Build, Installer
     sim/                      Browser-Testseite: wasm.c, page.html, build.sh  ->  docs/index.html
     tests/                    Host-Tests des Kerns
-    manual/                   Handbücher: build.py -> docs/manual.html (en/de/ro), suomi.py -> docs/suomi.html (fi/de/tlh, Text: suomi_text.py), codefacts.py (Werte aus dem Code)
+    manual/                   Handbücher: build.py -> docs/manual.html (en/de/ro), suomi.py -> docs/suomi.html (fi/de/tlh, Text: suomi_text.py), fre3tek.py -> docs/fre3tek.html, schr4nz.py -> docs/schr4nz.html (de/en), codefacts.py (Werte aus dem Code)
 
 Der Kern zeichnet das Display selbst in Streifen von 240 x 48 Pixeln (eigene 5x7-Schrift). Deshalb zeigen
 Gerät, Simulator und Browser dasselbe Bild.

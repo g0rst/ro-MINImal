@@ -1494,7 +1494,7 @@ int main(int argc, char **argv)
     }
 
     /* FRE3tek (HOME held 2 s): the tube collapses, a wall of speakers pumps, the name slams in; free tekno at 180,
-     * F phrygian, KICK ACID HAT TRIBE SCREECH SIREN; HOME held again goes back where it came from. A tap on HOME
+     * F phrygian, KICK ACID HAT TRIBE SCREAM SIREN; HOME held again goes home to ro:MINImal. A tap on HOME
      * still turns its pages, a shorter hold nothing */
     {
         int k, f, i, kicks = 0, acid = 0;
@@ -1536,6 +1536,56 @@ int main(int argc, char **argv)
         run(4.0, 0, &peak, &rms);
         printf("fre3tek: peak %.3f rms %.3f\n", peak, rms);
         CHECK(peak > 0.2 && peak < 1.01 && rms > 0.03, "FRE3tek sound: peak %g rms %g", peak, rms);
+
+        /* schr4nz: GLO held 2 s in FRE3tek (and only there): stripes, a gas mask breathing, the name pressed down;
+         * Schranz at 150, G minor, KICK RUMBLE HAT METAL CLAP ALARM. GLO held again: back to FRE3tek */
+        held_b |= 1u << ROMI_B_GLO;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_GLO);
+        CHECK(romi_state(ROMI_Q_UFO) == 4, "GLO held in FRE3tek: no schr4nz show (%d)", romi_state(ROMI_Q_UFO));
+        for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) {
+            frame(0);
+            if (f == 30 || f == 70 || f == 110 || f == 118 || f == 150) {
+                snprintf(path, sizeof path, "%s/screen-sch-%03d.ppm", out, f);
+                write_screen(path);
+            }
+        }
+        CHECK(romi_project()->style == 3 && romi_project()->bpm == 150 && romi_project()->scale == 0,
+              "schr4nz: style %d bpm %d scale %d", romi_project()->style, romi_project()->bpm, romi_project()->scale);
+        for (k = 0; k < 40; k++) frame(0);
+        snprintf(path, sizeof path, "%s/screen-sch.ppm", out);
+        write_screen(path);
+        {
+            const romi_pattern_t *a = &romi_project()->pat[0];
+            int rum = 0, met = 0, hats = 0;
+            kicks = 0;
+            for (i = 0; i < 16; i++) {
+                kicks += (a->tr[ROMI_KICK].step[i].flags & ROMI_ST_ON) && (i & 3) == 0;
+                rum += (a->tr[ROMI_SUB].step[i].flags & ROMI_ST_ON) && (i & 3) != 0;
+                hats += (a->tr[ROMI_HAT].step[i].flags & ROMI_ST_ON) != 0;
+                met += (a->tr[ROMI_PERC].step[i].flags & ROMI_ST_ON) != 0;
+            }
+            CHECK(kicks == 4 && rum >= 8 && hats >= 12 && met >= 5, "schr4nz: kicks %d rumble %d hats %d metal %d",
+                  kicks, rum, hats, met);
+            CHECK(a->tr[ROMI_STAB].engine == ROMI_ENG_NOISE && a->tr[ROMI_CLICK].engine == ROMI_ENG_PIIP &&
+                  a->tr[ROMI_CLICK].mute && a->tr[ROMI_SUB].sc == 127, "schr4nz engines: %d %d",
+                  a->tr[ROMI_STAB].engine, a->tr[ROMI_CLICK].engine);
+            for (i = 0; i < 16; i++)
+                if (a->tr[ROMI_STAB].step[i].flags & ROMI_ST_ON)
+                    CHECK(i == 4 || i == 12 || i == 3 || i == 11 || i == 15, "schr4nz clap on step %d", i + 1);
+        }
+        tap_button(ROMI_B_PLAY);
+        tap_button(ROMI_B_PLAY);
+        run(4.0, 0, &peak, &rms);
+        printf("schr4nz: peak %.3f rms %.3f\n", peak, rms);
+        CHECK(peak > 0.2 && peak < 1.01 && rms > 0.03, "schr4nz sound: peak %g rms %g", peak, rms);
+        held_b |= 1u << ROMI_B_GLO;
+        for (k = 0; k < 125; k++) frame(0);
+        held_b &= ~(1u << ROMI_B_GLO);
+        CHECK(romi_state(ROMI_Q_UFO) == 3, "GLO held in schr4nz: back with FRE3tek's show (%d)", romi_state(ROMI_Q_UFO));
+        for (f = 0; f < 400 && romi_state(ROMI_Q_UFO); f++) frame(0);
+        CHECK(romi_project()->style == 2, "back from schr4nz: style %d", romi_project()->style);
+
         held_b |= 1u << ROMI_B_HOME;
         for (k = 0; k < 125; k++) frame(0);
         held_b &= ~(1u << ROMI_B_HOME);

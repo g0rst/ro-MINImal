@@ -11,8 +11,8 @@ static int harmony_at(uint32_t i, uint32_t len)
 {
     static const int8_t FALL[4] = {0, 5, 6, 0};
     int k;
-    if (R.prj.style == 2)
-        return 0;                       /* FRE3tek: one chord, the drone of the kick and the acid */
+    if (R.prj.style >= 2)
+        return 0;                       /* FRE3tek, schr4nz: one chord, the drone of the kick */
     for (k = ROMI_STAB; k < ROMI_TRACKS; k++) {
         const romi_track_t *st = &EDT->tr[k];
         uint32_t sl = st->len ? st->len : 1u, j;
